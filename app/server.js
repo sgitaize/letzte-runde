@@ -5,7 +5,7 @@
  *   GET  /admin.html                -> Adminbereich
  *   GET  /api?a=state|get|config|info
  *   GET  /r/CODE                    -> Einladung mit Vorschau (WhatsApp & Co.), leitet auf /#CODE weiter
- *   POST /api?a=create|set|del|chip|rename|record|addbot|replacebot|sphand|voice|signal|signals|react
+ *   POST /api?a=create|set|del|chip|rename|record|addbot|replacebot|sphand|voice|signal|signals|react|botify
  *   POST /admin-api?a=login|config|rooms|delroom   (Header x-admin-secret)
  *   WS   /ws?room=CODE              -> Push bei jeder Änderung
  *
@@ -825,6 +825,21 @@ async function api(req, res, u) {
       return json(res, 200, { ok: true, id: id, version: r.version });
     } catch (e) { return json(res, e.status || 500, { error: e.status ? e.message : 'Bot konnte nicht angelegt werden' }); }
   }
+  if (a === 'botify') {
+    /* Host ersetzt einen Offline-Spieler durch einen Bot (doppelte Bestätigung im Browser). Läuft eine Hand,
+       wird sie nur mit abort=true abgebrochen – der Bot kann die Karten des alten Geräts nicht lesen. */
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
+    const who = String(body.uid || '').replace(ID_RE, '').slice(0, 40), target = String(body.target || '').replace(ID_RE, '').slice(0, 40);
+    if (!who || who !== roomHost(r) || !keyOk(r, who, keyHash(req), false)) return json(res, 403, { error: 'Nur der Host darf Spieler ersetzen' });
+    if (!target || target === who || !r.docs['players/' + target] || isBotId(r, target)) return json(res, 400, { error: 'Spieler unbekannt' });
+    if (onlineList(code).indexOf(target) >= 0) return json(res, 409, { error: 'Der Spieler ist gerade online' });
+    const m = r.docs['state/main'] || {}, inHand = !!m.phase && m.phase !== 'lobby' && m.phase !== 'done';
+    if (inHand && !body.abort) return json(res, 409, { error: 'Es läuft eine Hand – Ersetzen bricht sie ab' });
+    try { await bots.convert(code, r, target); } catch (e) { return json(res, e.status || 500, { error: e.status ? e.message : 'Bot konnte nicht angelegt werden' }); }
+    if (r.keys) delete r.keys[target];        // altes Gerät kann nicht mehr im Namen des Platzes handeln
+    if (inHand) { r.docs['state/main'] = Object.assign({}, m, { phase: 'lobby', stage: 0 }); commit(code, ['state/main']); }
+    return json(res, 200, { ok: true, aborted: inHand, version: r.version });
+  }
   if (a === 'replacebot') {
     /* Echter Spieler übernimmt nach einer Hand den Platz eines Bots (Sitzreihenfolge bleibt, Bot verschwindet) */
     let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
@@ -833,7 +848,7 @@ async function api(req, res, u) {
     if (!who || !kh || (r.keys && r.keys[who] && r.keys[who] !== kh)) return json(res, 403, { error: 'Geraeteschluessel fehlt' });
     if (!isBotId(r, target) || !r.docs['players/' + target]) return json(res, 400, { error: 'Diesen Bot gibt es nicht (mehr)' });
     if (!betweenHands(r)) return json(res, 409, { error: 'Bot-Plätze erst nach der Hand übernehmen' });
-    if (r.docs['players/' + who]) return json(res, 409, { error: 'Du spielst schon mit' });
+    if (r.docs['players/' + who] && who !== target) return json(res, 409, { error: 'Du spielst schon mit' });   // who===target: eigenen Platz vom Bot zurückholen
     if (!body.pub || typeof body.pub !== 'object' || JSON.stringify(body.pub).length > 2000) return json(res, 400, { error: 'Schluessel fehlt' });
     const seat = r.docs['players/' + target].joinedAt || Date.now();
     delete r.docs['players/' + target];

@@ -116,6 +116,23 @@ module.exports = function createBots(ctx) {
     return id;
   }
   function remove(r, id) { if (r.bots) delete r.bots[id]; privCache.delete(id); }
+  /* Offline-Spieler durch Bot ersetzen: gleiche ID, Name und Sitzplatz, neuer Schlüssel (alte Karten sind für ihn nicht lesbar) */
+  async function convert(code, r, id) {
+    const p = r.docs['players/' + id];
+    if (!p) throw Object.assign(new Error('Spieler unbekannt'), { status: 400 });
+    if (Object.keys(r.bots || {}).length >= MAX_BOTS_ROOM) throw Object.assign(new Error('Höchstens ' + MAX_BOTS_ROOM + ' Bots je Raum'), { status: 409 });
+    if (total() >= MAX_BOTS_TOTAL) throw Object.assign(new Error('Gerade zu viele Bots auf dem Server – bitte später'), { status: 503 });
+    const kp = await subtle.generateKey(EC, true, ['deriveBits']);
+    const pub = await subtle.exportKey('jwk', kp.publicKey), priv = await subtle.exportKey('jwk', kp.privateKey);
+    r.bots = r.bots || {};
+    const m = r.docs['state/main'] || {};
+    r.bots[id] = { name: p.name, priv, noise: 0.15 + Math.random() * 0.45, stub: Math.floor(Math.random() * 3), pace: 900 + Math.random() * 1400, gut: Math.random() < 0.65,
+      fromHand: (Number(m.hand) || 0) + 1 };      // Karten älterer Hände sind mit dem alten Schlüssel verschlüsselt – nicht anfassen
+    privCache.delete(id);
+    r.docs['players/' + id] = { name: p.name, pub, joinedAt: p.joinedAt || Date.now(), ready: null, bot: true, replaced: true };
+    commit(code, ['players/' + id]);
+    log('Raum ' + code + ': Spieler durch Bot ersetzt');
+  }
 
   /* ------------------------------------------------ Geben (Rollen) ---------- */
   async function doShuffle(code, r, h, Aid, Bid) {
@@ -323,7 +340,7 @@ module.exports = function createBots(ctx) {
   /* ------------------------------------------------ Takt ------------------- */
   function runRoom(code, r) {
     const m = mainOf(r), h = Number(m.hand) || 0, ph = m.phase, st = Number(m.stage) || 0;
-    const bots = partsOf(m).filter((id) => isBot(r, id));
+    const bots = partsOf(m).filter((id) => isBot(r, id) && (r.bots[id].fromHand || 0) <= (Number(m.hand) || 0));
     let R = rt.get(code);
     if (!R || R.hand !== h) { R = { hand: h, bots: {}, busy: {}, board: [null, null, null, null, null] }; rt.set(code, R); }
     bots.forEach((id) => { if (!R.bots[id]) R.bots[id] = {}; });
@@ -356,5 +373,5 @@ module.exports = function createBots(ctx) {
       try { runRoom(code, r); } catch (e) { console.error('Bots in ' + code, e); }
     }
   }
-  return { add, remove, tick, roleOrder, isBot, MAX_BOTS_ROOM };
+  return { add, remove, convert, tick, roleOrder, isBot, MAX_BOTS_ROOM };
 };

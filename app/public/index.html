@@ -180,6 +180,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   #chat .chatmsgs{flex:1 1 auto;max-height:none;min-height:0}
 }
 .vbox{max-width:520px;text-align:left}.vbox ul{margin:8px 0 12px 18px;padding:0}.vbox li{margin:6px 0;font-size:15px}.vbox h2{font-size:18px;text-transform:none;letter-spacing:0;color:var(--fg)}
+.vbox .danger.primary{background:var(--red,#c0392b);border-color:var(--red,#c0392b);color:#fff}
 .tag.vc{border-color:var(--accent)}.tag.vc.talk{background:var(--accent);color:var(--accent-fg)}
 .vstat{white-space:nowrap}
 .reactbar{display:flex;gap:4px;flex-wrap:wrap}.react-btn{font-size:18px;padding:2px 7px;line-height:1.3}
@@ -501,7 +502,11 @@ function applyDocs(){
   if(code&&joined&&!watching){
     var me=docs['players/'+uid];
     if(!me){uiErr='Du wurdest vom Host aus dem Raum entfernt.';leave();return;}
-    if(me.pub&&myPubJwk&&me.pub.x!==myPubJwk.x){uiErr='Dein Platz wurde auf einem anderen Gerät übernommen.';leave();return;}
+    if(me.bot){                              // Host hat den Platz an einen Bot gegeben, während wir offline waren
+      voiceLeave();joined=false;watching=true;myHand=null;
+      try{localStorage.removeItem('kr.room');}catch(e){}
+      uiNote='Du warst offline \u2013 der Host hat deinen Platz an einen Bot gegeben. Nach der Hand kannst du ihn unten bei deinem Namen über \u201ePlatz übernehmen\u201c zurückholen.';
+    }else if(me.pub&&myPubJwk&&me.pub.x!==myPubJwk.x){uiErr='Dein Platz wurde auf einem anderen Gerät übernommen.';leave();return;}
   }
   if(code&&!watching)notices();
   upd();
@@ -670,7 +675,9 @@ function once(key,fn){
 function tick(){
   if(!db||!code||!S.main)return;
   var h=hand(),ph=phase(),ps=parts(),m=pmap();
-  var Sid=roleId(0),Aid=roleId(1),Bid=roleId(2);
+  /* Rollen beim Geben nur, wenn ich selbst mitspiele (nicht als Zuschauer und nicht, wenn mein Platz ein Bot ist) */
+  var me_=m[uid],mayRole=!watching&&me_&&!me_.bot;
+  var Sid=mayRole?roleId(0):null,Aid=mayRole?roleId(1):null,Bid=mayRole?roleId(2):null;
 
   if(ph==='deal'){
     if(uid===Sid && !(S.deck&&S.deck.hand===h)) once('deck'+h,doShuffle);
@@ -1112,6 +1119,35 @@ function replaceBot(id){
   api('replacebot',{room:code},{uid:uid,name:myName,pub:myPubJwk,target:id})
     .then(function(){watching=false;joined=true;uiErr='';showToast('Du spielst ab der nächsten Hand mit');pollOnce(true);})
     .catch(showErr);
+}
+/* Offline-Spieler durch Bot ersetzen (nur Host), mit doppelter Bestätigung */
+var botifyDlg=null;   // {id, step: 1|2}
+function botInHand(){var ph=phase();return ph!=='lobby'&&ph!=='done';}
+function botifyStart(id){if(!isHost()||watching||!pmap()[id]||isBotP(id))return;botifyDlg={id:id,step:1};render();}
+function botifyDialog(){
+  if(!botifyDlg)return '';
+  var id=botifyDlg.id,p=pmap()[id];
+  if(!p||isBotP(id)){botifyDlg=null;return '';}
+  if(isOnline(id))return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true"><div class="cd-box vbox"><h2>\ud83e\udd16 Durch Bot ersetzen</h2>'+
+    '<p>'+esc(p.name)+' ist wieder online \u2013 Ersetzen ist nicht mehr nötig.</p><div class="bar"><button class="primary" data-a="botcancel">OK</button></div></div></div>';
+  var nm='<b>'+esc(p.name)+'</b>',away_=away[id]!=null?' (seit '+fmtAway(away[id])+')':'';
+  var body=botifyDlg.step===1?
+    '<h2>\ud83e\udd16 '+esc(p.name)+' durch einen Bot ersetzen?</h2><ul>'+
+      '<li>'+nm+' ist offline'+away_+'.</li>'+
+      '<li>Ein Bot übernimmt den Platz mit gleichem Namen (\ud83e\udd16) und spielt ab der nächsten Hand mit.</li>'+
+      (botInHand()?'<li><b>Die laufende Hand wird dafür abgebrochen</b> \u2013 die Karten von '+nm+' liegen verschlüsselt auf dem Gerät, das offline ist.</li>':'')+
+      '<li>Kommt '+nm+' zurück, kann er/sie den Platz nach einer Hand über \u201ePlatz übernehmen\u201c zurückholen.</li></ul>'+
+      '<div class="bar"><button class="primary" data-a="botnext">Weiter</button><button class="ghost" data-a="botcancel">Abbrechen</button></div>'
+    :'<h2>Wirklich ersetzen?</h2><p>'+nm+' wird durch einen Bot ersetzt'+(botInHand()?' und die laufende Hand abgebrochen':'')+'.</p>'+
+      '<div class="bar"><button class="danger primary" data-a="botok">Ja, durch Bot ersetzen</button><button class="ghost" data-a="botcancel">Abbrechen</button></div>';
+  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true"><div class="cd-box vbox">'+body+'</div></div>';
+}
+function botifyConfirm(){
+  if(!botifyDlg||botifyDlg.step!==2)return;
+  var id=botifyDlg.id,nm=pname(id);botifyDlg=null;render();
+  api('botify',{room:code},{uid:uid,target:id,abort:botInHand()}).then(function(r){
+    showToast(nm+' wird von einem Bot vertreten'+(r&&r.aborted?' \u2013 Hand abgebrochen':''));pollOnce(true);
+  }).catch(showErr);
 }
 /* Bots füllen den Raum auf (laufen auf dem Server); nur der Host, nur zwischen den Händen */
 function addBotBtn(){
@@ -2286,7 +2322,7 @@ function roomView(){
   if(uiErr)out+='<div class="panel"><p class="err">'+esc(uiErr)+'</p></div>';
   if(uiNote)out+='<div class="panel info-panel"><p class="info">'+esc(uiNote)+'</p><button class="small ghost" data-a="noteok">OK</button></div>';
   if(cd.key)out+=countdownHtml();
-  out+=voiceDialog();
+  out+=voiceDialog()+botifyDialog();
 
   var L='',Rt='';
   var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+L+'</div><div class="col-r">'+Rt+'</div></div>';};
@@ -2415,6 +2451,7 @@ function playerList(inHand){
       (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa Platz übernehmen</button>':
         (watching&&m[id]&&!isOnline(id)?'<span class="note">'+(id===hostId()?'Host \u2013 Rolle wandert nach '+Math.round(HOSTMOVE_MS/60000)+' min weiter':
           'übernehmbar in '+Math.max(1,Math.ceil((TAKE_MS-(away[id]||0))/1000))+' s')+'</span>':''))+
+      (!watching&&isHost()&&id!==uid&&m[id]&&!isBotP(id)&&!isOnline(id)?'<button class="small ghost" data-botify="'+esc(id)+'" title="Offline-Spieler durch einen Bot ersetzen">\ud83e\udd16 ersetzen</button>':'')+
       (!watching&&isHost()&&id!==uid&&m[id]?'<button class="small ghost" data-kick="'+esc(id)+'" title="Aus dem Raum entfernen">\u2715</button>':'')+
       cards+verdict+
     '</div>';
@@ -2530,7 +2567,7 @@ setInterval(function(){
 /* ---------- Events ---------- */
 document.addEventListener('click',function(ev){
   unlockAudio();
-  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react]'):null;
+  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify]'):null;
   if(!el)return;
   var a=el.getAttribute('data-a');
   if(el.hasAttribute('data-chip')){takeChip(parseInt(el.getAttribute('data-chip'),10));return;}
@@ -2538,6 +2575,7 @@ document.addEventListener('click',function(ev){
   if(el.hasAttribute('data-take')){takeOver(el.getAttribute('data-take'));return;}
   if(el.hasAttribute('data-replace')){replaceBot(el.getAttribute('data-replace'));return;}
   if(el.hasAttribute('data-react')){sendReact(el.getAttribute('data-react'));return;}
+  if(el.hasAttribute('data-botify')){botifyStart(el.getAttribute('data-botify'));return;}
   if(el.hasAttribute('data-nudge')){nudge(el.getAttribute('data-nudge'));return;}
   uiErr='';
   if(watching&&['start','abort','ready','force','confirm','reveal','skip'].indexOf(a)>=0)return;
@@ -2560,6 +2598,9 @@ document.addEventListener('click',function(ev){
   else if(a==='fx')toggleFx();
   else if(a==='close')closeRoom();
   else if(a==='addbot')addBot();
+  else if(a==='botnext'){if(botifyDlg){botifyDlg.step=2;render();}}
+  else if(a==='botok')botifyConfirm();
+  else if(a==='botcancel'){botifyDlg=null;render();}
   else if(a==='splearn')spToggleLearn();
   else if(a==='vjoin')voiceJoin();
   else if(a==='vmute')voiceMute();

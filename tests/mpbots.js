@@ -18,7 +18,7 @@ const hook = `globalThis.__kr={S:function(){return S;},main:main,hand:hand,phase
  myHand:function(){return myHand;},kickPlayer:kickPlayer,err:function(){return uiErr;},pmap:pmap,isHost:isHost,isReady:isReady,
  resolveHand:resolveHand,revealedCards:revealedCards,visibleBoard:visibleBoard,addBot:addBot,roleOrder:roleOrder,isBotP:isBotP,
  online:function(){return online;},driverId:driverId,hostId:hostId,watchRoom:watchRoom,jumpIn:jumpIn,replaceBot:replaceBot,
- watching:function(){return watching;}};\n`;
+ watching:function(){return watching;},botifyStart:botifyStart,botNext:function(){if(botifyDlg){botifyDlg.step=2;render();}},botifyConfirm:botifyConfirm,note:function(){return uiNote;},isOnline:isOnline};\n`;
 const cut = src.lastIndexOf('})();'); src = src.slice(0, cut) + hook + src.slice(cut);
 let consoleErrors = 0;
 function client(name) {
@@ -27,7 +27,7 @@ function client(name) {
     chat: { innerHTML: '', style: {} }, chatmsgs: { innerHTML: '', scrollTop: 0, scrollHeight: 0 }, chatin: { value: '' }, toast: { textContent: '', className: '', log: [] } };
   const con = Object.assign({}, console, { error: (...a) => { consoleErrors++; console.log('[' + name + '] console.error', ...a); }, warn() {} });
   const ctx = { console: con, setTimeout, clearTimeout, setInterval, clearInterval, TextEncoder, TextDecoder, btoa, atob, crypto: globalThis.crypto,
-    fetch: (u, o) => fetch(BASE + u, o), location: { pathname: '/', search: '', hash: '', origin: BASE.slice(0, -1), protocol: 'http:', host: '127.0.0.1:' + PORT, reload() {} },
+    fetch: (u, o) => (ctx.netOff ? Promise.reject(new Error('offline')) : fetch(BASE + u, o)), location: { pathname: '/', search: '', hash: '', origin: BASE.slice(0, -1), protocol: 'http:', host: '127.0.0.1:' + PORT, reload() {} },
     navigator: {}, history: { replaceState() {} },
     localStorage: { getItem: (k) => (k in ls ? ls[k] : null), setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } },
     document: { getElementById: (id) => ((id === 'chatmsgs' || id === 'chatin') && !els.chat.innerHTML.includes('id="' + id + '"')) ? null : (els[id] || null),
@@ -155,6 +155,43 @@ let srv;
   await playHandWithRoles([C], 'Cora 2 (1 Mensch + 2 Bots, Cora hat den höchsten Chip)', null, true);
   const g = C.K.S().guess;
   ok(C.K.main().target === C.K.uid() && g && g.cards.every((x) => x != null) && Object.keys(g.confirmed || {}).length === 2, 'Bots tippen selbst, wenn nur Bots tippen können');
+
+  // Offline-Spieler durch Bot ersetzen (Host, doppelte Bestätigung), Rückkehr und Platz zurückholen
+  const E = client('Eva'), F = client('Fritz'); await sleep(500);
+  E.K.createRoom(); await until(() => E.K.code() && E.K.S().players.length === 1, 'Evas Raum');
+  const ec = E.K.code();
+  F.K.joinRoom(ec); await until(() => E.K.S().players.length === 2, 'Fritz im Raum');
+  E.K.addBot(); await until(() => E.K.S().players.length === 3, 'Bot bei Eva');
+  const fid = F.K.uid(), eh = E.K.hand() + 1;
+  E.K.startHand();
+  await until(() => [E, F].every((X) => X.K.phase() === 'play' && X.K.myHand() && X.K.myHand().hand === eh), 'Hand bei Eva gegeben');
+  ok(!/data-botify=/.test(E.els.app.innerHTML), 'Kein „ersetzen“, solange Fritz online ist');
+  F.netOff = true;
+  await until(() => !E.K.isOnline(fid), 'Fritz offline', 40000);
+  await until(() => new RegExp('data-botify="' + fid + '"').test(E.els.app.innerHTML), 'Knopf „🤖 ersetzen“', 5000);
+  ok(!/data-botify=/.test(F.els.app.innerHTML), 'Knopf „🤖 ersetzen“ beim Host neben dem Offline-Spieler');
+  r = await post('botify', ec, { uid: E.K.uid(), target: fid }, E.ls['kr.sk']);
+  ok(r.status === 409, 'Während der Hand nur mit Abbrechen (409)');
+  r = await post('botify', ec, { uid: fid, target: E.K.uid(), abort: true }, F.ls['kr.sk']);
+  ok(r.status === 403, 'Nur der Host darf ersetzen (403)');
+  E.K.botifyStart(fid);
+  ok(/durch einen Bot ersetzen\?/.test(E.els.app.innerHTML) && /laufende Hand wird dafür abgebrochen/.test(E.els.app.innerHTML) && /data-a="botnext"/.test(E.els.app.innerHTML) && !/data-a="botok"/.test(E.els.app.innerHTML), '1. Bestätigung: erklärt Folgen (Hand wird abgebrochen), „Weiter“');
+  E.K.botNext();
+  ok(/Wirklich ersetzen\?/.test(E.els.app.innerHTML) && /data-a="botok"/.test(E.els.app.innerHTML), '2. Bestätigung: „Ja, durch Bot ersetzen“');
+  E.K.botifyConfirm();
+  await until(() => E.K.isBotP(fid) && E.K.phase() === 'lobby', 'Fritz ersetzt, Hand abgebrochen', 15000);
+  ok(E.K.pmap()[fid].name === 'Fritz' && E.K.S().players.length === 3, 'Fritz’ Platz: gleicher Name, jetzt Bot; Hand abgebrochen');
+  r = await post('chip', ec + '&n=1', { uid: fid, hand: eh, take: true }, F.ls['kr.sk']);
+  ok(r.status === 403, 'Altes Gerät kann nicht mehr im Namen des Platzes handeln');
+  F.netOff = false;
+  await until(() => F.K.watching() && /Platz an einen Bot gegeben/.test(F.K.note()), 'Hinweis bei Fritz', 15000);
+  ok(F.K.code() === ec, 'Fritz kommt zurück: Hinweis, bleibt als Zuschauer im Raum');
+  await playHandWithRoles([E], 'Eva + Bot-Fritz + Bot');
+  await until(() => new RegExp('data-replace="' + fid + '"').test(F.els.app.innerHTML), '„Platz übernehmen“ bei Fritz', 10000);
+  F.K.replaceBot(fid);
+  await until(() => !E.K.isBotP(fid) && !F.K.watching(), 'Fritz zurück', 15000);
+  ok(true, 'Nach der Hand holt Fritz seinen Platz zurück');
+  await playHandWithRoles([E, F], 'Eva + Fritz (zurück) + Bot');
 
   const log = fs.readFileSync(path.join(TMP, 'logs', 'app.log'), 'utf8');
   const errs = log.split('\n').filter((l) => / ERROR /.test(l));

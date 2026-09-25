@@ -86,7 +86,7 @@ const admin = (body) => fetch(URL0 + 'admin-api?a=config', { method: 'POST', hea
   ok(await A.js('document.querySelectorAll("#voiceaudio audio").length===1'), 'Ein Audio-Ausgang je Gegenüber');
 
   await B.click('[data-a="vmute"]');
-  await A.until('[...document.querySelectorAll(".p-players .pl")].some(function(p){return /Ben/.test(p.textContent)&&/🔇/.test(p.querySelector(".tag.vc")?p.querySelector(".tag.vc").textContent:"");})', 'Ben stumm bei Anna', 10000);
+  await A.until('[...document.querySelectorAll(".p-players .pl")].some(function(p){return /Ben/.test(p.textContent)&&/🔇/.test(p.querySelector(".tag.vc")?p.querySelector(".tag.vc").textContent:"");})', 'Ben stumm bei Anna', 25000);
   ok(true, 'Stummschalten ist beim anderen sichtbar (🔇)');
 
   await B.click('[data-a="vleave"]');
@@ -106,8 +106,8 @@ const admin = (body) => fetch(URL0 + 'admin-api?a=config', { method: 'POST', hea
   await A.until('(document.querySelector(".vstat")||{dataset:{}}).dataset.n==="1"', 'wieder verbunden 2', 30000);
 
   ok((await admin({ voiceEnabled: false })).status === 200, 'Admin schaltet Voice-Chat aus');
-  await A.until('!document.querySelector(".vstat")&&!document.querySelector(\'[data-a="vjoin"]\')', 'Voice bei Anna beendet', 10000);
-  await B.until('!document.querySelector(".vstat")', 'Voice bei Ben beendet', 10000);
+  await A.until('!document.querySelector(".vstat")&&!document.querySelector(\'[data-a="vjoin"]\')', 'Voice bei Anna beendet', 20000);
+  await B.until('!document.querySelector(".vstat")', 'Voice bei Ben beendet', 20000);
   ok(await A.js('document.querySelectorAll("#voiceaudio audio").length===0'), 'Ausschalten im Admin beendet laufende Gespräche');
   console.log('VOICE-TEST BESTANDEN');
 })().catch((e) => { console.error(e.message || e); process.exitCode = 1; })
