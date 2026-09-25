@@ -272,7 +272,10 @@ module.exports = function createBots(ctx) {
       later(1); return;
     }
     const holder = holderOf(r, h, t), lost = b.lost; b.lost = null;
-    if (!holder) { take(t); R.moves[id] = mv + 1; later(1.2); return; }
+    if (!holder) {
+      if (take(t)) { R.moves[id] = mv + 1; if (cur && Math.random() < 0.5) say(code, r, id, cur < t ? 'Hmm, doch besser als gedacht' : 'Ach nee, doch nicht so gut'); }
+      later(1.2); return;
+    }
     const key = id + ':' + t, cc = R.contest[key] || 0;
     let p;
     if (!isBot(r, holder)) {
@@ -281,9 +284,15 @@ module.exports = function createBots(ctx) {
     } else p = 0.85 - 0.3 * cc;
     p = Math.max(0, Math.min(0.9, p));
     R.contest[key] = cc + 1;
-    if (Math.random() < p && take(t)) { R.moves[id] = mv + 1; later(1.3); return; }
+    if (Math.random() < p && take(t)) {
+      R.moves[id] = mv + 1;
+      if (!isBot(r, holder)) say(code, r, id, cc || lost === t ? 'Nee, die ' + t + ' brauch ich wirklich 😤' : 'Die ' + t + ' nehm ich lieber');
+      else if (Math.random() < 0.5) say(code, r, id, 'Ich glaub, die ' + t + ' ist meine');
+      later(1.3); return;
+    }
     b.yieldTo[holder] = t;
     if (!isBot(r, holder)) R.humanFixed[holder] = t;
+    if (!isBot(r, holder) || Math.random() < 0.3) say(code, r, id, 'Okay, die ' + t + ' gehört ' + (r.docs['players/' + holder] || {}).name);
     later(0.6);
   }
   function playStep(code, r, m, R, h, st, bots) {
@@ -294,7 +303,10 @@ module.exports = function createBots(ctx) {
     for (const x of Object.keys(R.lostBy)) if (holderOf(r, h, R.lostBy[x]) === x) { R.insist[R.lostBy[x]] = (R.insist[R.lostBy[x]] || 0) + 1; delete R.lostBy[x]; }
     for (const id of bots) {
       const b = R.bots[id], cur = chipOf(r, h, id);
-      if (b.lastChip && cur !== b.lastChip) { b.lost = b.lastChip; b.lastChip = cur; b.next = Math.min(b.next, now + (500 + Math.random() * r.bots[id].pace) * TEMPO); }
+      if (b.lastChip && cur !== b.lastChip) {
+        b.lost = b.lastChip; b.lastChip = cur; b.next = Math.min(b.next, now + (500 + Math.random() * r.bots[id].pace) * TEMPO);
+        if (Math.random() < 0.25) react(code, r, id, Math.random() < 0.5 ? 2 : 3);      // 😬 / 🤔
+      }
       if (now >= b.next) botAct(code, r, m, R, h, st, id);
     }
   }
@@ -337,6 +349,34 @@ module.exports = function createBots(ctx) {
     setMain(code, r, i + 1 >= ord.length ? { phase: 'done', revealIdx: i + 1 } : { revealIdx: i + 1 });
   }
 
+  /* ------------------------------------------------ Sprechblasen + Reaktionen (wie im Übungsraum) -- */
+  /* Nur der Server schreibt say/<bot> und react/<bot>; Browser zeigen sie gut 4 s neben dem Namen */
+  function say(code, r, id, text) { set(code, r, 'say/' + id, { t: String(text).slice(0, 80), ts: Date.now() }); }
+  function react(code, r, id, e) { set(code, r, 'react/' + id, { e: e, ts: Date.now() }); }
+  /* Nach der Hand: Ergebnis selbst ausrechnen (aufgedeckte Karten + Tisch + Chips aus Runde 4 + Tipp) und gelegentlich reagieren */
+  function doneReactions(code, r, m, R, h, bots) {
+    try {
+      const ps = partsOf(m), h4 = ((m.chipHist || {})['4']) || {}, board = R.board.filter((c) => c != null);
+      if (board.length < 5) return;
+      const hands = {};
+      for (const id of ps) { const rv = r.docs['reveal/' + id]; if (!rv || rv.hand !== h || !Array.isArray(rv.cards)) return; hands[id] = H.bestHand(rv.cards.concat(board), rv.cards); }
+      let orderOk = true;
+      for (const a of ps) for (const b of ps) if (Number(h4[a]) < Number(h4[b]) && H.cmpHand(hands[a], hands[b]) > 0) orderOk = false;
+      let guessOk = true;
+      const g = r.docs['state/guess'], t = m.target;
+      if (g && g.hand === h && Array.isArray(g.cards) && t && r.docs['reveal/' + t]) {
+        const left = r.docs['reveal/' + t].cards.map((c) => c % 13);
+        guessOk = g.cards.every((v) => { const i = left.indexOf(v); if (i < 0) return false; left.splice(i, 1); return true; });
+      }
+      const win = orderOk && guessOk;
+      bots.forEach((id, k) => {
+        if (Math.random() >= 0.5) return;
+        setTimeout(() => { if (rooms.get(code) === r && Number(mainOf(r).hand) === h) react(code, r, id, win ? (Math.random() < 0.5 ? 0 : 4) : [1, 2, 3][Math.floor(Math.random() * 3)]); },
+          (400 + k * 500 + Math.random() * 800) * TEMPO);
+      });
+    } catch (e) { /* nur Deko */ }
+  }
+
   /* ------------------------------------------------ Takt ------------------- */
   function runRoom(code, r) {
     const m = mainOf(r), h = Number(m.hand) || 0, ph = m.phase, st = Number(m.stage) || 0;
@@ -365,6 +405,7 @@ module.exports = function createBots(ctx) {
     if (ph === 'play') playStep(code, r, m, R, h, st, bots);
     else if (ph === 'guess') guessStep(code, r, m, R, h, bots);
     else if (ph === 'reveal') revealStep(code, r, m, R, h);
+    else if (ph === 'done' && R.doneReact !== h) { R.doneReact = h; doneReactions(code, r, m, R, h, bots); }
   }
   function tick() {
     for (const code of [...rt.keys()]) if (!rooms.has(code)) rt.delete(code);

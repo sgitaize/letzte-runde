@@ -33,7 +33,7 @@ function client(name) {
     document: { getElementById: (id) => ((id === 'chatmsgs' || id === 'chatin') && !els.chat.innerHTML.includes('id="' + id + '"')) ? null : (els[id] || null),
       addEventListener() {}, hidden: false, documentElement: { setAttribute() {}, getAttribute() { return null; } } } };
   ctx.window = ctx; vm.createContext(ctx); vm.runInContext(HANDLIB, ctx); vm.runInContext(QRLIB + ';this.qrcode=qrcode;', ctx); vm.runInContext(src, ctx);
-  ctx.els = els; ctx.ls = ls; ctx.K = ctx.__kr; return ctx;
+  ctx.els = els; ctx.ls = ls; ctx.K = ctx.__kr; clientsAll.push(ctx); return ctx;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (c, m) => { if (!c) throw new Error('FEHLER: ' + m); console.log('  ok  ' + m); };
@@ -41,6 +41,9 @@ async function until(f, what, ms = 60000) { const t = Date.now(); while (Date.no
 const post = (a, code, body, key) => fetch(BASE + 'api?a=' + a + '&room=' + code, { method: 'POST',
   headers: { 'Content-Type': 'application/json', 'x-kr-key': key || 'fremder-schluessel-1234567890' }, body: JSON.stringify(body) });
 const bots = (X) => X.K.S().players.filter((p) => p.bot).map((p) => p.id);
+let seenSay = 0, seenReact = 0;   // Sprechblasen/Reaktionen der Bots, gesehen in Browsern der Menschen
+setInterval(() => { for (const X of clientsAll) { const h = X.els.app.innerHTML; if (/class="say"/.test(h)) seenSay++; if (/class="react-pop"/.test(h)) seenReact++; } }, 200).unref();
+const clientsAll = [];
 
 /* Eine komplette Hand spielen: Menschen nehmen den Chip, der zu ihrer Einschätzung passt, klopfen, tippen, decken auf */
 async function playHand(humans, label, onPlay, top, noClick) {
@@ -91,8 +94,9 @@ async function playHand(humans, label, onPlay, top, noClick) {
     ok(waits.length === humans.length && waits.every((w) => w >= 9000 && w <= 13500), label + ': niemand klickt → alle decken nach ~10 s automatisch auf (' + waits.map((w) => (w / 1000).toFixed(1) + ' s').join(', ') + ')');
   }
   await until(() => H0.K.phase() === 'done' && H0.K.resolveHand(), label + ': Auflösung');
+  await until(() => H0.K.parts().every((id) => H0.K.revealedCards(id)), label + ': alle Karten im Browser nachgeprüft', 20000);   // Prüfung läuft im Hintergrund
   const ps = H0.K.parts(), all = [];
-  for (const id of ps) { const rv = H0.K.revealedCards(id); ok(rv && rv.length === 2, label + ': ' + (H0.K.isBotP(id) ? 'Bot ' : 'Mensch ') + H0.K.pmap()[id].name + ' aufgedeckt (überprüft): ' + rv.join(',')); all.push(...rv); }
+  for (const id of ps) { const rv = H0.K.revealedCards(id); ok(rv && rv.length === 2, label + ': ' + (H0.K.isBotP(id) ? 'Bot ' : 'Mensch ') + H0.K.pmap()[id].name + ' aufgedeckt (überprüft): ' + (rv ? rv.join(',') : 'NICHT aufgedeckt')); all.push(...rv); }
   all.push(...H0.K.visibleBoard());
   ok(new Set(all).size === all.length && all.every((c) => c >= 0 && c < 52), label + ': alle ' + all.length + ' Karten verschieden und gültig');
   ok(/Alles richtig|Tipp daneben|Nicht ganz/.test(H0.els.app.innerHTML), label + ': Ergebnis angezeigt');
@@ -193,6 +197,7 @@ let srv;
   ok(true, 'Nach der Hand holt Fritz seinen Platz zurück');
   await playHandWithRoles([E, F], 'Eva + Fritz (zurück) + Bot');
 
+  ok(seenSay > 0 && seenReact > 0, 'Bots zeigen im Raum Sprechblasen und Reaktionen wie im Übungsraum (' + seenSay + '/' + seenReact + ' Momente)');
   const log = fs.readFileSync(path.join(TMP, 'logs', 'app.log'), 'utf8');
   const errs = log.split('\n').filter((l) => / ERROR /.test(l));
   ok(!errs.length, 'Server-Log ohne Fehler' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));

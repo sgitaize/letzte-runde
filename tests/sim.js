@@ -218,6 +218,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
       // Ben nimmt Anna Chip 1 weg
       await sleep(1600); B.__kr.takeChip(1);
       await until(()=>/Ben hat dir Chip 1 genommen/.test(toasts(A)),'Chip-Hinweis'); ok(true,'Hinweis „Ben hat dir Chip 1 genommen“');
+      ok(/class="steal-pop"[^]*<b>Ben<\/b><br>hat dir Chip 1 genommen/.test(A.els.app.innerHTML)&&!/class="steal-pop"/.test(B.els.app.innerHTML),'Großes Popup „Ben hat dir Chip 1 genommen“ beim Bestohlenen');
       B.__kr.takeChip(2); await sleep(700); A.__kr.takeChip(1);
       await until(()=>P.every(x=>P.every(y=>x.__kr.chipOf(y.__kr.uid())===plan[1][P.indexOf(y)])),'Chips wieder wie geplant');
       await until(()=>A.els.app.innerHTML.includes('class="pl me"'),'eigene Zeile');
@@ -249,6 +250,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(t===T.__kr.uid(),'Ziel = Spieler mit höchstem Chip');
   ok(A.__kr.guessers().length===2&&A.__kr.guessers().indexOf(t)<0,'Ziel-Spieler tippt nicht mit');
   await until(()=>T.els.app.innerHTML.includes('Du tippst nicht mit'),'Hinweis beim Ziel');
+  { const g=GU[0].els.app.innerHTML; ok(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine'),'Tipp steht oben unter dem Tisch (wie die Auflösung), über der eigenen Hand'); }
   ok(!T.els.app.innerHTML.includes('data-g='),'Ziel-Spieler hat keine Auswahlfelder');
   const real=T.__kr.myHand().cards.map(c=>c%13);
   const wrong=[0,1,2,3,4,5,6,7,8,9,10,11,12].find(r=>real.indexOf(r)<0);

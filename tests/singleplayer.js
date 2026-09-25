@@ -8,7 +8,7 @@ const st0 = src.indexOf('<script>\n') + 9; src = src.slice(st0, src.indexOf('</s
 const HANDLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'hand.js'), 'utf8');
 const QRLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'qrcode.js'), 'utf8');
 const hook = `globalThis.__kr={sp:function(){return sp;},spStart:spStart,spTake:spTake,spReady:spReady,spNewHand:spNewHand,
- spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,spGuessConfirm:spGuessConfirm,spTick:spTick,spToggleLearn:spToggleLearn,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
+ spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
  setSpeed:function(v){spSpeed=v;},bestHand:bestHand,cmpHand:cmpHand,leave:leave,roomsHtml:roomsHtml,uid:function(){return uid;}};\n`;
 const i = src.lastIndexOf('})();'); src = src.slice(0, i) + hook + src.slice(i);
 
@@ -186,6 +186,10 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   await playHand(3);
   X.spSetBots(5); await playHand(5);
   X.spSetBots(2); await playHand(2);
+  // Chip weggenommen → großes Popup, verschwindet von selbst
+  X.spNewHand(); X.spTake(2); X.spTakeFor(bots()[0].id, 2);
+  ok(/class="steal-pop"[^]*hat dir Chip 2 genommen/.test(els.app.innerHTML), 'Großes Popup, wenn dir ein Bot den Chip wegnimmt');
+  await sleep(1800); ok(!/class="steal-pop"/.test(els.app.innerHTML), 'Popup verschwindet nach 1,6 s von selbst');
   X.sendReact(0); ok(/class="react-pop"[^>]*>👍/.test(els.app.innerHTML), 'Reaktion 👍 im Übungsraum');
   // Lernmodus
   ok(/data-a="splearn"/.test(els.app.innerHTML) && !/class="panel coach/.test(els.app.innerHTML), 'Knopf „🎓 Lernmodus“, standardmäßig aus');

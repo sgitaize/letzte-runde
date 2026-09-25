@@ -141,7 +141,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 /* Raum-Aufbau: im Hochformat eine Spalte in der gewohnten Reihenfolge (Spalten lösen sich auf) … */
 .cols{display:flex;flex-direction:column}
 .col-l,.col-r{display:contents}
-.p-board{order:1}.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:5}.p-guess{order:6}.cols .endbar{order:7}
+.p-board{order:1}.p-guess,.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:5}.p-guess{order:6}.cols .endbar{order:7}
 /* … ab Tablet-Größe im Querformat nebeneinander, ohne Scrollen: links Tisch/Karten/Chips, rechts Spieler + Chat */
 @media (orientation:landscape) and (min-width:900px) and (min-height:560px){
   :root{--rw:clamp(320px,34vw,460px);--chatH:clamp(170px,30vh,300px)}
@@ -203,6 +203,11 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .coachlist{margin:4px 0 4px 18px;padding:0}.coachlist li{margin:3px 0}.coach b.ok{color:#2e9d57}
 .installhelp summary{cursor:pointer;font-weight:600}.installhelp p{margin:8px 0;font-size:14px}
 .sitefoot{text-align:center;margin:18px 0 6px;font-size:13px;color:var(--muted)}.sitefoot a{color:inherit}
+.steal-pop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60}
+.steal-box{display:flex;align-items:center;gap:16px;background:rgba(20,22,21,.86);color:#fff;border-radius:20px;padding:18px 26px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.steal-box .chip.big{width:72px;height:72px;font-size:30px}.steal-txt{font-size:22px;line-height:1.3}
+.steal-box.anim{animation:stealIn .3s ease-out}@keyframes stealIn{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){.steal-box.anim{animation:none}}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
 .pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
@@ -497,7 +502,7 @@ function applyDocs(){
   pl.sort(function(a,b){return (a.joinedAt||0)-(b.joinedAt||0)||(a.id<b.id?-1:1);});
   S.players=pl;S.chips=ch;S.reveal=rv;
   S.chat=(docs['chat']&&docs['chat'].msgs)||[];
-  S.react={};for(var rk in docs){var mr=/^react\/(.+)$/.exec(rk);if(mr)S.react[mr[1]]=docs[rk];}
+  S.react={};S.say={};for(var rk in docs){var mr=/^(react|say)\/(.+)$/.exec(rk);if(mr)S[mr[1]][mr[2]]=docs[rk];}
   S.stats=(docs['stats']&&Array.isArray(docs['stats'].hands))?docs['stats'].hands:[];
   if(code&&joined&&!watching){
     var me=docs['players/'+uid];
@@ -517,7 +522,7 @@ function notices(){
   var key=hand()+'.'+stage(),mine=chipOf(uid);
   if(phase()==='play'&&prevMine.key===key&&prevMine.chip!=null&&mine!==prevMine.chip&&Date.now()-lastOwnChipAt>1500){
     var who=chipHolder(prevMine.chip);
-    if(who&&who!==uid){showToast(pname(who)+' hat dir Chip '+prevMine.chip+' genommen');fx('steal');}
+    if(who&&who!==uid){stealPop(pname(who),prevMine.chip);fx('steal');}
   }
   prevMine={key:key,chip:mine};
   var nd=docs['nudge/'+uid],nts=nd?num(nd.ts)||0:0;
@@ -1457,7 +1462,7 @@ function spTakeFor(id,n){
     var pp=spPl(prev);
     if(pp&&pp.bot){pp.lost=n;pp.next=Date.now()+(500+Math.random()*pp.pace)*SP_TEMPO*spSpeed;}
     if(pp&&pp.bot&&Math.random()<0.25)botReact(prev,Math.random()<0.5?2:3);          // 😬 / 🤔
-    if(prev==='me'){sp.lostMe=n;showToast(spPl(id).name+' hat dir Chip '+n+' genommen');fx('steal');}
+    if(prev==='me'){sp.lostMe=n;stealPop(spPl(id).name,n);fx('steal');}
   }
   sp.chips[id]=n;sp.ready[id]=false;sp.stable[id]=Date.now();
 }
@@ -1633,6 +1638,7 @@ function spView(){
     '<div class="bar" style="margin-top:8px">'+spLearnBtn()+'<span class="note">Mitspieler:</span>'+spBotBtns()+
       (spBots!==n-1?'<span class="note">ab der nächsten Hand '+(spBots+1)+' Spieler</span>':'')+'</div></div>';
   if(statsOpen)out+=statsPanel(sp.stats);
+  out+=stealHtml();
   if(sp.cd)out+='<div class="cd-overlay" role="alertdialog" aria-live="assertive"><div class="cd-box"><div class="cd-lbl">'+
     (st<4?'Gleich kommen neue Tischkarten':'Gleich wird aufgedeckt')+'</div><div class="cd-num">'+Math.max(1,spCdLeft())+'</div>'+
     '<button class="primary" data-a="ready">Bereit zurücknehmen</button></div></div>';
@@ -1644,8 +1650,8 @@ function spView(){
   out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+(fresh.length?'<span class="tag new">Neu aufgedeckt</span>':'')+'</div>'+
     '<div class="cards board">'+bh+'</div></div>';
   var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: rechte Spalte)
+  var afterBoard=out.length;                // Tipp/Auflösung kommen direkt unter den Tisch, über Lernmodus und eigene Hand
   if(ph!=='done'&&coach)out+=coach.l;
-  var afterBoard=out.length;                // Auflösung kommt direkt unter den Tisch, über die eigene Hand
 
   /* Eigene Karten + Chips je Runde */
   var mine=sp.hole.me,my=bestHand(mine.concat(vis),mine),mc='';
@@ -1692,7 +1698,8 @@ function spView(){
   }
   if(ph==='guess'){
     var t=sp.target;
-    if(t==='me')out+='<div class="panel p-guess"><h2>Tipp</h2><p>Du hast den höchsten Chip – die Bots tippen jetzt deine '+sp.K+' Karten …</p></div>';
+    var gp='';
+    if(t==='me')gp+='<div class="panel p-guess"><h2>Tipp</h2><p>Du hast den höchsten Chip – die Bots tippen jetzt deine '+sp.K+' Karten …</p></div>';
     else{
       var pick='';
       for(var q=0;q<sp.K;q++){
@@ -1700,10 +1707,11 @@ function spView(){
         RANK_NAME.forEach(function(x,kk){o+='<option value="'+kk+'"'+(v===kk?' selected':'')+'>'+x+'</option>';});
         pick+='<div class="row" style="gap:6px">'+rankHtml(v,'sm')+'<select data-g="r'+q+'">'+o+'</select></div>';
       }
-      out+='<div class="panel p-guess"><h2>Tipp</h2><p>Welche '+sp.K+' Karten hat <b>'+esc(spPl(t).name)+'</b> (höchster Chip)? Nur der Wert zählt.</p>'+
+      gp+='<div class="panel p-guess"><h2>Tipp</h2><p>Welche '+sp.K+' Karten hat <b>'+esc(spPl(t).name)+'</b> (höchster Chip)? Nur der Wert zählt.</p>'+
         '<div class="row" style="gap:14px">'+pick+'</div><div class="hr"></div><div class="bar">'+
         '<button class="primary" data-a="confirm"'+(sp.guess.every(function(x){return x!=null;})?'':' disabled')+'>Tipp bestätigen</button></div></div>';
     }
+    out=out.slice(0,afterBoard)+gp+out.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
   }
   if(ph==='done'){
     var res=sp.res,gr=sp.gr,rp='';
@@ -1902,6 +1910,19 @@ function reactOf(id){
   var at=sp?r.ts:r.ts-(srvOff||0);          // Zeitstempel im Raum stammen vom Server
   return Date.now()-at<REACT_MS?REACTS[num(r.e)]:null;
 }
+/* „Chip weggenommen“: groß in der Mitte wie der 3-2-1-Countdown, verschwindet nach 1,6 s, blockiert nichts */
+var stealMsg=null,STEAL_MS=1600;
+function stealPop(who,n){stealMsg={who:who,n:n,at:Date.now()};showToast(who+' hat dir Chip '+n+' genommen');render();
+  setTimeout(function(){if(stealMsg&&Date.now()-stealMsg.at>=STEAL_MS){stealMsg=null;render();}},STEAL_MS+50);}
+function stealHtml(){
+  if(!stealMsg||Date.now()-stealMsg.at>=STEAL_MS)return '';
+  var r=code?(phase()==='play'?stage():4):(sp?sp.stage:1);
+  return '<div class="steal-pop" role="status" aria-live="assertive"><div class="steal-box'+(Date.now()-stealMsg.at<300?' anim':'')+'">'+
+    '<div class="chip big static r'+r+'">'+num(stealMsg.n)+'</div><div class="steal-txt"><b>'+esc(stealMsg.who)+'</b><br>hat dir Chip '+num(stealMsg.n)+' genommen</div></div></div>';
+}
+/* Sprechblase eines Bots im Raum (nur der Server schreibt say/<bot>), wie im Übungsraum gut 4 s sichtbar */
+function sayOf(id){var q=(S.say||{})[id];return q&&typeof q.t==='string'&&Date.now()-(q.ts-(srvOff||0))<REACT_MS?q.t:null;}
+function sayHtml(id){var t=sayOf(id);return t?'<div class="say">\ud83d\udcac '+esc(t)+'</div>':'';}
 function reactHtml(id){var e=reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
 function reactBar(){
   if(!sp&&(watching||!joined||!code))return '';
@@ -1918,7 +1939,7 @@ function sendReact(i){
 setInterval(function(){                     // abgelaufene Reaktionen ausblenden
   if(!code&&!sp)return;
   var ids=sp?sp.players.map(function(p){return p.id;}):S.players.map(function(p){return p.id;});
-  var k=ids.map(function(id){return reactOf(id)||'';}).join('|');
+  var k=ids.map(function(id){return (reactOf(id)||'')+(sp?'':sayOf(id)||'');}).join('|')+(stealMsg?'s':'');
   if(k!==reactShown){reactShown=k;render();}
 },700);
 
@@ -2323,7 +2344,7 @@ function roomView(){
   if(uiErr)out+='<div class="panel"><p class="err">'+esc(uiErr)+'</p></div>';
   if(uiNote)out+='<div class="panel info-panel"><p class="info">'+esc(uiNote)+'</p><button class="small ghost" data-a="noteok">OK</button></div>';
   if(cd.key)out+=countdownHtml();
-  out+=voiceDialog()+botifyDialog();
+  out+=voiceDialog()+botifyDialog()+stealHtml();
 
   var L='',Rt='';
   var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+L+'</div><div class="col-r">'+Rt+'</div></div>';};
@@ -2386,7 +2407,7 @@ function roomView(){
       '</div></div>';
   }
 
-  if(ph==='guess')L+='<div class="p-guess">'+guessPanel()+'</div>';
+  if(ph==='guess')L=L.slice(0,afterBoard)+'<div class="p-guess">'+guessPanel()+'</div>'+L.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
   if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+'</div>'+L.slice(afterBoard);
   if(ph==='done')L+=endBar(resolveHand(),isHost()?'start':null,isHost()?'':'Warten auf '+pname(hostId())+' \u2026');
   return cols();
@@ -2445,7 +2466,7 @@ function playerList(inHand){
       (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
       '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+voiceTag(id)+reactHtml(id)+
-        (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+'</div>'+
+        (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+'</div>'+
       (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
       (inHand&&ph==='play'?(isReady(p)?'<span class="tag ok" title="bereit">\ud83d\udc4a</span>':'<span class="tag">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa Platz übernehmen</button>':'')+
