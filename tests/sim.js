@@ -401,7 +401,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(rl2.counts.sp===sp0+1,'Übungsraum-Zähler: 3 Meldungen in Folge von einer IP zählen nur einmal');
   await until(()=>/Bisher gespielt: <b>\d+<\/b> Hände? in Räumen · <b>\d+<\/b> im Übungsraum/.test(V.els.playcount.innerHTML),'Zähler auf der Startseite',8000);
   ok(true,'Startseite zeigt „Bisher gespielt: … Hände in Räumen · … im Übungsraum“');
-  { const h=V.els.app.innerHTML; ok(h.indexOf('id="playcount"')>h.indexOf('So läuft eine Hand')&&/href="impressum.html">Impressum<\/a>/.test(h)&&/impressum.html#datenschutz/.test(h),'Startseite: Statistik ganz unten, darunter Impressum und Datenschutz'); }
+  { const h=V.els.app.innerHTML; ok(h.indexOf('id="playcount"')>h.indexOf('So läuft eine Hand')&&/href="impressum.html">Impressum<\/a>/.test(h)&&/impressum.html#datenschutz/.test(h)&&/href="https:\/\/github.com\/sgitaize\/letzte-runde"/.test(h),'Startseite: Statistik ganz unten, darunter Impressum, Datenschutz und GitHub'); }
   { const imp=await (await fetch(BASE+'impressum.html')).text(); ok(/Sachsenstr\. 1/.test(imp)&&/§ 5 Digitale-Dienste-Gesetz/.test(imp)&&/id="datenschutz"/.test(imp),'Impressum + Datenschutz erreichbar'); }
   // ---- Geplanter Raum: Link vorab, Beitritt erst ab Startzeit, erster Spieler wird Host ----
   const pad=x=>String(x).padStart(2,'0'), local=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());};
