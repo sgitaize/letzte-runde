@@ -1,0 +1,2647 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://gang.aize.eu; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Letzte Runde</title>
+<meta name="theme-color" content="#1f5a41">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Letzte Runde">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f1ec; --bg2:#e8e4da; --panel:#ffffff; --fg:#1b1b19; --muted:#6f6d66;
+  --line:#dedad1; --card:#ffffff; --card2:#f4f1ea; --accent:#1f6b4a; --accent-fg:#ffffff;
+  --chip:#f1ede4; --red:#c0392b; --warn:#8a6d1f; --gold:#c89b3c;
+  --felt:#1f5a41; --felt2:#16452f; --felt-line:rgba(255,255,255,.14);
+  --shadow:0 1px 2px rgba(20,20,10,.06),0 4px 14px rgba(20,20,10,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1110; --bg2:#151a17; --panel:#1a1d1b; --fg:#ecebe6; --muted:#9c9b94;
+    --line:#2d312e; --card:#f4f1ea; --card2:#e2ddd1; --accent:#3fa574; --accent-fg:#07130d;
+    --chip:#2a2f2c; --red:#c0392b; --warn:#d6b96a; --gold:#e0b453;
+    --felt:#123a2a; --felt2:#0b261b; --felt-line:rgba(255,255,255,.08);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1110; --bg2:#151a17; --panel:#1a1d1b; --fg:#ecebe6; --muted:#9c9b94;
+  --line:#2d312e; --card:#f4f1ea; --card2:#e2ddd1; --accent:#3fa574; --accent-fg:#07130d;
+  --chip:#2a2f2c; --red:#c0392b; --warn:#d6b96a; --gold:#e0b453;
+  --felt:#123a2a; --felt2:#0b261b; --felt-line:rgba(255,255,255,.08);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+.wrap{max-width:780px;margin:0 auto;padding:14px 14px 48px}
+h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+h2{font-size:13px;margin:0 0 8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+p{margin:0 0 10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spread{display:flex;align-items:center;justify-content:space-between;gap:8px}
+button{font:inherit;font-weight:560;padding:9px 14px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.ghost{background:transparent}
+button:disabled{opacity:.45;cursor:default}
+button.small{padding:5px 9px;font-size:13px;font-weight:500}
+input,select{font:inherit;padding:9px 10px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel);color:var(--fg);min-width:0}
+input{width:100%}
+.field{flex:1 1 140px}
+label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.cards{display:flex;gap:6px;flex-wrap:wrap}
+.card{width:52px;height:72px;border-radius:8px;background:var(--card);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;
+  box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.card.sm{width:38px;height:54px}
+.card .r{font-size:19px;font-weight:650;line-height:1}
+.card.sm .r{font-size:14px}
+.card .s{font-size:17px;line-height:1.2}
+.card.sm .s{font-size:13px}
+.card.red{color:var(--red)}
+.card.back{background-image:repeating-linear-gradient(45deg,var(--line) 0 4px,transparent 4px 8px)}
+.card.empty{border-style:dashed;box-shadow:none;background:transparent;opacity:.5}
+.chip{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);
+  font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;flex:0 0 auto;user-select:none}
+.chip.mine{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.chip.static{cursor:default}
+.chip.ph{border-style:dashed;background:transparent;color:var(--muted);font-weight:500}
+.plist{display:flex;flex-direction:column;gap:2px}
+.pl{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pl:last-child{border-bottom:0}
+.pl .nm{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--accent);border-color:var(--accent)}
+.tag.you{background:var(--chip)}
+.hist{display:inline-flex;align-items:center;gap:3px;margin-left:8px;vertical-align:middle}
+.mchip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;border:1.5px dashed rgba(255,255,255,.55)}
+.mchip.none{background:transparent;color:var(--muted);border-color:var(--line)}
+.pl.me{background:color-mix(in srgb,var(--gold) 16%,transparent);border-radius:10px;box-shadow:inset 4px 0 0 var(--gold);padding-left:10px}
+.pl.me .nm{font-weight:700}
+.pl.res-ok{box-shadow:inset 4px 0 0 var(--accent)}
+/* Farbige Zeilen: Chip-Ringe (bis 5 px) dürfen weder den Balken noch den Kastenrand überdecken */
+.pl.me,.pl.res-ok,.pl.res-bad{padding-left:14px;padding-right:8px}
+.plist{padding:0 2px}
+.playcount{margin:0 0 10px;font-size:14px;color:var(--muted)}.playcount b{color:var(--fg)}
+.pl.res-bad{background:color-mix(in srgb,var(--red) 12%,transparent);box-shadow:inset 4px 0 0 var(--red);border-radius:10px}
+.pl.me.res-ok{box-shadow:inset 4px 0 0 var(--accent),inset 0 0 0 2px var(--gold)}
+.pl.me.res-bad{box-shadow:inset 4px 0 0 var(--red),inset 0 0 0 2px var(--gold)}
+.tag.res.ok{color:var(--accent);border-color:var(--accent);font-weight:650}
+.tag.res.bad{color:var(--red);border-color:var(--red);font-weight:650;white-space:normal}
+.result{border-radius:12px;padding:12px 14px;text-align:center;margin-bottom:6px}
+/* Nach Handende: Leiste bleibt am unteren Bildschirmrand stehen, damit „Neue Hand“ ohne Scrollen erreichbar ist */
+.endbar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:12px;
+  justify-content:space-between;padding:10px 12px;margin:0 0 12px;border-radius:14px;background:var(--panel);
+  border:2px solid var(--accent);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.endbar .res{font-weight:700;font-size:17px}.endbar .res.bad{color:#c0392b}.endbar .res.ok{color:var(--accent)}
+.endbar button.primary{font-size:18px;padding:12px 22px;border-radius:12px}
+.result .big{font-family:Georgia,serif;font-size:26px;font-weight:700}
+.result.win{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--fg);border:2px solid var(--accent)}
+.result.lose{background:color-mix(in srgb,var(--red) 12%,transparent);border:2px solid var(--red)}
+.card.hit{box-shadow:0 0 0 3px var(--accent)}
+.card.miss{box-shadow:0 0 0 3px var(--red);opacity:.8}
+.tag.hand{color:var(--fg);border-color:var(--gold);font-weight:600}
+.handname{margin-top:10px;font-size:15px}
+.ranking{margin-top:10px}
+.ranking ol{margin:8px 0 4px;padding-left:22px;font-size:13.5px}
+.ranking li{margin:3px 0;padding:4px 6px;border-radius:8px}
+.ranking li>*{vertical-align:middle}
+.ranking li{display:list-item}
+.ranking .rk-txt{display:inline-flex;flex-direction:column;min-width:150px;max-width:230px;margin-right:10px}
+.ranking .rk-cards{display:inline-flex;gap:3px;flex-wrap:nowrap}
+.card.xs{width:26px;height:36px;border-radius:5px}
+.card.xs .r{font-size:12px}.card.xs .s{font-size:10px;line-height:1}
+.card.dim{opacity:.35}
+.ranking li.cur{background:color-mix(in srgb,var(--gold) 22%,transparent)}
+.watching [data-a=abort],.watching [data-a=force],.watching [data-a=skip]{display:none}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:12.5px;color:var(--muted)}
+.err{color:var(--red);font-size:13px}
+.rename{vertical-align:middle;margin-left:4px}
+/* Raum-Aufbau: im Hochformat eine Spalte in der gewohnten Reihenfolge (Spalten lösen sich auf) … */
+.cols{display:flex;flex-direction:column}
+.col-l,.col-r{display:contents}
+.p-board{order:1}.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:5}.p-guess{order:6}.cols .endbar{order:7}
+/* … ab Tablet-Größe im Querformat nebeneinander, ohne Scrollen: links Tisch/Karten/Chips, rechts Spieler + Chat */
+@media (orientation:landscape) and (min-width:900px) and (min-height:560px){
+  :root{--rw:clamp(320px,34vw,460px);--chatH:clamp(170px,30vh,300px)}
+  .wrap.inroom{max-width:1500px;height:100vh;height:100dvh;box-sizing:border-box;padding:10px 16px;display:flex;flex-direction:column;overflow:hidden}
+  .wrap.inroom>.panel{flex:0 0 auto;margin-bottom:10px}
+  .inroom .cols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--rw);gap:14px}
+  .inroom .col-l,.inroom .col-r{display:block;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .inroom .cols.with-chat .col-r{padding-bottom:calc(var(--chatH) + 10px)}
+  .inroom .panel{padding:10px 12px;margin-bottom:10px}
+  .inroom .mine-row{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  .inroom .mine-row .mychips{margin-top:0}
+  .inroom .chip.big{width:46px;height:46px;font-size:18px;border-width:3px}
+  .inroom .pl{padding:5px 4px}
+  .inroom .endbar{margin-bottom:0}
+  .inroom .coach-l{display:none}.inroom .coach-r{display:block;font-size:.95em}   /* Lernmodus oben rechts, sofort sichtbar */
+  .inroom .coach-r .note{display:none}
+  /* Größen wachsen mit der Bildschirmhöhe: 1024×768 kompakt, iPad 11" (834) größer, iPad 12,9" (1024) groß */
+  .wrap.inroom{--cw:clamp(52px,8.4vh,96px);--chipw:clamp(36px,4.9vh,52px);font-size:clamp(15px,1.75vh,18px)}
+  .inroom .p-board .card,.inroom .p-mine .cards .card{width:var(--cw);height:calc(var(--cw)*1.38);border-radius:calc(var(--cw)*.14)}
+  .inroom .p-board .card .r,.inroom .p-mine .cards .card .r{font-size:calc(var(--cw)*.37)}
+  .inroom .p-board .card .s,.inroom .p-mine .cards .card .s{font-size:calc(var(--cw)*.33)}
+  .inroom .p-board .board{gap:calc(var(--cw)*.16);padding:calc(var(--cw)*.12) 0}
+  .inroom .p-mine .cards{gap:calc(var(--cw)*.12)}
+  .inroom .chip{width:var(--chipw);height:var(--chipw);font-size:calc(var(--chipw)*.42)}
+  .inroom .chip.big{width:calc(var(--chipw)*1.25);height:calc(var(--chipw)*1.25);font-size:calc(var(--chipw)*.5)}
+  .inroom .pl .card.sm{width:calc(var(--cw)*.6);height:calc(var(--cw)*.84)}
+  .inroom .pl .card.sm .r{font-size:calc(var(--cw)*.24)}.inroom .pl .card.sm .s{font-size:calc(var(--cw)*.21)}
+  .inroom .mchip{width:calc(var(--chipw)*.55);height:calc(var(--chipw)*.55);font-size:calc(var(--chipw)*.28)}
+  .inroom .pl{padding-top:clamp(5px,.9vh,10px);padding-bottom:clamp(5px,.9vh,10px)}
+  .inroom h1{font-size:clamp(19px,2.4vh,26px)}
+  .inroom button{font-size:clamp(14px,1.7vh,17px)}
+  /* nach der Hand: eigene Karten stehen in der Spielerliste, „Neue Hand“ in der Leiste → Doppeltes ausblenden */
+  .inroom .cols.is-done .p-mine,.inroom .cols.is-done .p-reveal [data-a="start"],.inroom .cols.is-done .p-reveal [data-a="spnext"]{display:none}
+  #chat{position:fixed;bottom:10px;right:max(16px,calc((100vw - 1500px)/2 + 16px));width:var(--rw);height:var(--chatH);max-width:none;padding:0;margin:0;box-sizing:border-box}
+  #chat .panel{height:100%;box-sizing:border-box;display:flex;flex-direction:column;margin:0}
+  #chat .chatmsgs{flex:1 1 auto;max-height:none;min-height:0}
+}
+.vbox{max-width:520px;text-align:left}.vbox ul{margin:8px 0 12px 18px;padding:0}.vbox li{margin:6px 0;font-size:15px}.vbox h2{font-size:18px;text-transform:none;letter-spacing:0;color:var(--fg)}
+.tag.vc{border-color:var(--accent)}.tag.vc.talk{background:var(--accent);color:var(--accent-fg)}
+.vstat{white-space:nowrap}
+.reactbar{display:flex;gap:4px;flex-wrap:wrap}.react-btn{font-size:18px;padding:2px 7px;line-height:1.3}
+.react-pop{display:inline-block;font-size:22px;margin-left:6px;vertical-align:middle;animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.2);opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+.accline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.acc{display:inline-flex;flex-direction:column;align-items:center;background:var(--chip);border-radius:8px;padding:4px 10px;min-width:62px}
+.acc small{font-size:11px;color:var(--muted)}.stwrap{overflow-x:auto}.stbl td.rc{font-variant-numeric:tabular-nums;white-space:nowrap}
+.panel.offline{border-color:var(--accent)}
+@media (prefers-reduced-motion: reduce){.react-pop{animation:none}}
+/* Lernmodus: bewusst anders eingefärbt, damit man ihn sofort vom Spiel unterscheidet */
+.coach-r{display:none}
+.coach{--coachc:#3d6fe0;border:2px solid var(--coachc);border-left-width:7px;background:color-mix(in srgb,var(--coachc) 9%,var(--panel))}
+.coach h2{color:var(--coachc)}.coach p{margin:6px 0}.coach .note{margin-top:6px}
+.coachbar{height:10px;border-radius:6px;background:color-mix(in srgb,var(--coachc) 18%,transparent);overflow:hidden;margin:4px 0 8px}
+.coachbar span{display:block;height:100%;background:linear-gradient(90deg,#c0392b,#e0a31a,#2e9d57)}
+.coachchip{display:inline-block;min-width:26px;text-align:center;border-radius:50%;background:var(--coachc);color:#fff;padding:1px 6px}
+.coachtip,.coachok,.coachwarn{padding:6px 10px;border-radius:8px}.coachtip{background:color-mix(in srgb,var(--coachc) 14%,transparent)}
+.coachok{background:color-mix(in srgb,#2e9d57 14%,transparent)}.coachwarn{background:color-mix(in srgb,#e0a31a 20%,transparent)}
+.coachlist{margin:4px 0 4px 18px;padding:0}.coachlist li{margin:3px 0}.coach b.ok{color:#2e9d57}
+.installhelp summary{cursor:pointer;font-weight:600}.installhelp p{margin:8px 0;font-size:14px}
+.sitefoot{text-align:center;margin:18px 0 6px;font-size:13px;color:var(--muted)}.sitefoot a{color:inherit}
+.revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
+.say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
+.pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:10px 0}
+.tile{background:var(--chip);border-radius:10px;padding:8px 10px;text-align:center}
+.tile .v{font-size:22px;font-weight:700}.tile .l{font-size:12px;opacity:.75}
+.stbl{width:100%;border-collapse:collapse;font-size:14px}.stbl th,.stbl td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line,rgba(127,127,127,.2))}
+.stbl tr.me td{font-weight:650}
+.dot{display:inline-block;width:20px;text-align:center;border-radius:5px;margin-right:2px}.dot.ok{color:#2e9d57}.dot.bad{color:#c0392b}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:650;letter-spacing:.14em}
+.steps{font-size:13.5px;color:var(--muted);padding-left:18px;margin:6px 0 0}
+.steps li{margin:3px 0}
+details summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.hr{height:1px;background:var(--line);margin:10px 0}
+.center{text-align:center}
+@media(max-width:400px){ .card{width:46px;height:64px} }
+
+/* ---------- Letzte Runde: Aufhübschung ---------- */
+body{background:radial-gradient(1200px 600px at 50% -200px,var(--bg2),var(--bg) 70%) fixed,var(--bg)}
+.panel{box-shadow:var(--shadow);border-radius:14px}
+.brand{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;font-style:italic;font-weight:700;
+  font-size:30px;letter-spacing:.3px;color:var(--fg)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand[data-a="reload"]{cursor:pointer;-webkit-tap-highlight-color:transparent;width:fit-content}
+.brand[data-a="reload"]:active{opacity:.6}
+.brand .logo{width:42px;height:auto;flex:0 0 auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
+.brand.sm .logo{width:20px;filter:none}
+.brand.sm{gap:6px}
+.brand.sm{font-size:14px;color:var(--muted);margin-bottom:1px}
+.hero{padding:16px}
+button{transition:transform .08s ease,border-color .15s,background .15s}
+button:active:not(:disabled){transform:scale(.97)}
+button.primary{box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 35%,transparent)}
+button.icon{font-size:16px;line-height:1;padding:6px 9px}
+/* Tisch als Filz */
+.felt{background:radial-gradient(ellipse at 50% 30%,var(--felt),var(--felt2));border-color:var(--felt2);color:#eef5f0}
+.felt h2{color:rgba(238,245,240,.7)}
+.felt .card.empty{border-color:var(--felt-line);opacity:1}
+.board{justify-content:center;gap:8px;padding:6px 0 2px}
+.tag.new{background:var(--gold);border-color:var(--gold);color:#1b1407;font-weight:650;animation:pop .5s ease both}
+/* Karten */
+.card{background:linear-gradient(160deg,var(--card),var(--card2));color:#1b1b19;border-color:rgba(0,0,0,.12);
+  box-shadow:0 1px 1px rgba(0,0,0,.08),0 3px 8px rgba(0,0,0,.12)}
+.card.red{color:var(--red)}
+.card.back{background:repeating-linear-gradient(45deg,#2c5f86 0 5px,#244f70 5px 10px);border:2px solid #f4f1ea}
+.card.empty{background:transparent;box-shadow:none}
+.card.fresh{box-shadow:0 0 0 3px var(--gold),0 0 16px color-mix(in srgb,var(--gold) 60%,transparent);transform:translateY(-3px)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+/* Chips wie Pokerchips */
+.chip{width:38px;height:38px;border:3px dashed rgba(255,255,255,.55);background:var(--accent);color:#fff;
+  box-shadow:0 0 0 2px var(--accent),0 2px 6px rgba(0,0,0,.25);font-size:15px;transition:transform .1s}
+.chip:not(.static):hover{transform:translateY(-2px)}
+/* Chipfarbe je Runde: 1 weiß, 2 gelb, 3 orange, 4 rot */
+.r1{--cf:#f4f1ea;--ct:#1b1b19;--cb:rgba(0,0,0,.28)}
+.r2{--cf:#e9c43f;--ct:#1b1407;--cb:rgba(0,0,0,.25)}
+.r3{--cf:#e07b28;--ct:#fff;--cb:rgba(255,255,255,.6)}
+.r4{--cf:#c0392b;--ct:#fff;--cb:rgba(255,255,255,.6)}
+.chip.r1,.chip.r2,.chip.r3,.chip.r4{background:var(--cf);color:var(--ct);border-color:var(--cb);box-shadow:0 0 0 2px var(--cf),0 2px 6px rgba(0,0,0,.25)}
+.chip.mine{box-shadow:0 0 0 2px var(--cf,var(--accent)),0 0 0 5px var(--gold)}
+.mchip.r1,.mchip.r2,.mchip.r3,.mchip.r4{background:var(--cf);color:var(--ct);border-color:var(--cb)}
+.mychips{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.mychips .slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.chip.big{width:56px;height:56px;font-size:22px;border-width:4px}
+.chip.big.now{outline:3px solid var(--gold);outline-offset:3px}
+.mychips .cap{font-size:11px;color:var(--muted)}
+.chip.ph{border:2px dashed var(--line);background:transparent;color:var(--muted);box-shadow:none}
+button.danger{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:60;
+  background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14.5px;font-weight:600;max-width:calc(100% - 32px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.wait .who{white-space:nowrap}
+button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
+.invite-body{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.qr{background:#fff;border-radius:10px;padding:6px;width:172px;flex:0 0 auto}
+.qr svg{display:block;width:100%;height:auto}
+.invite-txt{flex:1 1 220px;min-width:0}
+.linkbox{font-family:ui-monospace,Menlo,monospace;font-size:13px;background:var(--chip);border-radius:8px;padding:8px 10px;margin:8px 0;overflow-wrap:anywhere}
+.info{color:var(--fg);font-size:13.5px;background:color-mix(in srgb,var(--gold) 16%,transparent);border-left:3px solid var(--gold);padding:8px 10px;border-radius:8px;margin:0 0 8px}
+.info-panel{display:flex;gap:10px;align-items:flex-start}.info-panel .info{flex:1;margin:0}
+.jump{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tag.off{color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)}
+/* Countdown */
+.cd-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:rgba(8,10,9,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.cd-box{background:var(--panel);border:2px solid var(--gold);border-radius:20px;padding:20px 30px 22px;text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);min-width:220px}
+.cd-lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.cd-num{font-family:Georgia,serif;font-size:110px;font-weight:700;line-height:1;color:var(--gold);margin:6px 0 14px;animation:pop .3s ease both}
+/* Chat */
+.chatwrap{padding-top:0;padding-bottom:40px}
+.chatmsgs{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:8px;font-size:14px}
+.msg{padding:5px 9px;border-radius:10px;background:var(--chip);align-self:flex-start;max-width:85%;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:color-mix(in srgb,var(--accent) 22%,var(--panel))}
+.msg .who{font-weight:650}
+.msg .tm{font-size:11px;color:var(--muted);margin-left:4px}
+.chatform{flex-wrap:nowrap}
+@media (prefers-reduced-motion: reduce){.tag.new,.cd-num{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="muted">Lädt …</p></div>
+<div class="wrap chatwrap" id="chat" style="display:none"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="hand.js"></script>
+<script src="qrcode.js" async></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- Konstanten ---------- */
+var RANKS=['2','3','4','5','6','7','8','9','10','B','D','K','A'];
+var RANK_NAME=['2','3','4','5','6','7','8','9','10','Bube','Dame','König','Ass'];
+var SUITS=['\u2660','\u2665','\u2666','\u2663'];
+var CODE_ALPHABET='ACDEFGHJKLMNPRTUVWXY2345679';
+
+/* ---------- Laufzeit-Zustand ---------- */
+var db=null,userCap=null,uid=null,canWrite=true;
+var code=null,myName='',kp=null,myPubJwk=null;
+var subs=[],busy={},fatal=null,uiErr='';
+var S={players:[],chips:{},main:null,deck:null,aA:null,aB:null,bA:null,bB:null,guess:null,reveal:{}};
+var CFG={minPlayers:3,maxPlayers:8,holeCards:2,allowSteal:true,
+         guessEnabled:true,revealHighestFirst:true};
+function applyConfig(c){ if(!c)return; for(var k in CFG) if(c[k]!==undefined) CFG[k]=c[k]; try{localStorage.setItem('kr.cfg',JSON.stringify(CFG));}catch(e){} }
+try{(function(){var c=JSON.parse(localStorage.getItem('kr.cfg')||'null');if(c)for(var k in CFG)if(c[k]!==undefined)CFG[k]=c[k];})();}catch(e){}   // offline: zuletzt bekannte Einstellungen
+function optb(k){ var o=main().opt; return (o&&o[k]!==undefined)?o[k]:CFG[k]; }
+function HC(){ var o=main().opt,n=num(o&&o.holeCards)||num(CFG.holeCards)||2; return Math.min(5,Math.max(1,n)); }
+var myHand=null;      // {hand, cards:[i,i], slots:[], k1:[], k2:[]}
+var boardCache={};    // hand -> [cardIdx|null x5]
+var decrypting=false,decryptFailed=null;
+var watching=false;   // Zuschauer: im Raum, aber ohne Spieler-Eintrag
+var joined=false;     // eigener Spieler-Eintrag geschrieben (für Kick-/Übernahme-Erkennung)
+var online=null;      // [uid] laut Server, null = unbekannt
+var idle=[];          // [uid] übernehmbar laut Server (lange genug weg, nicht Host)
+var away={};          // uid -> ms weg (nur Offline-Spieler)
+var TAKE_MS=30000,HOSTMOVE_MS=120000;
+var uiNote='';        // neutrale Hinweise (kein Fehler)
+var pendingTake=null; // {code,id}: von der Startseite aus „einspringen“
+var lastPollAt=0;
+var inviteOpen=false,inviteCode=null;   // Einladung (Link/QR), Code aus #HASH
+var lastOwnChipAt=0,prevMine={key:null,chip:null};   // „Chip genommen“-Hinweis
+var lastNudgeTs=-1;                    // Anstupsen: -1 = noch nicht initialisiert
+var fxOn=true,AC=null;                 // Ton + Vibration
+try{fxOn=localStorage.getItem('kr.fx')!=='0';}catch(e){}
+(function(){var m=/^#([A-Za-z0-9]{3,8})$/.exec(location.hash||'');if(m)inviteCode=m[1].toUpperCase();})();
+var cd={key:null,start:0};  // Countdown vor dem Aufdecken
+var CD_MS=3000;
+
+var openRooms=null;   // Raumliste für die Startseite
+var playCounts=null;  // gespielte Hände: {mp: Räume, sp: Übungsraum}
+var inviteInfo=null,srvOff=0,planOpen=false,planShow=null;   // geplante Räume: Info zum Einladungslink, Serverzeit-Versatz
+var planned=[];try{planned=JSON.parse(localStorage.getItem('kr.planned')||'[]');if(!Array.isArray(planned))planned=[];}catch(e){planned=[];}
+
+/* ---------- kleine Helfer ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function b64(u8){var s='';for(var i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s);}
+function ub64(s){var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function hx(u8){var s='';for(var i=0;i<u8.length;i++)s+=('0'+u8[i].toString(16)).slice(-2);return s;}
+function uhx(h){var u=new Uint8Array(h.length/2);for(var i=0;i<u.length;i++)u[i]=parseInt(h.substr(i*2,2),16);return u;}
+function rnd(n){return crypto.getRandomValues(new Uint8Array(n));}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=crypto.getRandomValues(new Uint32Array(1))[0]%(i+1);var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function seq(n){var a=[];for(var i=0;i<n;i++)a.push(i);return a;}
+
+/* ---------- Krypto (ECDH P-256 + AES-GCM) ---------- */
+var EC={name:'ECDH',namedCurve:'P-256'};
+function genKP(){return crypto.subtle.generateKey(EC,true,['deriveBits']);}
+function impPub(j){return crypto.subtle.importKey('jwk',j,EC,true,[]);}
+function impPriv(j){return crypto.subtle.importKey('jwk',j,EC,true,['deriveBits']);}
+function shared(priv,pub){
+  return crypto.subtle.deriveBits({name:'ECDH',public:pub},priv,256).then(function(bits){
+    return crypto.subtle.importKey('raw',bits,{name:'AES-GCM'},false,['encrypt','decrypt']);
+  });
+}
+function aesRaw(u8){return crypto.subtle.importKey('raw',u8,{name:'AES-GCM'},false,['encrypt','decrypt']);}
+function encJson(key,obj){
+  var iv=rnd(12);
+  return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(JSON.stringify(obj)))
+    .then(function(ct){return b64(iv)+'.'+b64(new Uint8Array(ct));});
+}
+function decJson(key,s){
+  var p=s.split('.');
+  return crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(p[0])},key,ub64(p[1]))
+    .then(function(pt){return JSON.parse(new TextDecoder().decode(pt));});
+}
+function sealTo(pubJwk,obj){
+  var eph;
+  return genKP().then(function(k){eph=k;return impPub(pubJwk);})
+    .then(function(pub){return shared(eph.privateKey,pub);})
+    .then(function(key){return Promise.all([encJson(key,obj),crypto.subtle.exportKey('jwk',eph.publicKey)]);})
+    .then(function(r){return {e:r[1],c:r[0]};});
+}
+function openSealed(sealed){
+  return impPub(sealed.e).then(function(pub){return shared(kp.privateKey,pub);})
+    .then(function(key){return decJson(key,sealed.c);});
+}
+function xorHex(a,b){var x=uhx(a),y=uhx(b),o=new Uint8Array(x.length);for(var i=0;i<x.length;i++)o[i]=x[i]^y[i];return o;}
+function encCard(k1,k2,cardIdx){
+  return aesRaw(xorHex(k1,k2)).then(function(key){
+    var iv=rnd(12);
+    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new Uint8Array([cardIdx]))
+      .then(function(ct){return b64(iv)+'.'+b64(new Uint8Array(ct));});
+  });
+}
+function decCard(k1,k2,s){
+  return aesRaw(xorHex(k1,k2)).then(function(key){
+    var p=s.split('.');
+    return crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(p[0])},key,ub64(p[1]));
+  }).then(function(pt){return new Uint8Array(pt)[0];});
+}
+
+/* ---------- Schlüssel des Spielers ---------- */
+function keyStoreId(){return 'kr.key.'+uid;}
+function loadKeys(){
+  var raw=null;
+  try{raw=localStorage.getItem(keyStoreId());}catch(e){}
+  if(raw){
+    try{
+      var o=JSON.parse(raw);
+      return Promise.all([impPriv(o.priv),impPub(o.pub)]).then(function(r){
+        kp={privateKey:r[0],publicKey:r[1]};myPubJwk=o.pub;
+      }).catch(function(){return newKeys();});
+    }catch(e){return newKeys();}
+  }
+  return newKeys();
+}
+function newKeys(){
+  return genKP().then(function(k){
+    kp=k;
+    return Promise.all([crypto.subtle.exportKey('jwk',k.publicKey),crypto.subtle.exportKey('jwk',k.privateKey)]);
+  }).then(function(r){
+    myPubJwk=r[0];
+    try{localStorage.setItem(keyStoreId(),JSON.stringify({pub:r[0],priv:r[1]}));}catch(e){}
+  });
+}
+
+/* ---------- Server-Anbindung (api.php) ---------- */
+var API='api';
+/* Geräteschlüssel: bleibt im Browser, der Server kennt nur den Hash (Host-Rechte, eigener Platz) */
+var SK=(function(){
+  var k=null;try{k=localStorage.getItem('kr.sk');}catch(e){}
+  if(!k||k.length<16){k=hx(rnd(24));try{localStorage.setItem('kr.sk',k);}catch(e){}}
+  return k;
+})();
+var docs={},ver=-1,pollTimer=null,pollBusy=false,offline=false;
+function api(a,params,body,ms){
+  var qs='?a='+encodeURIComponent(a);
+  for(var k in params)qs+='&'+k+'='+encodeURIComponent(params[k]);
+  var opt={method:body?'POST':'GET',cache:'no-store',headers:{'x-kr-key':SK}};
+  if(body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}
+  /* Zeitlimit: ohne Netz (z. B. Flugzeug-WLAN) hängen Anfragen sonst minutenlang, statt zu scheitern */
+  var ctl=typeof AbortController!=='undefined'?new AbortController():null,tm=null;
+  if(ctl){opt.signal=ctl.signal;tm=setTimeout(function(){ctl.abort();},ms||8000);}
+  return fetch(API+qs,opt).then(function(r){
+    if(tm)clearTimeout(tm);
+    return r.text().then(function(t){
+      var j=null;try{j=JSON.parse(t);}catch(e){}
+      if(!r.ok)throw new Error((j&&j.error)||('Server '+r.status));
+      return j||{};
+    });
+  });
+}
+function doc(p){
+  return {
+    set:function(o){
+      docs[p]=JSON.parse(JSON.stringify(o));applyDocs();
+      return api('set',{room:code,path:p},o);
+    },
+    get:function(){
+      return api('get',{room:code,path:p}).then(function(r){
+        return {exists:r.doc!=null,data:function(){return r.doc;}};
+      });
+    },
+    delete:function(){delete docs[p];applyDocs();return api('del',{room:code,path:p});}
+  };
+}
+function applyDocs(){
+  S.room=docs['room']||null;
+  S.main=docs['state/main']||null;
+  S.deck=docs['deal/deck']||null;
+  S.aA=docs['deal/assignA']||null;
+  S.aB=docs['deal/assignB']||null;
+  S.bA=docs['deal/boardA']||null;
+  S.bB=docs['deal/boardB']||null;
+  S.guess=docs['state/guess']||null;
+  var pl=[],ch={},rv={},m;
+  for(var k in docs){
+    if((m=/^players\/(.+)$/.exec(k))){var o=docs[k]||{};o=JSON.parse(JSON.stringify(o));o.id=m[1];pl.push(o);}
+    else if((m=/^chips\/(.+)$/.exec(k)))ch[m[1]]=docs[k];
+    else if((m=/^reveal\/(.+)$/.exec(k)))rv[m[1]]=docs[k];
+  }
+  pl.sort(function(a,b){return (a.joinedAt||0)-(b.joinedAt||0)||(a.id<b.id?-1:1);});
+  S.players=pl;S.chips=ch;S.reveal=rv;
+  S.chat=(docs['chat']&&docs['chat'].msgs)||[];
+  S.react={};for(var rk in docs){var mr=/^react\/(.+)$/.exec(rk);if(mr)S.react[mr[1]]=docs[rk];}
+  S.stats=(docs['stats']&&Array.isArray(docs['stats'].hands))?docs['stats'].hands:[];
+  if(code&&joined&&!watching){
+    var me=docs['players/'+uid];
+    if(!me){uiErr='Du wurdest vom Host aus dem Raum entfernt.';leave();return;}
+    if(me.pub&&myPubJwk&&me.pub.x!==myPubJwk.x){uiErr='Dein Platz wurde auf einem anderen Gerät übernommen.';leave();return;}
+  }
+  if(code&&!watching)notices();
+  upd();
+}
+/* Ereignisse, die man leicht verpasst: Chip weg, angestupst, selbst dran */
+var turnSeen=null;
+function notices(){
+  var key=hand()+'.'+stage(),mine=chipOf(uid);
+  if(phase()==='play'&&prevMine.key===key&&prevMine.chip!=null&&mine!==prevMine.chip&&Date.now()-lastOwnChipAt>1500){
+    var who=chipHolder(prevMine.chip);
+    if(who&&who!==uid){showToast(pname(who)+' hat dir Chip '+prevMine.chip+' genommen');fx('steal');}
+  }
+  prevMine={key:key,chip:mine};
+  var nd=docs['nudge/'+uid],nts=nd?num(nd.ts)||0:0;
+  if(lastNudgeTs<0)lastNudgeTs=nts;
+  else if(nts>lastNudgeTs){lastNudgeTs=nts;showToast(pname(nd.from)+' stupst dich an \ud83d\udc49');fx('nudge');}
+  if(phase()==='reveal'){
+    var ord=main().revealOrder||[],cur=ord[num(main().revealIdx)||0],tk=hand()+'.'+(num(main().revealIdx)||0);
+    if(cur===uid&&turnSeen!==tk){turnSeen=tk;showToast('Du bist dran: Karten aufdecken');fx('turn');}
+  }
+}
+function setPresence(r){
+  online=r.online||null;idle=r.idle||[];away=r.away||{};
+  voice.enabled=!!r.voiceEnabled;if(!voice.on)voice.list=r.voice||[];
+  if(!voice.enabled&&voice.on)voiceStop();
+  if(r.takeoverMs)TAKE_MS=r.takeoverMs;if(r.hostMoveMs)HOSTMOVE_MS=r.hostMoveMs;
+}
+function pollOnce(force){
+  if(pollBusy||!code)return;
+  if(!force&&wsOk&&Date.now()-lastPollAt<5000)return;
+  pollBusy=true;lastPollAt=Date.now();
+  api('state',{room:code,since:ver,u:uid}).then(function(r){
+    pollBusy=false;
+    lastSync=Date.now();
+    applyConfig(r.config);
+    if(r.online){var was=JSON.stringify([online,idle,away,voice.enabled,voice.on?null:voice.list]);setPresence(r);if(was!==JSON.stringify([online,idle,away,voice.enabled,voice.on?null:voice.list])&&r.version===ver)upd();}
+    if(offline){offline=false;uiErr='';}
+    if(r.version===ver)return;
+    ver=r.version;docs=r.docs||{};applyDocs();
+  }).catch(function(e){
+    pollBusy=false;
+    if(e&&/nicht gefunden/.test(e.message)){uiErr='Dieser Raum wurde geschlossen.';leave();return;}
+    offline=true;uiErr='Keine Verbindung zum Server \u2013 versuche weiter \u2026';render();
+  });
+}
+var ws=null,wsOk=false,wsRetry=null,lastSync=0;
+function wsConnect(){
+  if(!code||typeof WebSocket==='undefined')return;
+  var dir=location.pathname.replace(/[^/]*$/,'');
+  var url=(location.protocol==='https:'?'wss://':'ws://')+location.host+dir+'ws?room='+encodeURIComponent(code)+'&u='+encodeURIComponent(uid);
+  var sock;
+  try{sock=new WebSocket(url);}catch(e){return;}
+  ws=sock;
+  sock.onopen=function(){if(ws===sock)wsOk=true;};
+  sock.onmessage=function(ev){
+    if(ws!==sock)return;
+    var m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    lastSync=Date.now();
+    if(offline){offline=false;uiErr='';}
+    if(m.type==='config'){applyConfig(m.config);render();return;}
+    if(m.type==='gone'){uiErr='Dieser Raum wurde geschlossen.';leave();return;}
+    if(m.type==='full'){applyConfig(m.config);ver=m.version;docs=m.docs||{};applyDocs();return;}
+    if(m.type==='doc'||m.type==='docs'){
+      if(m.version!==ver+1){pollOnce(true);return;}
+      ver=m.version;
+      var ch=m.type==='doc'?[{path:m.path,doc:m.doc}]:(m.changes||[]);
+      for(var i=0;i<ch.length;i++){
+        if(ch[i].doc==null)delete docs[ch[i].path];else docs[ch[i].path]=ch[i].doc;
+      }
+      applyDocs();
+    }
+  };
+  sock.onerror=function(){if(ws===sock)wsOk=false;};
+  sock.onclose=function(){
+    if(ws!==sock)return;
+    ws=null;wsOk=false;
+    if(code&&!wsRetry)wsRetry=setTimeout(function(){wsRetry=null;wsConnect();},3000);
+  };
+}
+function startPoll(){stopPoll();wsConnect();pollTimer=setInterval(function(){pollOnce();},1000);pollOnce(true);}
+function stopPoll(){
+  if(pollTimer)clearInterval(pollTimer);pollTimer=null;
+  if(wsRetry)clearTimeout(wsRetry);wsRetry=null;
+  if(ws){var w=ws;ws=null;wsOk=false;try{w.onclose=null;w.onmessage=null;w.close();}catch(e){}}
+}
+
+/* ---------- Ableitungen ---------- */
+function main(){return S.main||{};}
+function num(v){var n=parseInt(v,10);return isFinite(n)?n:null;}    // Werte aus Dokumenten nie roh ins HTML
+function hand(){return Math.max(0,num(main().hand)||0);}
+function phase(){return main().phase||'lobby';}
+function stage(){return Math.min(4,Math.max(0,num(main().stage)||0));}
+function parts(){ var p=main().participants; return (p&&p.length)?p:S.players.map(function(x){return x.id;}); }
+function pmap(){var m={};S.players.forEach(function(p){m[p.id]=p;});return m;}
+function roomName(){return (S.room&&typeof S.room.name==='string')?S.room.name:'';}
+function roomLabel(c,n){return n?'„'+n+'“ ('+c+')':'Raum '+c;}
+function pname(id){var p=pmap()[id];return p?p.name:'Spieler';}
+function isBotP(id){var p=pmap()[id];return !!(p&&p.bot);}
+function hostId(){
+  var h=(S.room&&S.room.hostId)||null;var ids=S.players.map(function(p){return p.id;});
+  if(h&&ids.indexOf(h)>=0)return h; return ids.filter(function(id){return !isBotP(id);})[0]||null;   // ein Bot ist nie Host
+}
+function isHost(){return hostId()===uid;}
+function isOnline(id){return !online||online.indexOf(id)>=0;}
+function driverId(){
+  var h=hostId();if(isOnline(h))return h;
+  var ids=S.players.map(function(p){return p.id;}).filter(function(id){return isOnline(id)&&!isBotP(id);});
+  return ids[0]||h;
+}
+function isDriver(){return !watching&&driverId()===uid;}
+/* Rollen beim Geben (Mischen, Verteilen A, Verteilen B): Menschen zuerst, reihum; Bots nur, wenn weniger als 3 Menschen.
+   So hält der Server (Bots) ab 2 Menschen höchstens eine Rolle. Identisch zu roleOrder() in bots.js. */
+function roleOrder(){
+  var ps=parts(),h=hand(),rot=function(a){var k=a.length?h%a.length:0;return a.slice(k).concat(a.slice(0,k));};
+  return rot(ps.filter(function(id){return !isBotP(id);})).concat(rot(ps.filter(isBotP)));
+}
+function roleId(off){var o=roleOrder();return o.length?o[off%o.length]:null;}
+function chipOf(id){for(var n in S.chips){if(S.chips[n]&&S.chips[n].holder===id&&S.chips[n].hand===hand())return parseInt(n,10);}return null;}
+function chipHolder(n){var c=S.chips[String(n)];return (c&&c.hand===hand())?c.holder:null;}
+function isReady(p){return !!(p&&p.ready&&p.ready.hand===hand()&&p.ready.stage===stage()&&chipOf(p.id));}
+function allReady(){
+  var m=pmap(),ps=parts();
+  for(var i=0;i<ps.length;i++){if(!isReady(m[ps[i]]))return false;}
+  return ps.length>0;
+}
+function topChipHolder(){
+  var ps=parts(),best=null,bn=-1;
+  for(var i=0;i<ps.length;i++){var c=chipOf(ps[i]);if(c!=null&&c>bn){bn=c;best=ps[i];}}
+  return best;
+}
+function chipSnapshot(){
+  var hist={},cur=main().chipHist||{},snap={};
+  for(var k in cur)hist[k]=cur[k];
+  parts().forEach(function(id){snap[id]=chipOf(id);});
+  hist[String(stage())]=snap;
+  return hist;
+}
+function boardSlotsFor(st){return st>=4?[0,1,2,3,4]:st===3?[0,1,2,3]:st===2?[0,1,2]:[];}
+
+/* ---------- Schreiben ---------- */
+function setMain(patch){
+  var m={};var cur=S.main||{};
+  for(var k in cur)m[k]=cur[k];
+  for(var k2 in patch)m[k2]=patch[k2];
+  return doc('state/main').set(m);
+}
+function myPlayerDoc(patch){
+  var cur=pmap()[uid]||{};
+  var o={name:myName||cur.name||'Spieler',pub:myPubJwk,joinedAt:cur.joinedAt||Date.now(),
+         ready:cur.ready||null};
+  for(var k in patch)o[k]=patch[k];
+  return doc('players/'+uid).set(o);
+}
+function RETRY(){var e=new Error('retry');e.retry=true;return e;}
+function once(key,fn){
+  if(busy[key])return Promise.resolve();
+  busy[key]=true;
+  return Promise.resolve().then(fn).catch(function(e){
+    busy[key]=false;
+    if(e&&e.retry)return;
+    console.error(key,e);uiErr='Fehler bei "'+key+'": '+(e&&e.message||e);render();
+  });
+}
+
+/* ---------- Spielablauf / Zustandsautomat ---------- */
+function tick(){
+  if(!db||!code||!S.main)return;
+  var h=hand(),ph=phase(),ps=parts(),m=pmap();
+  var Sid=roleId(0),Aid=roleId(1),Bid=roleId(2);
+
+  if(ph==='deal'){
+    if(uid===Sid && !(S.deck&&S.deck.hand===h)) once('deck'+h,doShuffle);
+    if(uid===Aid && S.deck&&S.deck.hand===h && !(S.aA&&S.aA.hand===h)) once('aA'+h,doAssignA);
+    if(uid===Bid && S.aA&&S.aA.hand===h && !(S.aB&&S.aB.hand===h)) once('aB'+h,doAssignB);
+    if(isDriver() && S.aB&&S.aB.hand===h) once('play'+h,function(){return setMain({phase:'play',stage:1});});
+  }
+  if(ph==='play'){
+    if(uid===Aid) once('bA'+h+'.'+stage(),ensureBoardA);
+    if(uid===Bid) once('bB'+h+'.'+stage(),ensureBoardB);
+  }
+  updCountdown();
+  if(cd.key&&isDriver()&&Date.now()-cd.start>=CD_MS) advance();
+  decryptMine();
+  decryptBoard();
+  verifyReveals();
+}
+
+function guessers(){var t=main().target;return parts().filter(function(id){return id!==t;});}
+function canGuess(){return parts().indexOf(uid)>=0&&uid!==main().target;}
+/* 3-2-1 vor jedem Aufdecken; „Bereit“ zurücknehmen oder Chip wechseln bricht ab */
+function cdKey(){
+  var ph=phase();
+  if(ph==='play'&&allReady())return 'p'+hand()+'.'+stage();
+  if(ph==='guess'&&guessDone())return 'g'+hand();
+  return null;
+}
+function updCountdown(){
+  var k=cdKey();
+  if(k!==cd.key)cd={key:k,start:Date.now()};
+}
+function cdLeft(){return cd.key?Math.max(1,Math.ceil((CD_MS-(Date.now()-cd.start))/1000)):0;}
+function guessFilled(){
+  var g=S.guess,K=HC();
+  if(!(g&&g.hand===hand()&&g.cards&&g.cards.length>=K))return false;
+  for(var i=0;i<K;i++)if(g.cards[i]==null)return false;
+  return true;
+}
+function guessDone(){
+  var g=S.guess,ps=guessers();
+  if(!guessFilled())return false;
+  for(var i=0;i<ps.length;i++){if(!(g.confirmed||{})[ps[i]])return false;}
+  return ps.length>0;
+}
+function computeRevealOrder(){
+  var ps=parts(),t=topChipHolder();
+  var asc=ps.slice().sort(function(a,b){
+    var ca=chipOf(a),cb=chipOf(b);return (ca==null?99:ca)-(cb==null?99:cb);});
+  if(optb('revealHighestFirst')&&t)return [t].concat(asc.filter(function(x){return x!==t;}));
+  return asc;
+}
+function toReveal(){
+  var h=hand();
+  return once('toreveal'+h,function(){
+    return setMain({phase:'reveal',target:main().target||topChipHolder(),
+                    revealOrder:computeRevealOrder(),revealIdx:0});
+  });
+}
+function advance(){
+  var h=hand(),ps=parts();
+  if(phase()==='deal'){
+    if(S.aB&&S.aB.hand===h) return once('play'+h,function(){return setMain({phase:'play',stage:1});});
+    return;
+  }
+  if(phase()==='play'){
+    if(!allReady())return;
+    if(stage()<4) return once('adv'+h+'.'+stage(),function(){
+      // Neue Tischkarten: Chips gehen immer zurück in die Mitte, der Verlauf bleibt sichtbar
+      var hist=chipSnapshot(),jobs=[];
+      for(var i=1;i<=ps.length;i++)jobs.push(doc('chips/'+i).set({holder:null,hand:h}));
+      return Promise.all(jobs).then(function(){return setMain({stage:stage()+1,chipHist:hist});});
+    });
+    if(!optb('guessEnabled')){
+      var t0=topChipHolder();
+      return once('toguess'+h,function(){
+        return setMain({target:t0,chipHist:chipSnapshot()}).then(function(){return toReveal();});
+      });
+    }
+    return once('toguess'+h,function(){
+      var t=topChipHolder(),K=HC(),empty=[];
+      for(var i=0;i<K;i++)empty.push(null);
+      return doc('state/guess').set({hand:h,cards:empty,confirmed:{}}).then(function(){
+        return setMain({phase:'guess',target:t,chipHist:chipSnapshot()});
+      });
+    });
+  }
+  if(phase()==='guess'){
+    if(!guessDone())return;
+    return toReveal();
+  }
+}
+
+function doShuffle(){
+  var h=hand(),m=pmap(),Aid=roleId(1),Bid=roleId(2);
+  if(!m[Aid]||!m[Aid].pub||!m[Bid]||!m[Bid].pub)throw RETRY();
+  var deck=shuffle(seq(52)),k1=[],k2=[],jobs=[];
+  for(var j=0;j<52;j++){k1.push(hx(rnd(32)));k2.push(hx(rnd(32)));}
+  for(var j2=0;j2<52;j2++)(function(j){jobs.push(encCard(k1[j],k2[j],deck[j]));})(j2);
+  return Promise.all(jobs).then(function(cts){
+    return Promise.all([sealTo(m[Aid].pub,{k:k1}),sealTo(m[Bid].pub,{k:k2})]).then(function(sealed){
+      return doc('deal/deck').set({hand:h,cts:cts,forA:sealed[0],forB:sealed[1]});
+    });
+  });
+}
+
+function doAssignA(){
+  var h=hand(),ps=parts(),m=pmap(),Bid=roleId(2);
+  for(var q=0;q<ps.length;q++){if(!m[ps[q]]||!m[ps[q]].pub)throw RETRY();}
+  if(!m[Bid])throw RETRY();
+  return openSealed(S.deck.forA).then(function(o){
+    var k1=o.k,slots=shuffle(seq(52)),p=0,assign={},board=[];
+    var K=HC();
+    ps.forEach(function(id){var arr=[];for(var z=0;z<K;z++)arr.push(slots[p++]);assign[id]=arr;});
+    for(var i=0;i<5;i++)board.push(slots[p++]);
+    var jobs=[],ids=[];
+    ps.forEach(function(id){
+      if(!m[id])return;
+      ids.push(id);
+      jobs.push(sealTo(m[id].pub,{slots:assign[id],
+        k1:assign[id].map(function(sl){return k1[sl];})}));
+    });
+    jobs.push(sealTo(m[Bid].pub,{assign:assign,board:board}));
+    jobs.push(sealTo(myPubJwk,{assign:assign,board:board}));
+    return Promise.all(jobs).then(function(res){
+      var fp={};ids.forEach(function(id,i){fp[id]=res[i];});
+      return doc('deal/assignA').set({hand:h,forPlayers:fp,forB:res[ids.length],forSelf:res[ids.length+1]});
+    });
+  });
+}
+
+function doAssignB(){
+  var h=hand(),ps=parts(),m=pmap();
+  for(var q=0;q<ps.length;q++){if(!m[ps[q]]||!m[ps[q]].pub)throw RETRY();}
+  return Promise.all([openSealed(S.deck.forB),openSealed(S.aA.forB)]).then(function(r){
+    var k2=r[0].k,assign=r[1].assign,jobs=[],ids=[];
+    ps.forEach(function(id){
+      if(!m[id]||!assign[id])return;
+      ids.push(id);
+      jobs.push(sealTo(m[id].pub,{k2:assign[id].map(function(sl){return k2[sl];})}));
+    });
+    return Promise.all(jobs).then(function(res){
+      var fp={};ids.forEach(function(id,i){fp[id]=res[i];});
+      return doc('deal/assignB').set({hand:h,forPlayers:fp});
+    });
+  });
+}
+
+function ensureBoardA(){
+  var h=hand(),need=boardSlotsFor(stage());
+  if(!need.length)return;
+  if(!S.aA||S.aA.hand!==h||!S.deck||S.deck.hand!==h)throw RETRY();
+  var cur=(S.bA&&S.bA.hand===h)?S.bA.keys||{}:{};
+  var miss=need.filter(function(i){return !cur[String(i)];});
+  if(!miss.length)return;
+  return Promise.all([openSealed(S.deck.forA),openSealed(S.aA.forSelf)]).then(function(r){
+    var k1=r[0].k,board=r[1].board,keys={};
+    for(var x in cur)keys[x]=cur[x];
+    miss.forEach(function(i){keys[String(i)]={s:board[i],k:k1[board[i]]};});
+    return doc('deal/boardA').set({hand:h,keys:keys});
+  });
+}
+function ensureBoardB(){
+  var h=hand(),need=boardSlotsFor(stage());
+  if(!need.length)return;
+  if(!S.bA||S.bA.hand!==h||!S.aA||S.aA.hand!==h||!S.deck||S.deck.hand!==h)throw RETRY();
+  var av=S.bA.keys||{};
+  var cur=(S.bB&&S.bB.hand===h)?S.bB.keys||{}:{};
+  var pend=need.filter(function(i){return !cur[String(i)];});
+  if(!pend.length)return;
+  var miss=pend.filter(function(i){return !!av[String(i)];});
+  if(miss.length!==pend.length)throw RETRY();
+  return Promise.all([openSealed(S.deck.forB),openSealed(S.aA.forB)]).then(function(r){
+    var k2=r[0].k,board=r[1].board,keys={};
+    for(var x in cur)keys[x]=cur[x];
+    miss.forEach(function(i){keys[String(i)]={k:k2[board[i]]};});
+    return doc('deal/boardB').set({hand:h,keys:keys});
+  });
+}
+
+function decryptMine(){
+  var h=hand();
+  if(myHand&&myHand.hand===h)return;
+  if(decrypting||decryptFailed===h)return;
+  if(!S.deck||S.deck.hand!==h)return;
+  if(!S.aA||S.aA.hand!==h||!(S.aA.forPlayers||{})[uid])return;
+  if(!S.aB||S.aB.hand!==h||!(S.aB.forPlayers||{})[uid])return;
+  decrypting=true;
+  Promise.all([openSealed(S.aA.forPlayers[uid]),openSealed(S.aB.forPlayers[uid])]).then(function(r){
+    var a=r[0],b=r[1],jobs=[];
+    for(var i=0;i<a.slots.length;i++)jobs.push(decCard(a.k1[i],b.k2[i],S.deck.cts[a.slots[i]]));
+    return Promise.all(jobs).then(function(c){
+      myHand={hand:h,cards:c,slots:a.slots,k1:a.k1,k2:b.k2};
+      decrypting=false;render();
+    });
+  }).catch(function(e){decrypting=false;decryptFailed=h;console.warn('Handkarten nicht lesbar (Platz übernommen?)',e&&e.message);});
+}
+
+var revealCache={},verifying={};
+function verifyReveals(){
+  var h=hand();
+  if(!S.deck||S.deck.hand!==h)return;
+  var rc=revealCache[h]||(revealCache[h]={});
+  Object.keys(S.reveal).forEach(function(id){
+    var r=S.reveal[id];
+    if(!r||r.hand!==h||rc[id]||verifying[h+'|'+id])return;
+    if(!r.slots||!r.k1||!r.k2)return;
+    verifying[h+'|'+id]=true;
+    var jobs=[];
+    for(var i=0;i<r.slots.length;i++)jobs.push(decCard(r.k1[i],r.k2[i],S.deck.cts[r.slots[i]]));
+    Promise.all(jobs).then(function(c){
+      rc[id]=c;render();
+    }).catch(function(e){verifying[h+'|'+id]=false;console.error('verify',e);});
+  });
+}
+function revealedCards(id){var rc=revealCache[hand()]||{};return rc[id]||null;}
+function cardsHtml(arr,cls){return arr.map(function(c){return cardHtml(c,cls);}).join('');}
+
+function decryptBoard(){
+  var h=hand();
+  if(!S.deck||S.deck.hand!==h)return;
+  if(!S.bA||S.bA.hand!==h||!S.bB||S.bB.hand!==h)return;
+  var have=boardCache[h]||[null,null,null,null,null];
+  var jobs=[],idx=[];
+  for(var i=0;i<5;i++){
+    var a=(S.bA.keys||{})[String(i)],b=(S.bB.keys||{})[String(i)];
+    if(have[i]==null&&a&&b){idx.push(i);jobs.push(decCard(a.k,b.k,S.deck.cts[a.s]));}
+  }
+  if(!jobs.length)return;
+  Promise.all(jobs).then(function(cs){
+    idx.forEach(function(i,n){have[i]=cs[n];});
+    boardCache[h]=have;render();
+  }).catch(function(e){console.error('board',e);});
+}
+
+/* ---------- Pokerhände bewerten ---------- */
+var HAND_NAMES=['Höchste Karte','Ein Paar','Zwei Paare','Drilling','Straße','Flush','Full House','Vierling','Straight Flush','Royal Flush'];
+var HAND_HINT=['keine Kombination \u2013 deine höchste Handkarte zählt (nicht der Tisch)','zwei gleiche Werte','zweimal zwei gleiche Werte','drei gleiche Werte',
+  'fünf Werte in Folge (A-2-3-4-5 zählt auch)','fünf Karten gleicher Farbe','Drilling + Paar','vier gleiche Werte',
+  'Straße in einer Farbe','10-B-D-K-A in einer Farbe'];
+var RANK_PL=['Zweien','Dreien','Vieren','Fünfen','Sechsen','Siebenen','Achten','Neunen','Zehnen','Buben','Damen','Könige','Asse'];
+/* 1–5 Karten bewerten: {cat, tb (Tiebreak), groups, straight} */
+/* eval5, cmpHand, bestHand, handCore, ownImproves, estimateRank: siehe hand.js (gemeinsam mit dem Server) */
+function handName(h){
+  if(!h)return '';
+  var g=h.groups,R=RANK_NAME,P=RANK_PL;
+  switch(h.cat){
+    case 0:return 'Höchste Karte: '+R[h.tb[0]];
+    case 1:return 'Ein Paar: '+P[g[0][1]];
+    case 2:return 'Zwei Paare: '+P[g[0][1]]+' und '+P[g[1][1]];
+    case 3:return 'Drilling: '+P[g[0][1]];
+    case 4:return h.ownHigh==null?'Straße bis '+R[h.straight]:h.ownLowAce?'Straße mit Ass als 1':'Straße, '+R[h.ownHigh]+' hoch';
+    case 5:return 'Flush, '+R[h.ownHigh!=null?h.ownHigh:g[0][1]]+' hoch';
+    case 6:return 'Full House: '+P[g[0][1]]+' und '+P[g[1][1]];
+    case 7:return 'Vierling: '+P[g[0][1]];
+    case 8:return 'Straight Flush bis '+R[h.straight];
+    default:return 'Royal Flush';
+  }
+}
+function visibleBoard(){
+  var bc=boardCache[hand()]||[],sl=phase()==='play'?boardSlotsFor(stage()):[0,1,2,3,4];
+  return sl.map(function(i){return bc[i];}).filter(function(c){return c!=null;});
+}
+/* Beispielkarten je Hand: Wert+Farbe (s,h,d,c); Kleinbuchstabe vorne = Beikarte (blass) */
+var HAND_EX=[
+  ['Ah','-Jd','-8c','-5s','-2h'],['Th','Tc','-Ad','-7s','-3c'],['Jh','Js','4d','4c','-As'],['8s','8h','8d','-Kc','-3h'],
+  ['Ts','9h','8d','7c','6s'],['Ad','Jd','8d','4d','2d'],['Qh','Qs','Qd','7c','7h'],['Ks','Kh','Kd','Kc','-2s'],
+  ['9s','8s','7s','6s','5s'],['Ah','Kh','Qh','Jh','Th']];
+function exCards(list){
+  return list.map(function(s){
+    var dim=s[0]==='-';if(dim)s=s.slice(1);
+    var c='shdc'.indexOf(s[1])*13+'23456789TJQKA'.indexOf(s[0]);
+    return cardHtml(c,'xs'+(dim?' dim':''));
+  }).join('');
+}
+function rankingHtml(cur){
+  var li='';
+  for(var i=HAND_NAMES.length-1;i>=0;i--)
+    li+='<li'+(cur===i?' class="cur"':'')+'><div class="rk-txt"><b>'+HAND_NAMES[i]+'</b><span class="note">'+HAND_HINT[i]+'</span></div>'+
+      '<div class="cards rk-cards">'+exCards(HAND_EX[i])+'</div></li>';
+  return '<details class="ranking"><summary>Rangfolge der Hände</summary><ol>'+li+'</ol>'+
+    '<p class="note">Oben die stärkste Hand. Bei Gleichstand entscheiden die höheren Werte.</p></details>';
+}
+
+/* ---------- Auflösung am Ende der Hand ---------- */
+function finalChip(id){
+  var h4=(main().chipHist||{})['4'];
+  return (h4&&h4[id]!=null)?h4[id]:chipOf(id);
+}
+/* Passt die Chip-Reihenfolge zur Stärke? Chip 1 = schwächste Hand. Gleich starke Hände dürfen beliebig liegen. */
+function resolveHand(){
+  if(phase()!=='done')return null;
+  var board=visibleBoard();if(board.length<5)return null;
+  var list=parts().map(function(id){
+    var rv=revealedCards(id);
+    return {id:id,chip:finalChip(id),hand:rv?bestHand(rv.concat(board),rv):null};
+  });
+  var known=list.filter(function(x){return x.hand&&x.chip!=null;});
+  known.forEach(function(x){
+    x.swaps=known.filter(function(y){
+      if(y===x)return false;
+      var d=cmpHand(y.hand,x.hand);
+      return (y.chip<x.chip&&d>0)||(y.chip>x.chip&&d<0);
+    }).map(function(y){return y.id;});
+    var weaker=0,equal=0;
+    known.forEach(function(y){if(y!==x){var d=cmpHand(y.hand,x.hand);if(d<0)weaker++;else if(d===0)equal++;}});
+    x.lo=weaker+1;x.hi=weaker+equal+1;
+    x.ok=!x.swaps.length;
+  });
+  var bad=known.filter(function(x){return !x.ok;}).length;
+  var missing=list.length-known.length;
+  var by={};list.forEach(function(x){by[x.id]=x;});
+  var gr=guessResult(),orderOk=!bad&&!missing,guessOk=!gr||gr.hits===gr.of;
+  return {by:by,bad:bad,missing:missing,orderOk:orderOk,guessOk:guessOk,gr:gr,win:orderOk&&guessOk};
+}
+/* Ergebnis-Kasten: gewonnen nur mit richtiger Reihenfolge UND komplett richtigem Tipp */
+function resultBox(res,gr){
+  var g=gr?'Tipp '+gr.hits+' von '+gr.of:'';
+  if(res.win)return '<div class="result win"><div class="big">\u2713 Alles richtig!</div><div>Reihenfolge getroffen'+(gr?' und Tipp komplett richtig':'')+'.</div></div>';
+  if(res.orderOk)return '<div class="result lose"><div class="big">\u2717 Tipp daneben</div><div>Die Reihenfolge stimmt, aber der Tipp nicht ('+g+').</div></div>';
+  return '<div class="result lose"><div class="big">\u2717 Nicht ganz</div><div>'+
+    (res.bad?res.bad+' Spieler '+(res.bad===1?'liegt':'liegen')+' falsch':'')+
+    (res.bad&&res.missing?' \u00b7 ':'')+(res.missing?res.missing+' nicht aufgedeckt':'')+
+    (gr&&!res.guessOk?' \u00b7 '+g:'')+'</div></div>';
+}
+/* Tipp auswerten: wie viele getippte Werte stecken in den echten Karten (Reihenfolge egal) */
+function guessResult(){
+  var g=S.guess||{},t=main().target,rv=revealedCards(t);
+  if(!rv||!g.cards||g.cards[0]==null)return null;
+  var left=rv.map(function(c){return c%13;}),marks=[],hits=0;
+  g.cards.slice(0,rv.length).forEach(function(r){
+    var i=left.indexOf(r);
+    if(i>=0){left.splice(i,1);hits++;marks.push(true);}else marks.push(false);
+  });
+  return {hits:hits,of:rv.length,marks:marks,cards:g.cards.slice(0,rv.length),real:rv,target:t};
+}
+
+/* ---------- Aktionen ---------- */
+function takeChip(n){
+  if(sp)return spTake(n);
+  if(phase()!=='play'||parts().indexOf(uid)<0)return;
+  var h=hand(),mine=chipOf(uid),take=(mine!==n),ts=Date.now();
+  lastOwnChipAt=ts;
+  var held=chipHolder(n);
+  if(take&&held&&held!==uid&&!optb('allowSteal'))return;
+  // sofortige lokale Vorschau, der Server bestaetigt gleich darauf
+  if(take&&mine)docs['chips/'+mine]={holder:null,hand:h,ts:ts};
+  docs['chips/'+n]={holder:take?uid:null,hand:h,ts:ts};
+  var me=docs['players/'+uid];
+  if(me&&me.ready){me=JSON.parse(JSON.stringify(me));me.ready=null;docs['players/'+uid]=me;}
+  applyDocs();
+  api('chip',{room:code,n:n},{uid:uid,hand:h,take:take}).catch(function(e){
+    showErr(e);pollOnce(true);
+  });
+}
+function toggleReady(){
+  if(sp)return spReady();
+  var cur=pmap()[uid];
+  var on=isReady(cur);
+  myPlayerDoc({ready:on?null:{hand:hand(),stage:stage()}}).catch(showErr);
+}
+function setGuessCard(i,val){
+  if(sp)return spGuessSet(i,val);
+  if(!canGuess())return;
+  var g=S.guess||{},K=HC(),c=[];
+  for(var z=0;z<K;z++)c.push((g.cards&&g.cards[z]!=null)?g.cards[z]:null);
+  c[i]=val;
+  docs['state/guess']={hand:hand(),cards:c,confirmed:{}};applyDocs();   // Vorschau, Server bestätigt
+  api('guess',{room:code},{uid:uid,i:i,val:val}).catch(function(e){showErr(e);pollOnce(true);});
+}
+function confirmGuess(){
+  if(sp)return spGuessConfirm();
+  var g=S.guess;if(!g||!canGuess())return;
+  var on=!(g.confirmed||{})[uid];
+  api('guess',{room:code},{uid:uid,confirm:on}).catch(function(e){showErr(e);pollOnce(true);});
+}
+/* Aufdecken: jeder hat REVEAL_MS Zeit (Countdown sichtbar), danach deckt sein Gerät automatisch auf.
+   Gezählt ab dem Moment, in dem dieses Gerät sieht, dass der Spieler dran ist. */
+var REVEAL_MS=10000,revT={key:null,at:0,fired:false},revealBusy=null;
+function revKey(){return hand()+'.'+(num(main().revealIdx)||0);}
+function revLeft(){
+  var k=revKey();
+  if(revT.key!==k)revT={key:k,at:Date.now(),fired:false};
+  return Math.max(0,Math.ceil((REVEAL_MS-(Date.now()-revT.at))/1000));
+}
+setInterval(function(){
+  if(!code||phase()!=='reveal')return;
+  try{
+    var l=revLeft(),cur=(main().revealOrder||[])[num(main().revealIdx)||0],el=$('revleft');
+    if(el&&el.textContent!==String(l)){el.textContent=l;if(cur===uid&&l>0&&l<=3)fx('tick');}
+    if(l<=0&&cur===uid&&!watching&&!revT.fired){
+      revT.fired=true;
+      if(myHand&&myHand.hand===hand())revealMine();else nextReveal().catch(showErr);
+    }
+  }catch(e){console.error(e);}
+},250);
+function revealMine(){
+  if(!myHand||myHand.hand!==hand())return;
+  if(revealBusy===revKey())return;          // Klick und Automatik gleichzeitig → nur einmal
+  revealBusy=revKey();
+  doc('reveal/'+uid).set({hand:hand(),slots:myHand.slots,k1:myHand.k1,k2:myHand.k2,cards:myHand.cards})
+    .then(nextReveal).catch(showErr);
+}
+function nextReveal(){
+  var ord=main().revealOrder||[],i=(main().revealIdx||0)+1;
+  return setMain(i>=ord.length?{phase:'done',revealIdx:i}:{revealIdx:i});
+}
+function startHand(){
+  var ps=S.players.map(function(p){return p.id;});
+  var need=CFG.minPlayers||3;
+  if(ps.length<need){uiErr='Mindestens '+need+' Spieler nötig.';render();return;}
+  if(CFG.maxPlayers&&ps.length>CFG.maxPlayers){
+    uiErr='Höchstens '+CFG.maxPlayers+' Spieler pro Hand.';render();return;}
+  var K=CFG.holeCards||2;
+  if(K*ps.length+5>52){uiErr='Zu viele Karten für '+ps.length+' Spieler.';render();return;}
+  var h=hand()+1,jobs=[],empty=[];
+  for(var z=0;z<K;z++)empty.push(null);
+  for(var i=1;i<=ps.length;i++)jobs.push(doc('chips/'+i).set({holder:null,hand:h}));
+  jobs.push(doc('state/guess').set({hand:h,cards:empty,confirmed:{}}));
+  busy={};myHand=null;
+  Promise.all(jobs).then(function(){
+    return setMain({phase:'deal',hand:h,stage:0,participants:ps,target:null,revealOrder:[],revealIdx:0,chipHist:{},
+      opt:{holeCards:K,allowSteal:!!CFG.allowSteal,
+           guessEnabled:!!CFG.guessEnabled,revealHighestFirst:!!CFG.revealHighestFirst}});
+  }).catch(showErr);
+}
+function sendChat(text){
+  text=String(text||'').trim();
+  if(!text||watching||!code)return;
+  var inp=$('chatin');if(inp)inp.value='';
+  api('chat',{room:code},{uid:uid,text:text}).catch(showErr);
+}
+/* Echter Spieler übernimmt nach einer Hand den Platz eines Bots (Sitzplatz bleibt, ab der nächsten Hand) */
+function replaceBot(id){
+  if(!watching||!code)return;
+  var n=($('name')||{}).value||myName||'';
+  if(!n.trim()){uiErr='Bitte Namen eingeben.';render();return;}
+  if(phase()!=='lobby'&&phase()!=='done'){uiErr='Bot-Plätze kannst du nach der laufenden Hand übernehmen.';render();return;}
+  myName=n.trim();try{localStorage.setItem('kr.name',myName);localStorage.setItem('kr.room',code);}catch(e){}
+  api('replacebot',{room:code},{uid:uid,name:myName,pub:myPubJwk,target:id})
+    .then(function(){watching=false;joined=true;uiErr='';showToast('Du spielst ab der nächsten Hand mit');pollOnce(true);})
+    .catch(showErr);
+}
+/* Bots füllen den Raum auf (laufen auf dem Server); nur der Host, nur zwischen den Händen */
+function addBotBtn(){
+  if(!isHost()||watching||(CFG.maxPlayers&&S.players.length>=CFG.maxPlayers))return '';
+  return '<button class="ghost" data-a="addbot" title="Bot als Mitspieler hinzufügen">\ud83e\udd16 Bot hinzufügen</button>';
+}
+function addBot(){
+  if(!isHost()||watching||(phase()!=='lobby'&&phase()!=='done'))return;
+  api('addbot',{room:code},{uid:uid}).then(function(){showToast('Bot kommt dazu');}).catch(showErr);
+}
+function kickPlayer(id){
+  if(!isHost()||id===uid)return;
+  if(typeof confirm==='function'&&!confirm(pname(id)+' aus dem Raum entfernen?'))return;
+  api('kick',{room:code},{uid:uid,target:id}).catch(showErr);
+}
+function renameRoom(n){
+  if(!isHost()||watching)return;
+  if(n==null){
+    if(typeof prompt!=='function')return;
+    n=prompt('Name für Raum '+code+' (leer = kein Name):',roomName());
+    if(n==null)return;
+  }
+  api('rename',{room:code},{uid:uid,name:String(n).trim().slice(0,30)}).then(function(){showToast('Raumname gespeichert');}).catch(showErr);
+}
+function closeRoom(){
+  if(!isHost()||watching)return;
+  if(typeof confirm==='function'&&!confirm(roomLabel(code,roomName())+' für alle schließen?'))return;
+  var c=code;
+  api('close',{room:c},{uid:uid}).then(function(){uiErr='Raum '+c+' geschlossen.';leave();}).catch(showErr);
+}
+function takeOver(id){
+  var p=pmap()[id];
+  if(!p){uiErr='Diesen Spieler gibt es nicht mehr.';render();return;}
+  if(idle.indexOf(id)<0){uiErr=p.name+' ist noch nicht lange genug offline.';render();return;}
+  if(typeof confirm==='function'&&!confirm('Platz von '+p.name+' übernehmen? Dieses Gerät spielt dann als '+p.name+'.'))return;
+  uid=id;try{localStorage.setItem('kr.uid',id);}catch(e){}
+  myHand=null;busy={};
+  newKeys().then(function(){
+    myName=p.name||'Spieler';
+    try{localStorage.setItem('kr.name',myName);localStorage.setItem('kr.room',code);}catch(e){}
+    return doc('players/'+id).set({name:myName,pub:myPubJwk,joinedAt:p.joinedAt||Date.now(),ready:null});
+  }).then(function(){
+    watching=false;joined=true;uiErr='';
+    uiNote='Du spielst jetzt als '+myName+'.'+
+      ((parts().indexOf(id)>=0&&phase()!=='lobby'&&phase()!=='done')?
+        ' Die Handkarten dieser Hand liegen auf dem alten Gerät \u2013 Chips und \u201eBereit\u201c gehen, aufdecken kannst du erst ab der nächsten Hand.':'');
+    stopPoll();startPoll();render();
+  }).catch(showErr);
+}
+function toggleTheme(){
+  var de=document.documentElement;if(!de)return;
+  var dark=de.getAttribute('data-theme')?de.getAttribute('data-theme')==='dark':
+    !!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
+  de.setAttribute('data-theme',dark?'light':'dark');
+  try{localStorage.setItem('kr.theme',dark?'light':'dark');}catch(e){}
+}
+function abortHand(){ busy={}; setMain({phase:'lobby',stage:0}).catch(showErr); }
+function showErr(e){uiErr=(e&&e.message)||String(e);console.error(e);render();}
+
+/* ---------- Kurzhinweise (Toast) ---------- */
+var toastTimer=null;
+function showToast(msg){
+  var el=$('toast');if(!el)return;
+  el.textContent=msg;el.className='toast show';
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.className='toast';},4000);
+}
+/* ---------- Ton + Vibration (abschaltbar) ---------- */
+function beep(freq,dur,delay,vol){
+  if(!AC)return;
+  try{
+    var t0=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();
+    o.type='sine';o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol||0.2,t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g);g.connect(AC.destination);o.start(t0);o.stop(t0+dur+0.02);
+  }catch(e){}
+}
+function vib(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
+var lastFx=null;   // zuletzt ausgelöster Effekt (für Tests)
+function fx(kind){
+  lastFx=kind;
+  if(!fxOn)return;
+  if(kind==='tick'){beep(880,0.09);vib(30);}
+  else if(kind==='go'){beep(660,0.12);beep(990,0.18,0.12);vib([60,40,60]);}
+  else if(kind==='turn'){beep(523,0.12);beep(784,0.2,0.13);vib([80,60,80]);}
+  else if(kind==='steal'){beep(330,0.25,0,0.25);vib(180);}
+  else if(kind==='nudge'){beep(740,0.08);beep(740,0.08,0.14);vib([40,60,40,60,40]);}
+  else if(kind==='chat'){beep(1047,0.07,0,0.14);beep(1319,0.11,0.08,0.14);vib(40);}
+}
+function unlockAudio(){
+  if(AC)return;
+  try{var C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}catch(e){}
+}
+function toggleFx(){
+  fxOn=!fxOn;try{localStorage.setItem('kr.fx',fxOn?'1':'0');}catch(e){}
+  if(fxOn){unlockAudio();fx('tick');}
+  showToast(fxOn?'Ton und Vibration an':'Ton und Vibration aus');render();
+}
+function fxBtn(){return '<button class="small ghost icon" data-a="fx" title="Ton/Vibration" aria-label="Ton und Vibration umschalten">'+(fxOn?'\ud83d\udd14':'\ud83d\udd15')+'</button>';}
+/* ---------- Anstupsen ---------- */
+function nudge(id){
+  if(watching||!code||id===uid)return;
+  api('nudge',{room:code},{uid:uid,target:id}).then(function(){showToast(pname(id)+' angestupst \ud83d\udc49');})
+    .catch(function(e){showToast((e&&e.message)||'Anstupsen ging nicht');});
+}
+function nudgeBtn(id){
+  return (!watching&&code&&id!==uid&&pmap()[id]&&!isBotP(id))?'<button class="small ghost nudge" data-nudge="'+esc(id)+'" title="'+esc(pname(id))+' anstupsen">\ud83d\udc49</button>':'';
+}
+/* „Warten auf: Ben 👉, Cem 👉“ */
+function waitingHtml(ids,doneTxt){
+  if(!ids.length)return '<span class="note">'+doneTxt+'</span>';
+  return '<span class="note wait">Warten auf: '+ids.map(function(id){
+    return '<span class="who">'+(id===uid?'<b>dich</b>':esc(pname(id)))+nudgeBtn(id)+'</span>';
+  }).join(', ')+'</span>';
+}
+/* ---------- Einladung (Link + QR) ---------- */
+/* Einladungslink …/r/CODE: der Server liefert dort Vorschau-Daten (WhatsApp & Co.) und leitet auf …/#CODE weiter */
+function inviteUrl(c){return location.origin+location.pathname.replace(/[^/]*$/,'')+'r/'+(c||code);}
+var qrCache={};
+function qrSvg(url){
+  if(qrCache[url])return qrCache[url];
+  if(typeof qrcode!=='function')return '';
+  try{var q=qrcode(0,'M');q.addData(url);q.make();return (qrCache[url]=q.createSvgTag({cellSize:5,margin:2,scalable:true}));}catch(e){return '';}
+}
+function invitePanel(c,n,t){
+  c=c||code;if(c===code&&n==null)n=roomName();
+  var url=inviteUrl(c),qr=qrSvg(url);
+  return '<div class="panel invite"><div class="spread"><h2>Einladen</h2><button class="small ghost" data-a="'+(c===code?'invite':'planclose')+'">Schließen</button></div>'+
+    (t?'<p class="info">📅 Startet '+esc(fmtWhen(t))+'. Vorher kann niemand beitreten; wer dann als Erster drin ist, wird Host.</p>':'')+
+    '<div class="invite-body">'+(qr?'<div class="qr" aria-label="QR-Code zum Beitreten">'+qr+'</div>':'')+
+    '<div class="invite-txt"><p class="note">QR-Code scannen oder Link schicken \u2013 wer ihn öffnet, landet direkt in <b>'+esc(roomLabel(c,n))+'</b>.</p>'+
+    '<div class="linkbox">'+esc(url)+'</div>'+
+    '<div class="bar"><button class="primary" data-a="copylink" data-code="'+esc(c)+'">Link kopieren</button>'+
+      (navigator.share?'<button data-a="sharelink" data-code="'+esc(c)+'">Teilen \u2026</button>':'')+
+      (t?'<button class="ghost" data-a="ics" data-code="'+esc(c)+'">📅 In den Kalender</button>':'')+'</div></div></div></div>';
+}
+function copyLink(c){
+  var url=inviteUrl(c);
+  var done=function(){showToast('Link kopiert');};
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,function(){showToast(url);});return;}
+  }catch(e){}
+  showToast(url);
+}
+function shareLink(c){
+  c=c||code;var pl=plannedOf(c),n=c===code?roomName():(pl?pl.name:''),t=pl?pl.startsAt:0;
+  var txt='Komm in meine Runde: '+roomLabel(c,n)+(t?' \u2013 '+fmtWhen(t)+'':'');
+  try{navigator.share({title:'Letzte Runde',text:txt,url:inviteUrl(c)}).catch(function(){});}catch(e){}
+}
+/* ---------- Geplante Räume ---------- */
+function srvNow(){return Date.now()+srvOff;}
+/* Datum + Uhrzeit in der Zeitzone dieses Geräts, mit Kürzel: „Fr., 26.09., 20:00 Uhr (MESZ)“ */
+function fmtWhen(t){
+  try{
+    var d=new Date(t),z='';
+    try{var p=new Intl.DateTimeFormat('de-DE',{timeZoneName:'short'}).formatToParts(d).filter(function(x){return x.type==='timeZoneName';})[0];if(p)z=' ('+p.value+')';}catch(e){}
+    return d.toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' Uhr'+z;
+  }catch(e){return new Date(t).toISOString();}
+}
+function fmtLeft(ms){
+  var s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),z=function(x){return (x<10?'0':'')+x;};
+  if(d)return d+' T '+h+' h';if(h)return h+':'+z(m)+' h';return m+':'+z(s%60)+' min';
+}
+function plannedOf(c){return planned.filter(function(p){return p.code===c;})[0]||null;}
+function savePlanned(){
+  planned=planned.filter(function(p){return p&&p.startsAt>Date.now()-2*86400000;}).slice(-20);
+  try{localStorage.setItem('kr.planned',JSON.stringify(planned));}catch(e){}
+}
+function planRoom(){
+  var n=(($('sname')||{}).value||'').trim().slice(0,30),tv=($('stime')||{}).value||'';
+  var t=tv?new Date(tv).getTime():NaN;
+  if(!isFinite(t)){uiErr='Bitte Datum und Uhrzeit wählen.';render();return;}
+  if(t<=Date.now()){uiErr='Die Startzeit muss in der Zukunft liegen.';render();return;}
+  var c=newCode();
+  var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
+  api('create',{room:c},{startsAt:t,name:n,tz:tz}).then(function(r){
+    if(r.exists)return planRoom();
+    planned.push({code:c,name:n,startsAt:t});savePlanned();
+    planShow=c;planOpen=false;render();
+  }).catch(showErr);
+}
+function fetchInviteInfo(){
+  if(!inviteCode)return;
+  api('info',{room:inviteCode}).then(function(r){
+    srvOff=(num(r.now)||Date.now())-Date.now();
+    inviteInfo={code:r.code,name:typeof r.name==='string'?r.name:'',startsAt:num(r.startsAt)||0,players:num(r.players)||0};render();
+  }).catch(function(){inviteInfo={code:inviteCode,missing:true};render();});
+}
+/* Kalendereintrag (.ics), 2 Stunden */
+function icsDownload(c){
+  var pl=plannedOf(c)||(inviteInfo&&inviteInfo.code===c?inviteInfo:null);if(!pl||!pl.startsAt)return;
+  var f=function(t){return new Date(t).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');};
+  var title=(pl.name||'Letzte Runde')+' (Raum '+c+')';
+  var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Letzte Runde//DE','BEGIN:VEVENT','UID:'+c+'-'+pl.startsAt+'@letzte-runde',
+    'DTSTAMP:'+f(Date.now()),'DTSTART:'+f(pl.startsAt),'DTEND:'+f(pl.startsAt+7200000),
+    'SUMMARY:'+title.replace(/[,;\\]/g,' '),'URL:'+inviteUrl(c),'DESCRIPTION:Beitreten: '+inviteUrl(c),'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  try{
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+    a.download='letzte-runde-'+c+'.ics';document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
+  }catch(e){showToast('Kalender nicht möglich');}
+}
+function plannedHtml(){
+  var now=srvNow(),list=planned.filter(function(p){return p.startsAt>now-6*3600000;});
+  if(!list.length)return '';
+  return '<h2>Deine geplanten Räume</h2><div class="plist">'+list.map(function(p){
+    var open=p.startsAt<=now;
+    return '<div class="pl"><span class="code">'+esc(p.code)+'</span><div class="nm">'+(p.name?'<b>'+esc(p.name)+'</b><br>':'')+
+      '<span class="note">'+esc(fmtWhen(p.startsAt))+' \u00b7 '+(open?'offen':'noch <span data-left="'+num(p.startsAt)+'">'+fmtLeft(p.startsAt-now)+'</span>')+'</span></div>'+
+      '<button class="small ghost" data-a="planlink" data-code="'+esc(p.code)+'">Link</button>'+
+      (open?'<button class="small" data-a="joincode" data-code="'+esc(p.code)+'">Beitreten</button>':'')+'</div>';
+  }).join('')+'</div><div class="hr"></div>';
+}
+function planHtml(){
+  var pad=function(x){return (x<10?'0':'')+x;},d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);
+  var def=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':00';
+  var sh=planShow&&plannedOf(planShow);
+  return (sh?invitePanel(sh.code,sh.name,sh.startsAt):'')+
+    (planOpen?'<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Raumname (optional)</label>'+
+      '<input id="sname" maxlength="30" placeholder="z.B. Freitagsrunde"></div>'+
+      '<div class="field"><label class="lbl">Start</label><input id="stime" type="datetime-local" value="'+def+'"></div></div>'+
+      '<p class="note" style="margin-top:6px">Du bekommst einen Link. Beitreten geht erst ab der Startzeit, wer dann als Erster drin ist, wird Host.</p>'+
+      '<div class="bar"><button class="primary" data-a="plan">Planen &amp; Link erstellen</button><button class="ghost" data-a="planopen">Abbrechen</button></div>'
+    :'<div class="row" style="margin-top:10px"><button class="ghost" data-a="planopen">📅 Raum für später planen</button></div>');
+}
+
+/* ---------- Einzelspieler: Übungsraum gegen Bots (läuft komplett im Browser, kein Server) ---------- */
+var sp=null,spSpeed=1,spBots=3;
+var SP_TEMPO=1.35;   // Bedenkzeit der Bots (1 = ursprüngliches Tempo; Simon 2026-09-23: etwas langsamer)
+try{var _spb=num(localStorage.getItem('kr.sp.bots'));if(_spb>=2&&_spb<=5)spBots=_spb;}catch(e){}
+var BOT_NAMES=['Lena','Max','Ole','Mia','Jonas','Emma','Paul','Nina','Tom','Lea','Finn','Ida'];
+function spRand(){return crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
+function spGauss(){var u=Math.random()||1e-9,v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function spShuffle(a,rnd){rnd=rnd||spRand;for(var i=a.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function spPl(id){for(var i=0;i<sp.players.length;i++)if(sp.players[i].id===id)return sp.players[i];return null;}
+function spHolder(n){for(var id in sp.chips)if(sp.chips[id]===n)return id;return null;}
+function spSay(id,txt){sp.bubble[id]={t:txt,at:Date.now()};}
+function spStart(){
+  var n=($('name')||{}).value;if(n&&n.trim()){myName=n.trim().slice(0,18);try{localStorage.setItem('kr.name',myName);}catch(e){}}
+  uiErr='';uiNote='';statsOpen=false;
+  sp={hand:0,stats:[],players:[],bubble:{}};
+  try{var st=JSON.parse(localStorage.getItem('kr.sp.stats')||'[]');if(Array.isArray(st))sp.stats=st.slice(-150);}catch(e){}
+  spNewHand();
+}
+function spLeave(){sp=null;statsOpen=false;render();fetchRooms();}
+function spMakePlayers(){
+  var names=spShuffle(BOT_NAMES.slice()),ps=[{id:'me',name:myName||'Du',bot:false}];
+  for(var i=0;i<spBots;i++)ps.push({id:'b'+i,name:names[i],bot:true,
+    noise:0.15+spRand()*0.45,          // wie treffsicher schätzt der Bot
+    stub:Math.floor(spRand()*3),        // wie hartnäckig holt er sich einen Chip zurück
+    pace:900+spRand()*1400,             // Bedenkzeit
+    gut:spRand()<0.65});                // greift erst aus dem Bauch und korrigiert dann
+  return ps;
+}
+function botReact(id,e){sp.react=sp.react||{};sp.react[id]={e:e,ts:Date.now()+Math.random()*600};}
+function spSetBots(n){
+  n=num(n);if(!(n>=2&&n<=5))return;
+  spBots=n;try{localStorage.setItem('kr.sp.bots',String(n));}catch(e){}
+  /* Sofort neu geben, solange noch nichts passiert ist (Handende oder Runde 1 ohne deinen Chip); sonst ab der nächsten Hand */
+  if(sp&&(sp.phase==='done'||(sp.phase==='play'&&sp.stage===1&&!sp.chips.me)))spNewHand();else render();
+}
+function spNewHand(){
+  if(sp.players.length!==spBots+1)sp.players=spMakePlayers();
+  sp.players[0].name=myName||'Du';
+  var K=HC(),deck=spShuffle(Array.apply(null,Array(52)).map(function(_,i){return i;}));
+  sp.hand++;sp.K=K;sp.hole={};
+  reportSpHand();   // nur für den Zähler auf der Startseite; offline gespielte Hände werden nachgereicht
+  sp.players.forEach(function(p){sp.hole[p.id]=deck.splice(0,K);});
+  sp.board=deck.splice(0,5);
+  sp.hist={};sp.target=null;sp.guess=[];for(var i=0;i<K;i++)sp.guess.push(null);
+  sp.botGuess=null;sp.botGuessAt=0;sp.res=null;sp.gr=null;sp.bubble={};
+  spStage(1);
+}
+function spVisible(st){return sp.board.slice(0,st>=4?5:st===3?4:st===2?3:0);}
+function spStage(st){
+  sp.phase='play';sp.stage=st;sp.chips={};sp.ready={};sp.cd=null;sp.cdShown=null;sp.moves={};sp.contest={};sp.stable={};sp.insist={};sp.lostMe=null;sp.meFixed=null;
+  var now=Date.now(),prev=st>1?(sp.hist[st-1]||{}):{};
+  sp.prevMe=prev.me||null;                  // dein Chip der Vorrunde (nimmst du ihn wieder, gilt die Absprache)
+  sp.players.forEach(function(p){
+    if(!p.bot)return;
+    var last=st>1?p.est:null;
+    p.est=spEstimate(p.id,st===4?300:160);  // erwarteter Rang am Ende (1 = schwächste Hand); mit vollem Tisch genauer
+    /* Der Mittelwert liegt fast immer nahe der Mitte → spreizen, damit starke Karten klar nach oben zeigen */
+    p.est=(sp.players.length+1)/2+(p.est-(sp.players.length+1)/2)*1.7;   // nicht kappen: die Reihenfolge starker Hände bleibt erhalten
+    p.bias=spGauss()*p.noise*(st===4?0.35:1); // Fehleinschätzung in dieser Runde (mit vollem Tisch geringer)
+    p.e=p.est+p.bias;
+    p.first=p.gut;p.lost=null;p.yieldTo={};p.perc={};p.anchor=null;
+    /* Hat die neue Tischkarte an meiner Einschätzung kaum etwas geändert, gilt die Reihenfolge der Vorrunde weiter:
+       ich gehe von meinem damaligen Chip aus (plus der kleinen Änderung) und greife nicht erst „aus dem Bauch“ */
+    if(last!=null&&prev[p.id]&&Math.abs(p.est-last)<0.5){p.anchor=prev[p.id];p.e=prev[p.id]+(p.est-last)*0.8;p.first=false;}
+    p.next=now+(600+Math.random()*p.pace*1.6)*SP_TEMPO*spSpeed;
+  });
+  sp.players.forEach(function(p){            // Eindruck von den anderen; zwischen zwei „gleich gebliebenen“ Bots gilt die Vorrunde
+    if(!p.bot)return;
+    sp.players.forEach(function(q){if(q.bot&&q.id!==p.id)p.perc[q.id]=(p.anchor&&q.anchor)?0:spGauss()*(st===4?0.2:0.35);});
+  });
+  render();
+}
+/* Einschätzung eines Spielers: Monte-Carlo aus hand.js (gleiche Hausregel wie die Auswertung) */
+function spEstimate(id,sims){return estimateRank(sp.hole[id],spVisible(sp.stage),sp.players.length-1,sp.K,sims||160);}
+/* Chip n für id nehmen (aus der Mitte oder von jemandem); wer ihn verliert, reagiert darauf */
+function spTakeFor(id,n){
+  var prev=spHolder(n);
+  if(prev&&prev!==id){
+    delete sp.chips[prev];sp.ready[prev]=false;
+    var pp=spPl(prev);
+    if(pp&&pp.bot){pp.lost=n;pp.next=Date.now()+(500+Math.random()*pp.pace)*SP_TEMPO*spSpeed;}
+    if(pp&&pp.bot&&Math.random()<0.25)botReact(prev,Math.random()<0.5?2:3);          // 😬 / 🤔
+    if(prev==='me'){sp.lostMe=n;showToast(spPl(id).name+' hat dir Chip '+n+' genommen');fx('steal');}
+  }
+  sp.chips[id]=n;sp.ready[id]=false;sp.stable[id]=Date.now();
+}
+function spNearestFree(e){
+  var n=sp.players.length,best=null;
+  for(var c=1;c<=n;c++)if(!spHolder(c)&&(best==null||Math.abs(c-e)<Math.abs(best-e)))best=c;
+  return best;
+}
+/* Wo sehe ich mich? Rangfolge aus eigener Einschätzung, dem (leicht verrauschten) Eindruck der anderen Bots
+   und deinem Chip als Ansage. Wem ich einen Chip überlassen habe, der steht fest; die übrigen Chips werden
+   unter den übrigen Spielern nach dieser Rangfolge verteilt. */
+function spTarget(p,e){
+  var n=sp.players.length,mid=(n+1)/2,fixed={},list=[],left=[];
+  sp.players.forEach(function(q){
+    if(q.id===p.id){list.push({id:q.id,v:e});return;}
+    var held=sp.chips[q.id]||null;
+    if(held&&(p.yieldTo[q.id]===held||(q.id==='me'&&(sp.meFixed===held||(p.anchor&&held===sp.prevMe))))){fixed[held]=1;return;}   // akzeptiert (selbst, am Tisch gesehen oder in der Vorrunde ausgemacht)
+    var v;
+    if(q.bot)v=q.e+(p.perc[q.id]||0);
+    else v=held?held+(held>mid?-0.5:held<mid?0.5:0):mid;   // deine Ansage, etwas zur Mitte hin: man traut ihr nicht blind
+    list.push({id:q.id,v:v});
+  });
+  for(var c=1;c<=n;c++)if(!fixed[c])left.push(c);
+  list.sort(function(a,b){return a.v-b.v||(a.id<b.id?-1:1);});
+  for(var i=0;i<list.length;i++)if(list[i].id===p.id)return left[i];
+  return spNearestFree(e);
+}
+function spBotAct(p){
+  var n=sp.players.length,now=Date.now(),cur=sp.chips[p.id]||null,mv=sp.moves[p.id]||0;
+  var later=function(f){p.next=now+f*(400+Math.random()*p.pace)*SP_TEMPO*spSpeed;};
+  if(mv>=8){                                          // genug hin und her: nehmen, was da ist
+    if(!cur)spTakeFor(p.id,spNearestFree(p.e));
+    sp.ready[p.id]=true;p.next=Infinity;return;
+  }
+  var e=p.e;
+  if(p.first){e+=spGauss()*0.9;p.first=false;}   // erster Griff aus dem Bauch
+  var t=spTarget(p,e);
+  if(cur===t){                                        // passt → nach kurzer Ruhe klopfen
+    if(!sp.ready[p.id]&&now-sp.stable[p.id]>(900+p.pace*0.6)*SP_TEMPO*spSpeed)sp.ready[p.id]=true;
+    later(1);return;
+  }
+  var h=spHolder(t),lost=p.lost;p.lost=null;
+  if(!h){
+    spTakeFor(p.id,t);sp.moves[p.id]=mv+1;
+    if(cur&&Math.random()<0.5)spSay(p.id,cur<t?'Hmm, doch besser als gedacht':'Ach nee, doch nicht so gut');
+    later(1.2);return;
+  }
+  /* Chip hat jemand. Bei Bots: die Rangfolge spricht für mich → nehmen (jedes Hin und Her macht nachgiebiger).
+     Bei dir: nur wenn ich mir sicher bin; wer gerade genau diesen Chip verloren hat, hängt daran. */
+  var key=p.id+':'+t,cc=sp.contest[key]||0,pSteal;
+  if(h==='me'){
+    var sure=Math.min(1,Math.abs(e-(n+1)/2)/((n-1)/2));          // wie weit außen sehe ich mich
+    pSteal=0.05+0.2*p.stub+0.35*sure+(lost===t?0.25:0)-0.4*cc-0.3*(sp.insist[t]||0);   // wer auf seinem Chip besteht, wirkt überzeugt
+  }else pSteal=0.85-0.3*cc;
+  pSteal=Math.max(0,Math.min(0.9,pSteal));
+  sp.contest[key]=cc+1;
+  if(Math.random()<pSteal){
+    sp.moves[p.id]=mv+1;
+    if(h==='me')spSay(p.id,cc||lost===t?'Nee, die '+t+' brauch ich wirklich 😤':'Die '+t+' nehm ich lieber');
+    else if(Math.random()<0.5)spSay(p.id,'Ich glaub, die '+t+' ist meine');
+    spTakeFor(p.id,t);later(1.3);return;
+  }
+  p.yieldTo[h]=t;                                     // akzeptieren und neu einordnen
+  if(h==='me')sp.meFixed=t;                           // die anderen haben es gesehen
+  if(h==='me'||Math.random()<0.3)spSay(p.id,'Okay, die '+t+' gehört '+(h==='me'?'dir':spPl(h).name));
+  later(0.6);
+}
+function spAllReady(){return sp.players.every(function(p){return sp.chips[p.id]&&sp.ready[p.id];});}
+function spCdLeft(){return sp.cd?Math.max(0,Math.ceil((CD_MS*spSpeed-(Date.now()-sp.cd.start))/(1000*spSpeed))):0;}
+function spTick(){
+  var now=Date.now(),ch=false;
+  if(sp.phase==='play'){
+    if(sp.cd){
+      var left=spCdLeft();
+      if(left<=0){sp.cd=null;spEndStage();return;}
+      if(left!==sp.cdShown){sp.cdShown=left;fx('tick');render();}
+      return;
+    }
+    sp.players.forEach(function(p){
+      if(!p.bot||now<p.next)return;
+      var before=JSON.stringify([sp.chips,sp.ready]);
+      spBotAct(p);
+      if(JSON.stringify([sp.chips,sp.ready])!==before)ch=true;
+    });
+    if(spAllReady()){sp.cd={start:now};sp.cdShown=null;ch=true;}
+  }else if(sp.phase==='guess'&&sp.botGuessAt&&now>=sp.botGuessAt){sp.botGuessAt=0;spFinish();return;}
+  for(var id in sp.bubble)if(now-sp.bubble[id].at>4500){delete sp.bubble[id];ch=true;}
+  if(ch)render();
+}
+setInterval(function(){if(sp)try{spTick();}catch(e){console.error(e);}},200);
+function spTake(n){
+  if(!sp||sp.phase!=='play'||sp.cd||!(n>=1&&n<=sp.players.length))return;
+  if(sp.chips.me===n){delete sp.chips.me;sp.ready.me=false;}
+  else{var hb=spHolder(n);if(hb&&hb!=='me'&&(sp.lostMe===n))sp.insist[n]=(sp.insist[n]||0)+1;spTakeFor('me',n);}
+  render();
+}
+function spReady(){
+  if(!sp||sp.phase!=='play')return;
+  if(sp.cd){sp.cd=null;sp.ready.me=false;render();return;}   // im Countdown: zurücknehmen
+  if(!sp.chips.me)return;
+  sp.ready.me=!sp.ready.me;render();
+}
+function spEndStage(){
+  sp.hist[sp.stage]=JSON.parse(JSON.stringify(sp.chips));
+  if(sp.stage<4){fx('turn');spStage(sp.stage+1);return;}
+  sp.target=spHolder(sp.players.length);
+  if(!CFG.guessEnabled){spFinish();return;}
+  sp.phase='guess';
+  if(sp.target==='me'){sp.botGuess=spBotGuess();sp.botGuessAt=Date.now()+2500*spSpeed;}
+  render();
+}
+/* Bots tippen die Karten des Spielers: hohe Werte, gern passend zum Tisch (wer die 1 hat, hat oft ein Paar) */
+function spBotGuess(){
+  var b=sp.board.map(function(c){return c%13;}).sort(function(x,y){return y-x;}),out=[];
+  for(var i=0;i<sp.K;i++)
+    out.push(Math.random()<0.45&&b.length?b.splice(Math.floor(Math.random()*Math.min(3,b.length)),1)[0]:8+Math.floor(Math.random()*5));
+  return out;
+}
+function spGuessSet(i,v){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&i>=0&&i<sp.K){sp.guess[i]=(v>=0&&v<=12)?v:null;render();}}
+function spGuessConfirm(){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&sp.guess.every(function(x){return x!=null;}))spFinish();}
+function spFinish(){
+  var board=sp.board,h4=sp.hist[4]||{};
+  var list=sp.players.map(function(p){var hl=sp.hole[p.id];return {id:p.id,chip:h4[p.id],hand:bestHand(hl.concat(board),hl)};});
+  list.forEach(function(x){
+    x.swaps=list.filter(function(y){if(y===x)return false;var d=cmpHand(y.hand,x.hand);return (y.chip<x.chip&&d>0)||(y.chip>x.chip&&d<0);})
+      .map(function(y){return y.id;});
+    var weaker=0,equal=0;
+    list.forEach(function(y){if(y!==x){var d=cmpHand(y.hand,x.hand);if(d<0)weaker++;else if(d===0)equal++;}});
+    x.lo=weaker+1;x.hi=weaker+equal+1;x.ok=!x.swaps.length;
+  });
+  var by={};list.forEach(function(x){by[x.id]=x;});
+  var bad=list.filter(function(x){return !x.ok;}).length;
+  var g=sp.target==='me'?sp.botGuess:sp.guess;sp.gr=null;
+  if(CFG.guessEnabled&&sp.target&&g){
+    var left=sp.hole[sp.target].map(function(c){return c%13;}),marks=[],hits=0;
+    g.forEach(function(r){var i=left.indexOf(r);if(i>=0){left.splice(i,1);hits++;marks.push(true);}else marks.push(false);});
+    sp.gr={hits:hits,of:g.length,marks:marks,cards:g,real:sp.hole[sp.target],target:sp.target};
+  }
+  var guessOk=!sp.gr||sp.gr.hits===sp.gr.of;
+  sp.res={by:by,bad:bad,missing:0,orderOk:!bad,guessOk:guessOk,win:!bad&&guessOk};
+  sp.phase='done';
+  var sid=function(id){return id==='me'?uid:'bot:'+spPl(id).name;};
+  sp.stats.push({hand:sp.hand,ts:Date.now(),win:sp.res.win,
+    players:sp.players.map(function(p){return {id:sid(p.id),name:p.name,ok:by[p.id].ok,
+      rounds:roundHits(by[p.id].lo,by[p.id].hi,function(r){return spChipOfStage(p.id,r);})};}),
+    guess:sp.gr?{target:sid(sp.gr.target),hits:sp.gr.hits,of:sp.gr.of}:null});
+  sp.stats=sp.stats.slice(-150);
+  try{localStorage.setItem('kr.sp.stats',JSON.stringify(sp.stats));}catch(e){}
+  sp.players.forEach(function(p){if(p.bot&&Math.random()<0.5)botReact(p.id,sp.res.win?(Math.random()<0.5?0:4):[1,2,3][Math.floor(Math.random()*3)]);});
+  fx(sp.res.win?'turn':'nudge');
+  render();
+}
+
+/* Darstellung – gleiche Bausteine wie im Mehrspieler-Raum */
+/* Ergebnis + großer „Neue Hand“-Knopf, klebt unten am Bildschirm */
+function endBar(res,action,wait){
+  var r=!res?'<span class="res">Hand fertig</span>':res.win?'<span class="res ok">\u2713 Alles richtig!</span>':
+    res.orderOk?'<span class="res bad">\u2717 Tipp daneben</span>':'<span class="res bad">\u2717 Nicht ganz</span>';
+  return '<div class="endbar">'+r+(action?'<button class="primary" data-a="'+action+'">Neue Hand \u25b6</button>':'<span class="note">'+esc(wait)+'</span>')+'</div>';
+}
+function spBotBtns(){
+  var o='';for(var b=2;b<=5;b++)o+='<button class="small'+(b===spBots?' primary':' ghost')+'" data-a="spbots" data-n="'+b+'" title="'+(b+1)+' Spieler">'+b+' Bots</button>';
+  return o;
+}
+function spChipOfStage(id,st){var h=sp.hist[st];return h?num(h[id]):null;}
+function spView(){
+  var ps=sp.players,n=ps.length,ph=sp.phase,st=sp.stage,out='';
+  var label=ph==='play'?'Runde '+st+' von 4':ph==='guess'?'Tipp':'Hand fertig';
+  out+='<div class="panel"><div class="spread"><div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
+    '<h1>🤖 Übungsraum</h1><div class="note">Hand '+num(sp.hand)+' · '+label+' · du + '+(n-1)+' Bots</div></div>'+
+    '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
+    '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
+    '<div class="bar" style="margin-top:8px">'+spLearnBtn()+'<span class="note">Mitspieler:</span>'+spBotBtns()+
+      (spBots!==n-1?'<span class="note">ab der nächsten Hand '+(spBots+1)+' Spieler</span>':'')+'</div></div>';
+  if(statsOpen)out+=statsPanel(sp.stats);
+  if(sp.cd)out+='<div class="cd-overlay" role="alertdialog" aria-live="assertive"><div class="cd-box"><div class="cd-lbl">'+
+    (st<4?'Gleich kommen neue Tischkarten':'Gleich wird aufgedeckt')+'</div><div class="cd-num">'+Math.max(1,spCdLeft())+'</div>'+
+    '<button class="primary" data-a="ready">Bereit zurücknehmen</button></div></div>';
+
+  var head=out;out='';
+  /* Tisch */
+  var vis=ph==='play'?spVisible(st):sp.board,fresh=ph==='play'?(st===2?[0,1,2]:st===3?[3]:st===4?[4]:[]):[],bh='';
+  for(var i=0;i<5;i++)bh+=i<vis.length?cardHtml(vis[i],fresh.indexOf(i)>=0?'fresh':''):'<div class="card empty"></div>';
+  out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+(fresh.length?'<span class="tag new">Neu aufgedeckt</span>':'')+'</div>'+
+    '<div class="cards board">'+bh+'</div></div>';
+  var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: rechte Spalte)
+  if(ph!=='done'&&coach)out+=coach.l;
+  var afterBoard=out.length;                // Auflösung kommt direkt unter den Tisch, über die eigene Hand
+
+  /* Eigene Karten + Chips je Runde */
+  var mine=sp.hole.me,my=bestHand(mine.concat(vis),mine),mc='';
+  for(var r=1;r<=4;r++){
+    var now_=ph==='play'&&r===st;if(ph==='play'&&r>st)break;
+    var c=now_?(sp.chips.me||null):spChipOfStage('me',r);
+    mc+='<div class="slot"><div class="chip big static'+(c==null?' ph':' r'+r)+(now_?' now':'')+'">'+(c==null?'–':c)+'</div><div class="cap">Runde '+r+'</div></div>';
+  }
+  out+='<div class="panel p-mine"><h2>Deine Karten</h2><div class="mine-row"><div class="cards">'+cardsHtml(mine)+'</div><div class="mychips">'+mc+'</div></div>'+
+    (my?'<div class="handname">Du hast: <b>'+esc(handName(my))+'</b></div>':'')+rankingHtml(my?my.cat:-1)+'</div>';
+
+  /* Spieler */
+  var chipNow=function(id){return ph==='play'?(sp.chips[id]||null):spChipOfStage(id,4);};
+  var order=ps.map(function(p){return p.id;}).sort(function(a,b){var ca=chipNow(a),cb=chipNow(b);return (cb==null?-1:cb)-(ca==null?-1:ca);});
+  var pl='<div class="plist">';
+  order.forEach(function(id){
+    var p=spPl(id),c=chipNow(id),rx=ph==='done'&&sp.res?sp.res.by[id]:null,hist='',cards='',verdict='';
+    for(var s2=1;s2<=4;s2++){if(ph==='play'&&s2>=st)break;var hc=spChipOfStage(id,s2);if(hc!=null)hist+='<span class="mchip r'+s2+'" title="Runde '+s2+'">'+hc+'</span>';}
+    var clickable=ph==='play'&&!sp.cd&&c;
+    if(ph==='done'){var hl=sp.hole[id];cards='<div class="cards">'+cardsHtml(hl,'sm')+'</div><span class="tag hand">'+esc(handName(bestHand(hl.concat(sp.board),hl)))+'</span>';}
+    else if(id==='me')cards='<div class="cards">'+cardsHtml(mine,'sm')+'</div>';
+    else{var bb='';for(var z=0;z<sp.K;z++)bb+=backHtml('sm');cards='<div class="cards">'+bb+'</div>';}
+    if(rx)verdict=rx.ok?'<span class="tag res ok">✓ richtig</span>':
+      '<span class="tag res bad">✗ vertauscht mit '+esc(rx.swaps.map(function(x){return spPl(x).name;}).join(', '))+' · wäre Chip '+(rx.lo===rx.hi?rx.lo:rx.lo+'–'+rx.hi)+'</span>';
+    var say=sp.bubble[id];
+    pl+='<div class="pl'+(id==='me'?' me':'')+(rx?(rx.ok?' res-ok':' res-bad'):'')+'">'+
+      (c?'<div class="chip r'+(ph==='play'?st:4)+(clickable?'':' static')+(id==='me'?' mine':'')+'"'+(clickable?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">–</div>')+
+      '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag">🤖</span>':' <span class="tag you">du</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
+        (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+'</div>'+
+      (ph==='play'?(sp.ready[id]&&c?'<span class="tag ok" title="bereit">👊</span>':'<span class="tag">'+(p.bot?'🤔':'…')+'</span>'):'')+
+      cards+verdict+'</div>';
+  });
+  var Rt='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
+
+  if(ph==='play'){
+    var free='';
+    for(var k=1;k<=n;k++)if(!spHolder(k))free+='<div class="chip r'+st+'" data-chip="'+k+'">'+k+'</div>';
+    var waiting=ps.filter(function(p){return !(sp.chips[p.id]&&sp.ready[p.id]);}).map(function(p){return p.id==='me'?'dich':p.name;});
+    out+='<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
+      '<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+n+' = beste. Chip antippen zum Nehmen (auch von den Bots), eigenen Chip antippen legt ihn zurück.</p>'+
+      '<div class="hr"></div><div class="bar"><button class="'+(sp.ready.me?'':'primary')+'" data-a="ready"'+(sp.chips.me?'':' disabled')+'>'+
+      (sp.ready.me?'Bereit zurücknehmen':'👊 Bereit')+'</button>'+
+      (waiting.length?'<span class="note">Warten auf: '+esc(waiting.join(', '))+'</span>':'<span class="note">Alle bereit</span>')+'</div></div>';
+  }
+  if(ph==='guess'){
+    var t=sp.target;
+    if(t==='me')out+='<div class="panel p-guess"><h2>Tipp</h2><p>Du hast den höchsten Chip – die Bots tippen jetzt deine '+sp.K+' Karten …</p></div>';
+    else{
+      var pick='';
+      for(var q=0;q<sp.K;q++){
+        var v=sp.guess[q],o='<option value="">Karte</option>';
+        RANK_NAME.forEach(function(x,kk){o+='<option value="'+kk+'"'+(v===kk?' selected':'')+'>'+x+'</option>';});
+        pick+='<div class="row" style="gap:6px">'+rankHtml(v,'sm')+'<select data-g="r'+q+'">'+o+'</select></div>';
+      }
+      out+='<div class="panel p-guess"><h2>Tipp</h2><p>Welche '+sp.K+' Karten hat <b>'+esc(spPl(t).name)+'</b> (höchster Chip)? Nur der Wert zählt.</p>'+
+        '<div class="row" style="gap:14px">'+pick+'</div><div class="hr"></div><div class="bar">'+
+        '<button class="primary" data-a="confirm"'+(sp.guess.every(function(x){return x!=null;})?'':' disabled')+'>Tipp bestätigen</button></div></div>';
+    }
+  }
+  if(ph==='done'){
+    var res=sp.res,gr=sp.gr,rp='';
+    rp+='<div class="panel p-reveal"><h2>Auflösung</h2>'+resultBox(res,gr);
+    if(gr)rp+='<p style="margin-top:10px">Tipp auf '+esc(gr.target==='me'?'dich':spPl(gr.target).name)+': <b>'+gr.hits+' von '+gr.of+' Karten richtig</b>'+(gr.hits===gr.of?' ✓':'')+'</p>'+
+      '<div class="row"><span class="note">getippt</span><div class="cards">'+gr.cards.map(function(r,i){return rankHtml(r,'sm '+(gr.marks[i]?'hit':'miss'));}).join('')+'</div>'+
+      '<span class="note">tatsächlich</span><div class="cards">'+cardsHtml(gr.real,'sm')+'</div></div>';
+    rp+='<div class="hr"></div><div class="bar"><button class="primary" data-a="spnext">Neue Hand</button></div>'+statsLine(sp.stats)+'</div>';
+    out=out.slice(0,afterBoard)+rp+(coach?coach.l:'')+out.slice(afterBoard);
+    out+=endBar(res,'spnext','');
+  }
+  return head+'<div class="cols'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+out+'</div><div class="col-r">'+(coach?coach.r:'')+Rt+'</div></div>';
+}
+
+/* ---------- Voice-Chat (WebRTC direkt zwischen den Geräten, ohne TURN; im Admin schaltbar, Standard aus) ---------- */
+var voice={on:false,stream:null,muted:false,peers:{},list:[],enabled:false,talk:{},timer:null,busy:false};
+var ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}];
+function voiceAvailable(){
+  return !!(voice.enabled&&code&&joined&&!watching&&typeof RTCPeerConnection!=='undefined'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+}
+function voiceBox(){
+  var b=$('voiceaudio');
+  if(!b&&document.createElement&&document.body){b=document.createElement('div');b.id='voiceaudio';b.style.display='none';document.body.appendChild(b);}
+  return b;
+}
+/* Einwilligung vor dem ersten Voice-Chat: einmal zustimmen, wird auf dem Gerät gespeichert, über ⓘ widerrufbar */
+var VOICE_CONSENT='kr.voice.consent',voiceDlg=null;   // null | 'ask' (vor dem Beitreten) | 'info' (ⓘ)
+function voiceConsented(){try{return !!localStorage.getItem(VOICE_CONSENT);}catch(e){return false;}}
+function voiceConsent(){try{localStorage.setItem(VOICE_CONSENT,JSON.stringify({v:1,ts:Date.now()}));}catch(e){}voiceDlg=null;voiceJoin();}
+function voiceRevoke(){try{localStorage.removeItem(VOICE_CONSENT);}catch(e){}voiceDlg=null;voiceLeave();render();showToast('Zustimmung zum Voice-Chat zurückgenommen');}
+function voiceDialog(){
+  if(!voiceDlg)return '';
+  var ask=voiceDlg==='ask';
+  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="vdlgh"><div class="cd-box vbox">'+
+    '<h2 id="vdlgh">🎙 Voice-Chat'+(ask?' – bevor es losgeht':'')+'</h2><ul>'+
+    '<li>Dein <b>Mikrofon</b> wird erst genutzt, wenn du zustimmst und es im Browser freigibst. Stummschalten oder Verlassen geht jederzeit.</li>'+
+    '<li>Der Ton läuft <b>direkt und verschlüsselt</b> zwischen den Geräten der Mitspieler – nicht über unseren Server – und wird <b>nicht aufgezeichnet</b>.</li>'+
+    '<li>Für den Verbindungsaufbau sehen deine Mitspieler deine <b>IP-Adresse</b>. Dein Browser fragt dazu STUN-Server von <b>Google und Cloudflare</b> an, die dabei ebenfalls deine IP-Adresse erhalten.</li>'+
+    '<li>Mehr dazu in der <a href="impressum.html#datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.</li></ul>'+
+    (ask?'<div class="bar"><button class="primary" data-a="vconsent">Zustimmen &amp; beitreten</button><button class="ghost" data-a="vcancel">Abbrechen</button></div>'+
+        '<p class="note">Deine Zustimmung wird auf diesem Gerät gespeichert, du wirst nicht erneut gefragt. Zurücknehmen kannst du sie über ⓘ neben dem Voice-Knopf.</p>'
+      :'<p class="note">Du hast am '+esc(consentDate())+' zugestimmt.</p><div class="bar"><button class="ghost danger" data-a="vrevoke">Zustimmung zurücknehmen</button><button class="primary" data-a="vcancel">Schließen</button></div>')+
+    '</div></div>';
+}
+function consentDate(){try{var c=JSON.parse(localStorage.getItem(VOICE_CONSENT));return new Date(c.ts).toLocaleDateString('de-DE');}catch(e){return '–';}}
+function voiceJoin(){
+  if(!voiceAvailable()||voice.on)return;
+  if(!voiceConsented()){voiceDlg='ask';render();return;}
+  unlockAudio();
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false}).then(function(st){
+    voice.stream=st;voice.on=true;voice.muted=false;
+    return api('voice',{room:code},{uid:uid,on:true,muted:false});
+  }).then(function(r){
+    if(r&&r.voice)voice.list=r.voice;
+    if(!voice.timer)voice.timer=setInterval(voiceTick,1000);
+    voiceTick();render();
+  }).catch(function(e){
+    voiceStop();
+    uiErr=(e&&e.name==='NotAllowedError')?'Mikrofon nicht erlaubt – bitte in den Browser-Einstellungen freigeben.':'Voice-Chat nicht möglich: '+((e&&e.message)||e);
+    render();
+  });
+}
+function voiceStop(){
+  if(voice.timer)clearInterval(voice.timer);voice.timer=null;
+  for(var id in voice.peers)closePeer(id);
+  if(voice.stream)voice.stream.getTracks().forEach(function(t){t.stop();});
+  voice.stream=null;voice.on=false;voice.talk={};voice.busy=false;voice.s0=voice.sd0=null;
+}
+function voiceLeave(){
+  if(!voice.on)return;
+  var c=code;voiceStop();
+  if(c)api('voice',{room:c},{uid:uid,on:false}).catch(function(){});
+  render();
+}
+function voiceMute(){
+  if(!voice.on)return;
+  voice.muted=!voice.muted;
+  voice.stream.getAudioTracks().forEach(function(t){t.enabled=!voice.muted;});
+  api('voice',{room:code},{uid:uid,on:true,muted:voice.muted}).catch(function(){});
+  render();
+}
+function closePeer(id){
+  var p=voice.peers[id];if(!p)return;
+  try{p.pc.close();}catch(e){}
+  if(p.audio){try{p.audio.srcObject=null;p.audio.remove();}catch(e){}}
+  delete voice.peers[id];delete voice.talk[id];
+}
+function newPeer(id){
+  var pc=new RTCPeerConnection({iceServers:ICE_SERVERS}),p={pc:pc,audio:null,at:Date.now()};
+  voice.stream.getTracks().forEach(function(t){pc.addTrack(t,voice.stream);});
+  pc.ontrack=function(ev){
+    if(!p.audio){var a=document.createElement('audio');a.autoplay=true;a.setAttribute('playsinline','');voiceBox().appendChild(a);p.audio=a;}
+    p.audio.srcObject=ev.streams[0];
+    try{var pr=p.audio.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}
+  };
+  pc.onconnectionstatechange=function(){if(pc.connectionState==='failed'||pc.connectionState==='closed')closePeer(id);render();};
+  voice.peers[id]=p;return p;
+}
+/* Kandidaten erst sammeln, dann das komplette Angebot schicken (ein Hin und Zurück über den Server) */
+function gathered(pc){
+  return new Promise(function(res){
+    if(pc.iceGatheringState==='complete')return res();
+    var t=setTimeout(res,2500);
+    pc.addEventListener('icegatheringstatechange',function(){if(pc.iceGatheringState==='complete'){clearTimeout(t);res();}});
+  });
+}
+function sendSig(to,type,data){return api('signal',{room:code},{uid:uid,to:to,type:type,data:data});}
+function callPeer(id){
+  var pc=newPeer(id).pc;
+  pc.createOffer().then(function(o){return pc.setLocalDescription(o);}).then(function(){return gathered(pc);})
+    .then(function(){return sendSig(id,'offer',JSON.stringify(pc.localDescription));})
+    .catch(function(e){console.warn('voice offer',e&&e.message);closePeer(id);});
+}
+function onSignal(m){
+  if(!m||!m.from)return;
+  if(m.type==='bye'){closePeer(m.from);render();return;}
+  var desc;try{desc=JSON.parse(m.data);}catch(e){return;}
+  if(m.type==='offer'){
+    closePeer(m.from);
+    var pc=newPeer(m.from).pc;
+    pc.setRemoteDescription(desc).then(function(){return pc.createAnswer();}).then(function(a){return pc.setLocalDescription(a);})
+      .then(function(){return gathered(pc);}).then(function(){return sendSig(m.from,'answer',JSON.stringify(pc.localDescription));})
+      .catch(function(e){console.warn('voice answer',e&&e.message);closePeer(m.from);});
+  }else if(m.type==='answer'){
+    var q=voice.peers[m.from];
+    if(q&&q.pc.signalingState==='have-local-offer')q.pc.setRemoteDescription(desc).catch(function(e){console.warn('voice',e&&e.message);});
+  }
+}
+function voiceTick(){
+  if(!voice.on)return;
+  if(!voiceAvailable()){voiceLeave();return;}
+  if(voice.busy)return;voice.busy=true;
+  api('signals',{room:code},{uid:uid,muted:voice.muted}).then(function(r){
+    voice.busy=false;
+    if(!voice.on)return;                    // inzwischen verlassen: späte Antwort nicht mehr verarbeiten
+    voice.list=r.voice||[];
+    (r.msgs||[]).forEach(onSignal);
+    var ids=voice.list.map(function(v){return v.id;});
+    for(var id in voice.peers)if(ids.indexOf(id)<0)closePeer(id);
+    ids.forEach(function(id){if(id!==uid&&!voice.peers[id]&&uid<id)callPeer(id);});   // der mit der kleineren ID ruft an
+    for(var id2 in voice.peers){var p=voice.peers[id2];
+      if(p.pc.connectionState!=='connected'&&Date.now()-p.at>15000&&uid<id2)closePeer(id2);}   // hängt → neu anrufen
+  }).catch(function(e){
+    voice.busy=false;
+    if(e&&/ausgeschaltet|Nur Spieler/.test(e.message)){voiceStop();render();}
+  });
+}
+/* Wer spricht gerade? Tonenergie aus den WebRTC-Statistiken je Verbindung (eingehend = Gegenüber,
+   media-source = eigenes Mikrofon). Funktioniert in Chrome, Safari und Firefox, ohne Web Audio. */
+function isTalking(id){return !!voice.talk[id];}
+setInterval(function(){
+  if(!voice.on)return;
+  var ids=Object.keys(voice.peers);
+  if(!ids.length){if(Object.keys(voice.talk).length){voice.talk={};render();}return;}
+  Promise.all(ids.map(function(id){
+    return voice.peers[id].pc.getStats().then(function(st){
+      var inb=null,src=null;
+      st.forEach(function(x){if(x.kind==='audio'&&x.type==='inbound-rtp')inb=x;if(x.kind==='audio'&&x.type==='media-source')src=x;});
+      return {id:id,inb:inb,src:src};
+    }).catch(function(){return null;});
+  })).then(function(res){
+    var now={},loud=function(e,d,e0,d0){return e0!=null&&d>d0&&(e-e0)/(d-d0)>0.0004;};
+    res.forEach(function(r){
+      var p=r&&voice.peers[r.id];if(!p)return;
+      if(r.inb&&r.inb.totalAudioEnergy!=null){var e=r.inb.totalAudioEnergy,d=r.inb.totalSamplesDuration||0;if(loud(e,d,p.e0,p.d0))now[r.id]=true;p.e0=e;p.d0=d;}
+      if(r.src&&r.src.totalAudioEnergy!=null&&!('src' in now)){var e2=r.src.totalAudioEnergy,d2=r.src.totalSamplesDuration||0;
+        if(!voice.muted&&loud(e2,d2,voice.s0,voice.sd0))now[uid]=true;voice.s0=e2;voice.sd0=d2;now.src=0;}
+    });
+    delete now.src;
+    if(JSON.stringify(now)!==JSON.stringify(voice.talk)){voice.talk=now;render();}
+  });
+},500);
+function voiceConnected(){var n=0;for(var id in voice.peers)if(voice.peers[id].pc.connectionState==='connected')n++;return n;}
+function voiceMember(id){return (voice.list||[]).filter(function(v){return v.id===id;})[0]||null;}
+function voiceBtns(){
+  if(!voice.enabled||!code||watching||!joined)return '';
+  var info=voiceConsented()?'<button class="small ghost" data-a="vinfo" title="Voice-Chat: Datenschutz und Zustimmung" aria-label="Voice-Chat Info">ⓘ</button>':'';
+  if(!voice.on)return '<button class="small ghost" data-a="vjoin" title="Voice-Chat beitreten">🎙 Voice</button>'+info;
+  var others=(voice.list||[]).filter(function(v){return v.id!==uid;}).length;
+  return '<button class="small '+(voice.muted?'ghost':'primary')+'" data-a="vmute" title="Mikrofon an/aus">'+(voice.muted?'🔇 Stumm':'🎤 An')+'</button>'+
+    '<span class="vstat note" data-n="'+voiceConnected()+'">'+voiceConnected()+'/'+others+' verbunden</span>'+
+    '<button class="small ghost" data-a="vleave">Voice aus</button>'+info;
+}
+function voiceTag(id){
+  var v=voiceMember(id);if(!v||!voice.enabled)return '';
+  var talk=voice.on&&isTalking(id);
+  return ' <span class="tag vc'+(talk?' talk':'')+'" title="im Voice-Chat">'+(v.muted?'🔇':talk?'🔊':'🎙')+'</span>';
+}
+
+/* ---------- Schnelle Reaktionen: 5 feste Emojis, erscheinen ein paar Sekunden neben dem Namen ---------- */
+var REACTS=['👍','😂','😬','🤔','🔥'];   // 👍 😂 😬 🤔 🔥
+var REACT_MS=4500,reactShown='';
+function reactOf(id){
+  var r=sp?(sp.react||{})[id]:(S.react||{})[id];
+  if(!r||num(r.e)==null||!REACTS[num(r.e)])return null;
+  var at=sp?r.ts:r.ts-(srvOff||0);          // Zeitstempel im Raum stammen vom Server
+  return Date.now()-at<REACT_MS?REACTS[num(r.e)]:null;
+}
+function reactHtml(id){var e=reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
+function reactBar(){
+  if(!sp&&(watching||!joined||!code))return '';
+  return '<div class="reactbar" role="group" aria-label="Schnelle Reaktion">'+REACTS.map(function(e,i){
+    return '<button class="small ghost react-btn" data-react="'+i+'" aria-label="Reaktion '+e+'">'+e+'</button>';}).join('')+'</div>';
+}
+function sendReact(i){
+  i=num(i);if(i==null||i<0||i>4)return;
+  if(sp){sp.react=sp.react||{};sp.react.me={e:i,ts:Date.now()};render();return;}
+  if(!code||watching)return;
+  docs['react/'+uid]={e:i,ts:Date.now()+(srvOff||0)};applyDocs();
+  api('react',{room:code},{uid:uid,e:i}).catch(function(e){if(!/schnell/.test(e.message))showErr(e);});
+}
+setInterval(function(){                     // abgelaufene Reaktionen ausblenden
+  if(!code&&!sp)return;
+  var ids=sp?sp.players.map(function(p){return p.id;}):S.players.map(function(p){return p.id;});
+  var k=ids.map(function(id){return reactOf(id)||'';}).join('|');
+  if(k!==reactShown){reactShown=k;render();}
+},700);
+
+/* ---------- Offline: Service Worker hält die App vor; Übungsraum läuft ohne Netz ---------- */
+var netDown=false,spPending=0;
+try{spPending=Math.max(0,parseInt(localStorage.getItem('kr.sp.pending'),10)||0);}catch(e){}
+function isOffline(){return netDown||(typeof navigator.onLine==='boolean'&&!navigator.onLine);}
+function reportSpHand0(){spPending--;reportSpHand();}   // nachreichen, ohne eine Hand dazuzuzählen
+function reportSpHand(){
+  spPending++;try{localStorage.setItem('kr.sp.pending',String(spPending));}catch(e){}
+  try{api('sphand',{},{n:Math.min(20,spPending)}).then(function(){spPending=0;try{localStorage.setItem('kr.sp.pending','0');}catch(e){}}).catch(function(){});}catch(e){}
+}
+function offlineBanner(){
+  if(!isOffline())return '';
+  return '<div class="panel offline"><p class="info">📴 <b>Offline</b> – Räume gehen gerade nicht, der Übungsraum schon.</p>'+
+    '<div class="bar"><button class="primary" data-a="sp">🤖 Übungsraum spielen</button></div></div>';
+}
+
+/* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
+var spLearn=false;try{spLearn=localStorage.getItem('kr.sp.learn')==='1';}catch(e){}
+function spToggleLearn(){spLearn=!spLearn;try{localStorage.setItem('kr.sp.learn',spLearn?'1':'0');}catch(e){}render();}
+function spLearnBtn(){return '<button class="small '+(spLearn?'primary':'ghost')+'" data-a="splearn" title="Lernmodus: Tipps und Erklärungen">🎓 Lernmodus'+(spLearn?' an':'')+'</button>';}
+/* Einschätzung der eigenen Hand je Runde (gleiches Verfahren wie die Bots, einmal pro Runde gerechnet) */
+function spCoachEst(){
+  var k=sp.hand+'.'+sp.stage;sp.coach=sp.coach||{};
+  if(sp.coach[k]==null)sp.coach[k]=spEstimate('me',300);
+  var n=sp.players.length,raw=sp.coach[k],e=(n+1)/2+(raw-(n+1)/2)*1.7;
+  return {raw:raw,e:e,sug:Math.max(1,Math.min(n,Math.round(e))),n:n};
+}
+function whyStronger(a,b){        // a ist stärker als b: kurze Begründung
+  if(a.cat!==b.cat)return HAND_NAMES[a.cat]+' schlägt '+HAND_NAMES[b.cat];
+  return 'beide '+HAND_NAMES[a.cat]+' – die höheren Werte entscheiden';
+}
+function coachPlay(){
+  var c=spCoachEst(),st=sp.stage,mine=sp.hole.me,vis=spVisible(st),my=bestHand(mine.concat(vis),mine),cur=sp.chips.me||null,out='';
+  var pct=Math.round((c.raw-1)/(c.n-1)*100);
+  out+='<p>Du hast: <b>'+esc(handName(my))+'</b>.';
+  var bd=vis.length?bestHand(vis):null;
+  if(bd&&bd.cat>0&&my.cat===0)out+=' Das '+esc(HAND_NAMES[bd.cat])+' auf dem Tisch haben alle – nach eurer Hausregel zählt es für dich nicht, nur deine höchste Karte.';
+  out+='</p>';
+  out+='<div class="coachbar" title="Stärke im Vergleich zu zufälligen Händen"><span style="width:'+Math.max(4,Math.min(100,pct))+'%"></span></div>';
+  out+='<p class="note">'+(st===1?'Noch keine Tischkarten – nur deine '+sp.K+' Karten zählen. Ein Paar auf der Hand oder hohe Karten (A, K) sind stark; kleine, ungleiche Karten eher schwach.':
+    st===4?'Alle 5 Tischkarten liegen – jetzt steht deine Hand fest. Wichtig ist nur noch, wie sie gegen die anderen abschneidet.':
+    'Es kommen noch '+(5-vis.length)+' Tischkarte'+(5-vis.length>1?'n':'')+'. Die Einschätzung rechnet mit, was noch kommen kann.')+'</p>';
+  out+='<p>Deine Hand liegt vermutlich auf <b>Platz '+c.e.toFixed(1).replace('.',',')+' von '+c.n+'</b> → passender Chip: <b class="coachchip">'+c.sug+'</b></p>';
+  var holder=spHolder(c.sug);
+  if(!cur)out+='<p class="coachtip">👉 Nimm die <b>'+c.sug+'</b>'+(holder&&holder!=='me'?' – die hat gerade '+esc(spPl(holder).name)+'. Du darfst sie wegnehmen, wenn du dir sicher bist, oder auf die Nachbarzahl ausweichen.':'.')+'</p>';
+  else if(cur===c.sug)out+='<p class="coachok">✓ Dein Chip '+cur+' passt zu deiner Hand.</p>';
+  else if(Math.abs(cur-c.e)<0.8)out+='<p class="coachok">✓ Chip '+cur+' ist vertretbar – deine Hand liegt zwischen '+Math.floor(c.e)+' und '+Math.ceil(c.e)+'.</p>';
+  else out+='<p class="coachwarn">⚠ Chip '+cur+' ist eher zu '+(cur>c.e?'hoch':'niedrig')+': '+(cur>c.e?'Viele andere Hände schlagen '+esc(handName(my))+'.':'Deine Hand schlägt vermutlich mehr Mitspieler, als die '+cur+' sagt.')+' Besser wäre die <b>'+c.sug+'</b>'+(holder&&holder!=='me'?' (hat '+esc(spPl(holder).name)+')':'')+'.</p>';
+  out+='<p class="note">Die Chips der anderen sind ihre Einschätzung: Wer eine hohe Zahl festhält, hält seine Hand für stark. Holt sich ein Bot seinen Chip zurück, ist er sich sicher.</p>';
+  return out;
+}
+function coachGuess(){
+  var t=sp.target;if(t==='me')return '<p>Die Bots tippen deine Karten. Du hattest den höchsten Chip – also sollten sie auf starke Karten tippen.</p>';
+  var b=sp.board.map(function(c){return RANK_NAME[c%13];});
+  return '<p>'+esc(spPl(t).name)+' hat den höchsten Chip – vermutlich ein Paar mit einer Tischkarte ('+esc(b.join(', '))+') oder hohe Karten wie Ass und König.</p>';
+}
+function coachDone(){
+  var res=sp.res,by=res.by,me=by.me,out='',nm=function(id){return id==='me'?'du':esc(spPl(id).name);};
+  var myH=bestHand(sp.hole.me.concat(sp.board),sp.hole.me);
+  if(me.ok)out+='<p class="coachok">✓ Du lagst richtig: deine Hand ('+esc(handName(myH))+') war Platz '+(me.lo===me.hi?me.lo:me.lo+'–'+me.hi)+' von '+sp.players.length+'.</p>';
+  else{
+    out+='<p class="coachwarn">⚠ Dein Chip '+me.chip+' passte nicht – richtig wäre <b>'+(me.lo===me.hi?me.lo:me.lo+' bis '+me.hi)+'</b> gewesen.</p><ul class="coachlist">';
+    me.swaps.forEach(function(id){
+      var o=by[id],oh=bestHand(sp.hole[id].concat(sp.board),sp.hole[id]),d=cmpHand(oh,myH);
+      out+='<li>'+esc(spPl(id).name)+' (Chip '+o.chip+', '+esc(handName(oh))+') '+(d>0?'ist stärker als':'ist schwächer als')+' du ('+esc(handName(myH))+') – '+esc(d>0?whyStronger(oh,myH):whyStronger(myH,oh))+
+        '. Deshalb gehört '+(d>0?esc(spPl(id).name)+' über dich':'du über '+esc(spPl(id).name))+'.</li>';
+    });
+    out+='</ul>';
+  }
+  var hits=[1,2,3,4].map(function(r){var c=spChipOfStage('me',r);return c==null?'–':(c>=me.lo&&c<=me.hi?'<b class="ok">'+c+' ✓</b>':c);});
+  out+='<p>Deine Chips je Runde: '+hits.map(function(h,i){return 'R'+(i+1)+' '+h;}).join(' · ')+'. Früh danebenliegen ist normal – wichtig ist, dass du mit jeder Tischkarte nachziehst.</p>';
+  var botBad=sp.players.filter(function(p){return p.bot&&!by[p.id].ok;});
+  if(botBad.length)out+='<p class="note">Auch die Bots lagen daneben: '+botBad.map(function(p){return esc(p.name)+' (Chip '+by[p.id].chip+', richtig '+(by[p.id].lo===by[p.id].hi?by[p.id].lo:by[p.id].lo+'–'+by[p.id].hi)+')';}).join(', ')+'.</p>';
+  if(sp.gr&&sp.gr.hits<sp.gr.of&&sp.target!=='me')out+='<p class="note">Beim Tipp auf '+esc(spPl(sp.target).name)+' hättest du '+sp.gr.real.map(function(c){return RANK_NAME[c%13];}).join(' und ')+' tippen müssen.</p>';
+  return out;
+}
+function spCoach(){
+  if(!spLearn||!sp)return null;
+  var body='';
+  try{body=sp.phase==='play'?coachPlay():sp.phase==='guess'?coachGuess():sp.phase==='done'?coachDone():'';}catch(e){console.error(e);return null;}
+  /* zweimal: links unter dem Tisch (Hochformat), oben rechts über den Spielern (Querformat) – CSS blendet je eines aus */
+  var box=function(cls){return '<div class="panel coach p-coach '+cls+'" role="note"><div class="spread"><h2>🎓 Lernmodus</h2><button class="small ghost" data-a="splearn">aus</button></div>'+body+'</div>';};
+  return {l:box('coach-l'),r:box('coach-r')};
+}
+
+/* ---------- Offene Räume (Startseite) ---------- */
+var PHASE_SHORT={lobby:'wartet',deal:'gibt',play:'spielt',guess:'tippt',reveal:'deckt auf',done:'Hand fertig'};
+function inviteHint(){
+  var ii=inviteInfo&&inviteInfo.code===inviteCode?inviteInfo:null,n=ii&&ii.name?ii.name:inviteName();
+  if(ii&&ii.missing)return '<p class="err" style="margin-top:10px">Raum '+esc(inviteCode)+' gibt es nicht (mehr).</p>';
+  if(ii&&ii.startsAt&&ii.startsAt>srvNow())
+    return '<p class="info" style="margin-top:10px">📅 Du bist zu <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen. Start: <b>'+esc(fmtWhen(ii.startsAt))+'</b> \u2013 noch <b><span data-left="'+num(ii.startsAt)+'">'+fmtLeft(ii.startsAt-srvNow())+'</span></b>. '+
+      'Ab dann kannst du beitreten; wer zuerst drin ist, wird Host.</p><div class="bar"><button class="small ghost" data-a="ics" data-code="'+esc(inviteCode)+'">📅 In den Kalender</button></div>';
+  return '<p class="info" style="margin-top:10px">Du wurdest in <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen \u2013 Namen eingeben und auf \u201eBeitreten\u201c tippen.'+
+    (ii&&ii.startsAt&&!ii.players?' Du bist der Erste und wirst Host.':'')+'</p>';
+}
+function inviteName(){var r=(openRooms||[]).filter(function(x){return x.code===inviteCode;})[0];return (r&&typeof r.name==='string')?r.name:'';}
+function countsHtml(){
+  if(!playCounts)return '';
+  var f=function(n){return Number(n).toLocaleString('de-DE');};
+  return '<p class="playcount">\ud83c\udccf Bisher gespielt: <b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?'Hand':'Hände')+' in Räumen \u00b7 <b>'+
+    f(playCounts.sp)+'</b> im Übungsraum</p>';
+}
+function roomsHtml(){
+  var pin='<div class="plist"><div class="pl sp"><span class="code">\ud83e\udd16</span><div class="nm"><b>Übungsraum</b>'+
+    '<div class="note">Allein gegen Bots \u00b7 immer offen</div></div><button class="small primary" data-a="sp">Spielen</button></div></div>';
+  if(openRooms==null)return pin+'<p class="note">Lade offene Räume \u2026</p>';
+  if(!openRooms.length)return pin+'<p class="note">Gerade keine offenen Räume.</p>';
+  return pin+'<div class="plist">'+openRooms.map(function(r){
+    var full=CFG.maxPlayers&&r.players>=CFG.maxPlayers;
+    return '<div class="pl"><span class="code">'+esc(r.code)+'</span>'+
+      '<div class="nm">'+(r.name?'<b>'+esc(r.name)+'</b><br>':'')+esc((r.names||[]).join(', '))+
+        '<div class="note">'+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
+      (full?'':'<button class="small" data-a="joincode" data-code="'+esc(r.code)+'">Beitreten</button>')+
+      '<button class="small ghost" data-a="watch" data-code="'+esc(r.code)+'">Zuschauen</button>'+
+      ((r.free&&r.free.length)?'<div class="jump">'+r.free.map(function(f){
+        return '<button class="small primary" data-a="jump" data-code="'+esc(r.code)+'" data-id="'+esc(f.id)+'">'+
+          '\u21aa Für '+esc(f.name)+(f.bot?' \ud83e\udd16':'')+' einspringen</button>';}).join('')+'</div>':'')+
+    '</div>';
+  }).join('')+'</div>';
+}
+function fetchRooms(){
+  if(code||sp)return;
+  api('rooms',{},null,5000).then(function(r){
+    if(netDown){netDown=false;render();}
+    openRooms=r.rooms||[];
+    if(r.counts){playCounts={mp:num(r.counts.mp)||0,sp:num(r.counts.sp)||0};var pc=$('playcount');if(pc)pc.innerHTML=countsHtml();}
+    var el=$('roomlist');if(el&&!code)el.innerHTML=roomsHtml();
+    if(spPending)reportSpHand0();
+  }).catch(function(){if(!netDown){netDown=true;if(!code&&!sp)render();}});
+}
+setInterval(function(){if(!code&&!sp&&!document.hidden)fetchRooms();},5000);
+
+/* ---------- Raum betreten / erstellen ---------- */
+function newCode(){var s='';for(var i=0;i<4;i++)s+=CODE_ALPHABET[crypto.getRandomValues(new Uint32Array(1))[0]%CODE_ALPHABET.length];return s;}
+function createRoom(){
+  var name=($('name')||{}).value||'';
+  if(!name.trim()){uiErr='Bitte Namen eingeben.';render();return;}
+  myName=name.trim();
+  var rn=(($('rname')||{}).value||'').trim().slice(0,30);
+  var c=newCode();
+  api('create',{room:c},{hostId:uid,name:rn}).then(function(r){
+    if(r.exists)return createRoom();
+    enter(c);
+  }).catch(showErr);
+}
+function joinRoom(pre){
+  var name=($('name')||{}).value||'',c=(pre||($('code')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!name.trim()){uiErr='Bitte Namen eingeben.';render();return;}
+  if(c.length<3){uiErr='Bitte Raumcode eingeben.';render();return;}
+  myName=name.trim();
+  api('info',{room:c}).then(function(inf){
+    srvOff=(num(inf.now)||Date.now())-Date.now();
+    var t=num(inf.startsAt)||0;
+    if(t>srvNow()){uiErr=roomLabel(c,inf.name)+' öffnet erst '+fmtWhen(t)+' (noch '+fmtLeft(t-srvNow())+').';render();return null;}
+    return api('state',{room:c,since:-1});
+  }).then(function(r){
+    if(!r)return;
+    if(!r.docs||!r.docs['room']){uiErr='Raum '+c+' nicht gefunden.';render();return;}
+    applyConfig(r.config);
+    var n=0,drin=false;
+    for(var k in r.docs){if(k.indexOf('players/')===0){n++;if(k==='players/'+uid)drin=true;}}
+    if(!drin&&CFG.maxPlayers&&n>=CFG.maxPlayers){
+      uiErr='Raum ist voll ('+CFG.maxPlayers+' Spieler).';render();return;}
+    enter(c);
+  }).catch(function(e){uiErr='Raum '+c+' nicht gefunden.';render();});
+}
+function jumpIn(c,id){
+  pendingTake={code:c,id:id};
+  watchRoom(c);
+}
+function watchRoom(c){
+  var n=($('name')||{}).value;if(n&&n.trim())myName=n.trim();
+  enter(c,true);
+}
+function playNow(){
+  var name=($('name')||{}).value||'';
+  if(!name.trim()){uiErr='Bitte Namen eingeben.';render();return;}
+  if(CFG.maxPlayers&&S.players.length>=CFG.maxPlayers){uiErr='Raum ist voll ('+CFG.maxPlayers+' Spieler).';render();return;}
+  if(S.room&&num(S.room.startsAt)>srvNow()){uiErr='Der Raum öffnet erst '+fmtWhen(num(S.room.startsAt))+'.';render();return;}
+  myName=name.trim();
+  try{localStorage.setItem('kr.name',myName);}catch(e){}
+  var cur=docs['players/'+uid]||{};
+  doc('players/'+uid).set({name:myName,pub:myPubJwk,joinedAt:cur.joinedAt||Date.now(),ready:null})
+    .then(function(){watching=false;joined=true;uiErr='';render();}).catch(showErr);
+}
+function enter(c,watch){
+  code=c;uiErr='';uiNote='';ver=-1;docs={};watching=!!watch;joined=false;online=null;idle=[];away={};
+  lastNudgeTs=-1;prevMine={key:null,chip:null};inviteOpen=false;turnSeen=null;
+  if(inviteCode===c)inviteCode=null;
+  try{if(location.hash&&history.replaceState)history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  if(!watching){try{localStorage.setItem('kr.name',myName);try{localStorage.setItem('kr.room',c);}catch(e2){}}catch(e){}}
+  api('state',{room:c,since:-1}).then(function(r){
+    ver=r.version;docs=r.docs||{};setPresence(r);
+    if(watching&&docs['players/'+uid])watching=false;  // schon Spieler in diesem Raum
+    applyDocs();
+    if(watching){
+      var pt=pendingTake;pendingTake=null;
+      if(pt&&pt.code===c)setTimeout(function(){if(isBotP(pt.id))replaceBot(pt.id);else takeOver(pt.id);},0);
+      return;
+    }
+    var cur=docs['players/'+uid]||{};
+    return doc('players/'+uid).set({name:myName||cur.name||'Spieler',pub:myPubJwk,joinedAt:cur.joinedAt||Date.now(),ready:null})
+      .then(function(){joined=true;});
+  }).then(function(){startPoll();}).catch(showErr);
+}
+function leave(){
+  if(sp){spLeave();return;}
+  voiceLeave();
+  stopPoll();joined=false;online=null;
+  code=null;docs={};ver=-1;
+  S={players:[],chips:{},main:null,deck:null,aA:null,aB:null,bA:null,bB:null,guess:null,reveal:{},room:null};
+  myHand=null;busy={};watching=false;openRooms=null;
+  try{localStorage.removeItem('kr.room');}catch(e){}
+  render();fetchRooms();
+}
+function upd(){ try{tick();}catch(e){console.error(e);} try{maybeRecord();}catch(e){console.error(e);} render(); }
+
+/* ---------- Statistik ---------- */
+var statsOpen=false,recorded={};
+/* Fertige Hand an den Server melden (jeder Spieler; der Server nimmt nur die erste Meldung je Hand) */
+function maybeRecord(){
+  if(!code||!joined||watching||phase()!=='done')return;
+  var h=hand(),k=code+'.'+h;
+  if(recorded[k]||(S.stats||[]).some(function(e){return num(e.hand)===h;}))return;
+  var res=resolveHand();if(!res||res.missing)return;   // unvollständig aufgedeckt → zählt nicht
+  recorded[k]=true;
+  var gr=guessResult();
+  api('record',{room:code},{uid:uid,hand:h,win:res.win,
+    players:parts().map(function(id){var b=res.by[id]||{};return {id:id,ok:!!b.ok,
+      rounds:roundHits(b.lo,b.hi,function(r){return num(((main().chipHist||{})[String(r)]||{})[id]);})};}),
+    guess:gr?{target:gr.target,hits:gr.hits,of:gr.of}:null}).catch(function(){recorded[k]=false;});
+}
+/* Lag der Chip in Runde 1..4 schon im Bereich der endgültigen Stärke (lo..hi)? */
+function roundHits(lo,hi,chipIn){
+  var out=[];for(var r=1;r<=4;r++){var c=chipIn(r);out.push(c==null||lo==null?null:(c>=lo&&c<=hi));}
+  return out;
+}
+function calcStats(list){
+  var o={hands:0,wins:0,streak:0,best:0,hits:0,of:0,perfect:0,guesses:0,pl:{}},run=0;
+  (list||[]).forEach(function(e){
+    if(!e||!Array.isArray(e.players))return;
+    o.hands++;
+    if(e.win){o.wins++;run++;if(run>o.best)o.best=run;}else run=0;
+    if(e.guess&&num(e.guess.of)){o.guesses++;o.hits+=num(e.guess.hits)||0;o.of+=num(e.guess.of);if(num(e.guess.hits)===num(e.guess.of))o.perfect++;}
+    e.players.forEach(function(p){
+      var id=String(p.id||'');if(!id)return;
+      var x=o.pl[id]||(o.pl[id]={id:id,name:'',n:0,ok:0,tgt:0,tgtHit:0,r:[[0,0],[0,0],[0,0],[0,0]]});
+      x.name=String(p.name||x.name||'Spieler');x.n++;if(p.ok)x.ok++;
+      if(Array.isArray(p.rounds))for(var ri=0;ri<4;ri++){if(p.rounds[ri]===true||p.rounds[ri]===false){x.r[ri][1]++;if(p.rounds[ri])x.r[ri][0]++;}}
+    });
+    if(e.guess&&o.pl[e.guess.target]){o.pl[e.guess.target].tgt++;if(num(e.guess.hits)===num(e.guess.of))o.pl[e.guess.target].tgtHit++;}
+  });
+  o.streak=run;
+  return o;
+}
+function pct(a,b){return b?Math.round(a*100/b)+' %':'\u2013';}
+function statsLine(list){
+  var st=calcStats(list||S.stats);if(!st.hands)return '';
+  return '<p class="note statsline">📊 '+st.wins+' von '+st.hands+' Händen richtig ('+pct(st.wins,st.hands)+')'+
+    (st.streak>1?' \u00b7 Serie: '+st.streak+' \u2713':'')+' \u00b7 <a href="#" data-a="stats">Statistik</a></p>';
+}
+function statsPanel(list){
+  list=list||S.stats;
+  var st=calcStats(list);
+  var out='<div class="panel stats"><div class="spread"><h2>📊 Statistik</h2><button class="small ghost" data-a="stats">Schließen</button></div>';
+  if(!st.hands)return out+'<p class="note">Noch keine fertige Hand in diesem Raum.</p></div>';
+  var tile=function(v,l){return '<div class="tile"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';};
+  out+='<div class="tiles">'+tile(st.hands,'Hände')+tile(st.wins,'richtig')+tile(pct(st.wins,st.hands),'Quote')+
+    tile(st.streak,'aktuelle Serie')+tile(st.best,'beste Serie')+
+    (st.guesses?tile(pct(st.hits,st.of),'Tipp-Treffer')+tile(st.perfect+'/'+st.guesses,'Tipps komplett'):'')+'</div>';
+  var rows=Object.keys(st.pl).map(function(k){return st.pl[k];}).sort(function(a,b){return (b.ok/b.n)-(a.ok/a.n)||b.n-a.n;});
+  var me=st.pl[uid];
+  if(me&&me.r.some(function(q){return q[1];}))
+    out+='<p class="accline">\ud83c\udfaf Deine Treffsicherheit: '+me.r.map(function(q,i){return '<span class="acc"><small>Runde '+(i+1)+'</small><b>'+pct(q[0],q[1])+'</b></span>';}).join('')+'</p>';
+  out+='<div class="stwrap"><table class="stbl"><thead><tr><th>Spieler</th><th>Hände</th><th>richtig platziert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+(st.guesses?'<th>getippt (komplett)</th>':'')+'</tr></thead><tbody>'+
+    rows.map(function(x){
+      return '<tr'+(x.id===uid?' class="me"':'')+'><td>'+esc(x.name)+'</td><td>'+num(x.n)+'</td><td>'+num(x.ok)+' ('+pct(x.ok,x.n)+')</td>'+
+        x.r.map(function(q){return '<td class="rc">'+pct(q[0],q[1])+'</td>';}).join('')+
+        (st.guesses?'<td>'+num(x.tgt)+(x.tgt?' ('+num(x.tgtHit)+')':'')+'</td>':'')+'</tr>';
+    }).join('')+'</tbody></table></div>';
+  var last=list.slice(-12).map(function(e){return '<span class="dot '+(e.win?'ok':'bad')+'" title="Hand '+num(e.hand)+'">'+(e.win?'\u2713':'\u2717')+'</span>';}).join('');
+  out+='<p class="note" style="margin-top:8px">Letzte Hände: '+last+'</p>';
+  return out+'</div>';
+}
+
+/* ---------- Darstellung ---------- */
+function cardHtml(c,cls,style){
+  cls=cls||'';
+  if(c==null)return '<div class="card empty '+cls+'"></div>';
+  var r=RANKS[c%13],s=SUITS[Math.floor(c/13)],red=(Math.floor(c/13)===1||Math.floor(c/13)===2);
+  return '<div class="card '+cls+(red?' red':'')+'"'+(style?' style="'+style+'"':'')+'><div class="r">'+r+'</div><div class="s">'+s+'</div></div>';
+}
+function rankHtml(r,cls){
+  if(r==null)return '<div class="card empty '+(cls||'')+'"></div>';
+  return '<div class="card '+(cls||'')+'"><div class="r">'+RANKS[r]+'</div></div>';
+}
+/* Chip-Verlauf als Mini-Chips, einer pro abgeschlossener Runde */
+/* Eigene Chips groß, eine pro Runde (laufende Runde markiert) */
+function myChipsHtml(){
+  if(parts().indexOf(uid)<0||watching)return '';
+  var hist=main().chipHist||{},ph=phase(),st=stage(),out='';
+  for(var r=1;r<=4;r++){
+    var c,now=ph==='play'&&r===st;
+    if(ph==='play'&&r>st)break;
+    c=now?chipOf(uid):num((hist[String(r)]||{})[uid]);
+    out+='<div class="slot"><div class="chip big static'+(c==null?' ph':' r'+r)+(now?' now':'')+'">'+(c==null?'\u2013':c)+'</div>'+
+      '<div class="cap">Runde '+r+'</div></div>';
+  }
+  return out?'<div class="mychips">'+out+'</div>':'';
+}
+function histHtml(id){
+  var hist=main().chipHist||{},ph=phase(),parts_=[];
+  for(var st=1;st<=4;st++){
+    if(ph==='play'&&st>=stage())break;
+    var run=hist[String(st)];if(!run)continue;
+    var c=num(run[id]);
+    parts_.push('<span class="mchip'+(c==null?' none':' r'+st)+'" title="Runde '+st+'">'+(c==null?'\u2013':c)+'</span>');
+  }
+  return parts_.length?'<span class="hist">'+parts_.join('')+'</span>':'';
+}
+function backHtml(cls){return '<div class="card back '+(cls||'')+'"></div>';}
+
+function render(){
+  var el=$('app');if(!el)return;
+  if(fatal){el.innerHTML='<div class="panel"><h1 class="brand">Letzte Runde</h1><p class="err">'+esc(fatal)+'</p></div>';return;}
+  if(!db){el.innerHTML='<div class="panel"><p class="muted">Lädt …</p></div>';return;}
+  el.className='wrap'+(code||sp?' inroom':'')+(code&&watching?' watching':'');
+  try{document.title=(sp?'Übungsraum – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
+  var keep={},act=document.activeElement&&document.activeElement.id;
+  ['name','code','rname','sname','stime'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
+  el.innerHTML = sp?spView():code?roomView():startView();
+  for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
+  if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
+  renderChat();
+}
+
+function startView(){
+  var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
+  return '<div class="panel hero">'+
+    '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+fxBtn()+themeBtn()+'</div></div>'+
+    offlineBanner()+(inviteCode?inviteHint():'')+
+    '<div class="hr"></div>'+
+    '<div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
+      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+
+    '<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Raumname (optional)</label>'+
+      '<input id="rname" maxlength="30" placeholder="z.B. Freitagsrunde"></div>'+
+      '<button class="primary" data-a="create">Raum erstellen</button></div>'+
+    planHtml()+
+    '<div class="hr"></div>'+
+    '<div class="row"><div class="field"><label class="lbl">Raumcode</label>'+
+      '<input id="code" maxlength="6" placeholder="z.B. K7PR" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'"></div>'+
+      '<button data-a="join">Beitreten</button></div>'+
+    (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
+    (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
+    '<div class="hr"></div>'+
+    plannedHtml()+
+    '<h2>Offene Räume</h2><div id="roomlist">'+roomsHtml()+'</div>'+
+    '<div class="hr"></div>'+
+    '<details><summary>So läuft eine Hand</summary><ol class="steps">'+
+    '<li>Jeder bekommt '+(CFG.holeCards||2)+' verdeckte Handkarten.</li>'+
+    '<li>4 Runden: erst nur Handkarten, dann 3, 4 und 5 Karten auf dem Tisch.</li>'+
+    '<li>In jeder Runde legt jeder einen Chip 1\u2013n fest (1 = schlechteste Karten, n = beste). Chips lassen sich aus der Mitte oder von anderen nehmen, bis alle auf \u201e\ud83d\udc4a Bereit\u201c geklopft haben. Mit neuen Tischkarten gehen alle Chips zurück in die Mitte; welcher Chip in welcher Runde bei wem lag, bleibt sichtbar.</li>'+
+    (CFG.guessEnabled?'<li>Vor dem Aufdecken tippen alle anderen gemeinsam die Kartenwerte (ohne Farbe) des Spielers mit dem höchsten Chip.</li>':'')+
+    '<li>Haben alle geklopft, läuft ein 3-2-1-Countdown \u2013 bis dahin kann jeder noch zurücknehmen.</li>'+
+    '<li>Aufgedeckt wird zuerst der höchste Chip, danach ab Chip 1 aufwärts.</li>'+
+    '</ol><p class="note" style="margin-top:8px">Karten liegen verschlüsselt auf dem Server. Das Geben ist auf drei Spieler verteilt, damit weder der Server noch ein anderer Browser fremde Karten kennt.</p></details>'+
+  '</div>'+
+  '<div class="panel installhelp"><details><summary>\ud83d\udcf2 Als App speichern (auch offline spielbar)</summary>'+
+    '<p><b>iPhone / iPad (Safari):</b> unten auf das Teilen-Symbol (Quadrat mit Pfeil) tippen \u2192 \u201eZum Home-Bildschirm\u201c \u2192 \u201eHinzufügen\u201c. Danach startet \u201eLetzte Runde\u201c wie eine App vom Home-Bildschirm.</p>'+
+    '<p><b>Android (Chrome):</b> oben rechts auf \u22ee tippen \u2192 \u201eApp installieren\u201c bzw. \u201eZum Startbildschirm hinzufügen\u201c. Lange auf das Symbol drücken zeigt den Kurzbefehl \u201eÜbungsraum\u201c.</p>'+
+    '<p><b>Offline:</b> Einmal mit Internet öffnen \u2013 danach läuft der Übungsraum (inkl. Lernmodus und Statistik) auch ohne Netz, z. B. im Flugzeug. Räume mit anderen brauchen Internet.</p>'+
+    '<p><b>Aktualisieren:</b> passiert automatisch \u2013 jedes Mal, wenn du die App mit Internet öffnest, holt sie sich die neueste Version. Klappt das mal nicht: App ganz schließen (aus der App-Übersicht wischen) und neu öffnen oder oben auf das Logo tippen.</p>'+
+  '</details></div>'+
+  '<div id="playcount">'+countsHtml()+'</div>'+
+  '<p class="sitefoot"><a href="impressum.html">Impressum</a> \u00b7 <a href="impressum.html#datenschutz">Datenschutz</a></p>';
+}
+
+function roomView(){
+  var h=hand(),ph=phase(),ps=parts(),m=pmap();
+  var out='';
+  out+='<div class="panel"><div class="spread">'+
+    '<div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span>'+
+      (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="Raum umbenennen">✎</button>':'')+'</h1>'+
+    '<div class="note">'+esc(phaseLabel())+(S.room&&num(S.room.startsAt)>srvNow()?' \u00b7 öffnet '+esc(fmtWhen(num(S.room.startsAt)))+'':'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
+    '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
+      '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
+      (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
+      '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
+    (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
+      '<input id="name" value="'+esc(myName)+'" maxlength="18" placeholder="Name"></div>'+
+      '<button class="primary" data-a="play">Mitspielen</button></div>'+
+      '<p class="note" style="margin-top:6px">Wer während einer Hand einsteigt, spielt ab der nächsten Hand mit. '+
+      'Ist jemand länger als '+Math.round(TAKE_MS/1000)+' s offline, kannst du unten bei ihm \u201ePlatz übernehmen\u201c und sofort weiterspielen.</p>':'')+
+    '</div>';
+
+  if(inviteOpen)out+=invitePanel();
+  if(statsOpen)out+=statsPanel();
+  if(uiErr)out+='<div class="panel"><p class="err">'+esc(uiErr)+'</p></div>';
+  if(uiNote)out+='<div class="panel info-panel"><p class="info">'+esc(uiNote)+'</p><button class="small ghost" data-a="noteok">OK</button></div>';
+  if(cd.key)out+=countdownHtml();
+  out+=voiceDialog();
+
+  var L='',Rt='';
+  var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+L+'</div><div class="col-r">'+Rt+'</div></div>';};
+  if(ph==='lobby'){
+    L+='<div class="panel p-players"><div class="spread"><h2>Spieler ('+S.players.length+')</h2>'+reactBar()+'</div>'+playerList(false)+
+      '<div class="hr"></div><div class="bar">'+
+      (isHost()?'<button class="primary" data-a="start"'+(S.players.length<(CFG.minPlayers||3)?' disabled':'')+'>Hand geben</button>'+addBotBtn():
+        '<span class="note">Warten auf '+esc(pname(hostId()))+' \u2026</span>')+
+      (S.players.length<(CFG.minPlayers||3)?'<span class="note">Mindestens '+(CFG.minPlayers||3)+' Spieler nötig.</span>':'')+
+      '</div></div>';
+    return cols();
+  }
+  if(ph==='deal'){
+    L+='<div class="panel p-board"><p class="muted">Karten werden gegeben \u2026</p>'+
+      '<p class="note">Mischen: '+esc(pname(roleId(0)))+' \u00b7 Verteilen: '+esc(pname(roleId(1)))+' + '+esc(pname(roleId(2)))+'</p>'+
+      '<div class="hr"></div><div class="bar">'+
+      ((S.aB&&S.aB.hand===h)?'<button class="small" data-a="force">Weiter</button>':'')+
+      '<button class="small ghost" data-a="abort">Hand abbrechen</button></div></div>';
+    return cols();
+  }
+
+  /* Board */
+  var bc=boardCache[h]||[null,null,null,null,null];
+  var shown=boardSlotsFor(stage());
+  if(ph!=='play')shown=[0,1,2,3,4];
+  var bh='';
+  /* Zuletzt aufgedeckte Tischkarte(n) bleiben die ganze Runde markiert */
+  var st=stage(),fresh=ph==='play'?(st===2?[0,1,2]:st===3?[3]:st===4?[4]:[]):ph==='guess'?[4]:[];
+  for(var i=0;i<5;i++){
+    if(shown.indexOf(i)>=0&&bc[i]!=null)bh+=cardHtml(bc[i],fresh.indexOf(i)>=0?'fresh':'');
+    else bh+='<div class="card empty"></div>';
+  }
+  L+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+(fresh.length?'<span class="tag new">Neu aufgedeckt</span>':'')+'</div>'+
+    '<div class="cards board">'+bh+'</div></div>';
+  var afterBoard=L.length;                  // Aufdecken/Auflösung kommt direkt unter den Tisch, über die eigene Hand
+
+  /* Eigene Karten */
+  var mine='',K=HC(),z;
+  if(myHand&&myHand.hand===h)mine=cardsHtml(myHand.cards);
+  else if(ps.indexOf(uid)<0)mine='<span class="note">'+(watching?'Du schaust zu.':'Du bist in dieser Hand nicht dabei.')+'</span>';
+  else {mine='';for(z=0;z<K;z++)mine+=backHtml();}
+  var my=(myHand&&myHand.hand===h)?bestHand(myHand.cards.concat(visibleBoard()),myHand.cards):null;
+  L+='<div class="panel p-mine"><h2>Deine Karten</h2><div class="mine-row"><div class="cards">'+mine+'</div>'+myChipsHtml()+'</div>'+
+    (my?'<div class="handname">Du hast: <b>'+esc(handName(my))+'</b></div>':'')+
+    rankingHtml(my?my.cat:-1)+'</div>';
+
+  /* Spieler + Chips */
+  Rt+='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+playerList(true)+'</div>';
+
+  if(ph==='play'){
+    var free='';
+    for(var n=1;n<=ps.length;n++) if(!chipHolder(n)) free+='<div class="chip r'+stage()+'" data-chip="'+n+'">'+n+'</div>';
+    L+='<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
+      '<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+ps.length+' = beste. Chip antippen zum Nehmen'+(optb('allowSteal')?' (auch von anderen)':'')+', eigenen Chip antippen legt ihn zurück.</p>'+
+      '<div class="hr"></div><div class="bar">'+
+      (ps.indexOf(uid)>=0?'<button class="'+(isReady(m[uid])?'':'primary')+'" data-a="ready"'+(chipOf(uid)?'':' disabled')+'>'+
+        (isReady(m[uid])?'Bereit zurücknehmen':'\ud83d\udc4a Bereit')+'</button>':'')+
+      waitingHtml(ps.filter(function(id){return !isReady(m[id]);}),'Alle bereit')+
+      '<button class="small ghost" data-a="abort">Hand abbrechen</button>'+
+      '</div></div>';
+  }
+
+  if(ph==='guess')L+='<div class="p-guess">'+guessPanel()+'</div>';
+  if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+'</div>'+L.slice(afterBoard);
+  if(ph==='done')L+=endBar(resolveHand(),isHost()?'start':null,isHost()?'':'Warten auf '+pname(hostId())+' \u2026');
+  return cols();
+}
+
+/* 3-2-1 legt sich über alles; Zurücknehmen bleibt direkt im Overlay möglich */
+function countdownHtml(){
+  var btn='';
+  if(phase()==='play'&&parts().indexOf(uid)>=0&&!watching)
+    btn='<button class="primary" data-a="ready">Bereit zurücknehmen</button>';
+  else if(phase()==='guess'&&canGuess())
+    btn='<button class="primary" data-a="confirm">Tipp zurücknehmen</button>';
+  return '<div class="cd-overlay" role="alertdialog" aria-live="assertive"><div class="cd-box">'+
+    '<div class="cd-lbl">Gleich wird aufgedeckt</div>'+
+    '<div class="cd-num">'+cdLeft()+'</div>'+btn+'</div></div>';
+}
+function fmtAway(ms){var s=Math.floor(ms/1000);return s<60?s+' s':Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)+' min';}
+function themeBtn(){return '<button class="small ghost icon" data-a="theme" title="Hell/Dunkel" aria-label="Hell/Dunkel umschalten">\u25d0</button>';}
+function phaseLabel(){
+  var ph=phase();
+  if(ph==='lobby')return 'Lobby \u00b7 Hand '+hand();
+  if(ph==='deal')return 'Hand '+hand()+' \u00b7 geben';
+  if(ph==='play')return 'Hand '+hand()+' \u00b7 Runde '+stage()+' von 4';
+  if(ph==='guess')return 'Hand '+hand()+' \u00b7 gemeinsamer Tipp';
+  if(ph==='reveal')return 'Hand '+hand()+' \u00b7 aufdecken';
+  return 'Hand '+hand()+' \u00b7 fertig';
+}
+function playerList(inHand){
+  var ps=inHand?parts().slice():S.players.map(function(p){return p.id;});
+  var m=pmap(),ph=phase(),h=hand();
+  if(inHand&&ph!=='deal'){
+    var ord=parts();
+    ps.sort(function(a,b){var ca=chipOf(a),cb=chipOf(b);
+      return (cb==null?-1:cb)-(ca==null?-1:ca)||ord.indexOf(a)-ord.indexOf(b);});   // höchster Chip oben
+  }
+  var board=(ph==='reveal'||ph==='done')?visibleBoard():null;
+  var res=inHand?resolveHand():null;
+  var out='<div class="plist">';
+  ps.forEach(function(id){
+    var p=m[id]||{id:id,name:'(weg)'};
+    var c=chipOf(id);
+    var rv=revealedCards(id);
+    var cards='';
+    if(inHand&&(ph==='reveal'||ph==='done')&&rv)
+      cards='<div class="cards">'+cardsHtml(rv,'sm')+'</div>'+
+        '<span class="tag hand">'+esc(handName(bestHand(rv.concat(board||[]),rv)))+'</span>';
+    else if(inHand&&id!==uid){var bb='';for(var z2=0;z2<HC();z2++)bb+=backHtml('sm');cards='<div class="cards">'+bb+'</div>';}
+    else if(inHand&&id===uid&&myHand&&myHand.hand===h)cards='<div class="cards">'+cardsHtml(myHand.cards,'sm')+'</div>';
+    var rx=res&&res.by[id],verdict='';
+    if(rx&&rx.hand&&rx.chip!=null){
+      verdict=rx.ok?'<span class="tag res ok">\u2713 richtig</span>':
+        '<span class="tag res bad">\u2717 vertauscht mit '+esc(rx.swaps.map(pname).join(', '))+
+        ' \u00b7 wäre Chip '+(rx.lo===rx.hi?rx.lo:rx.lo+'\u2013'+rx.hi)+'</span>';
+    }else if(rx)verdict='<span class="tag res">nicht aufgedeckt</span>';
+    out+='<div class="pl'+(id===uid?' me':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+'">'+
+      (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
+        ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
+      '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+voiceTag(id)+reactHtml(id)+
+        (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+'</div>'+
+      (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
+      (inHand&&ph==='play'?(isReady(p)?'<span class="tag ok" title="bereit">\ud83d\udc4a</span>':'<span class="tag">\u2026</span>'):'')+
+      (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa Platz übernehmen</button>':'')+
+      (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa Platz übernehmen</button>':
+        (watching&&m[id]&&!isOnline(id)?'<span class="note">'+(id===hostId()?'Host \u2013 Rolle wandert nach '+Math.round(HOSTMOVE_MS/60000)+' min weiter':
+          'übernehmbar in '+Math.max(1,Math.ceil((TAKE_MS-(away[id]||0))/1000))+' s')+'</span>':''))+
+      (!watching&&isHost()&&id!==uid&&m[id]?'<button class="small ghost" data-kick="'+esc(id)+'" title="Aus dem Raum entfernen">\u2715</button>':'')+
+      cards+verdict+
+    '</div>';
+  });
+  return out+'</div>';
+}
+
+function guessPanel(){
+  var g=S.guess||{cards:[null,null],confirmed:{}},t=main().target,gs=guessers();
+  var conf=g.confirmed||{},n=0;gs.forEach(function(i){if(conf[i])n++;});
+  var me=canGuess();
+  var sel=function(i){
+    var v=(g.cards&&g.cards[i]!=null)?g.cards[i]:null;
+    var o='<option value="">Karte</option>';
+    RANK_NAME.forEach(function(x,k){o+='<option value="'+k+'"'+(v===k?' selected':'')+'>'+x+'</option>';});
+    return '<div class="row" style="gap:6px">'+rankHtml(v,'sm')+
+      (me?'<select data-g="r'+i+'">'+o+'</select>':'')+'</div>';
+  };
+  var K=HC(),pick='';
+  for(var z=0;z<K;z++)pick+=sel(z);
+  return '<div class="panel"><h2>Gemeinsamer Tipp</h2>'+
+    (uid===t?'<p>Du hast den höchsten Chip \u2013 die anderen tippen jetzt deine '+K+' Karten. Du tippst nicht mit.</p>':
+      '<p>Welche '+K+' Karten hat <b>'+esc(pname(t))+'</b> (höchster Chip)? Nur der Wert zählt, die Farbe nicht.</p>')+
+    '<div class="row" style="gap:14px">'+pick+'</div>'+
+    '<div class="hr"></div><div class="bar">'+
+    (me?'<button class="'+(conf[uid]?'':'primary')+'" data-a="confirm"'+(guessFilled()?'':' disabled')+'>'+
+      (conf[uid]?'Tipp zurücknehmen':'Tipp bestätigen')+'</button>':'')+
+    waitingHtml(gs.filter(function(id){return !conf[id];}),'Alle haben bestätigt')+
+    '</div>'+
+    (me?'<p class="note">Jede Änderung setzt die Bestätigungen zurück.</p>':'')+'</div>';
+}
+
+function revealPanel(){
+  var ord=main().revealOrder||[],i=main().revealIdx||0,h=hand();
+  var cur=ord[i]||null,g=S.guess||{},t=main().target;
+  var out='<div class="panel"><h2>Aufdecken</h2>';
+  if(phase()==='reveal'){
+    out+='<p>Reihenfolge: '+(optb('revealHighestFirst')?'höchster Chip zuerst, danach ab Chip 1 aufwärts':'ab Chip 1 aufwärts')+'.</p>';
+    if(cur===uid&&!(myHand&&myHand.hand===h))out+='<p class="info">Deine Karten dieser Hand liegen auf dem Gerät, von dem du übernommen hast.</p>'+
+      '<div class="bar"><button class="primary" data-a="skip">Weiter (nicht aufdecken)</button></div>';
+    else if(cur===uid)out+='<div class="bar"><button class="primary" data-a="reveal">Meine Karten aufdecken</button>'+
+      '<span class="revcd"><span id="revleft">'+revLeft()+'</span> s</span><span class="note">danach automatisch</span></div>';
+    else out+='<div class="bar"><span class="muted">Warten auf '+esc(pname(cur))+' \u2026</span>'+
+      '<span class="revcd"><span id="revleft">'+revLeft()+'</span> s</span>'+nudgeBtn(cur)+
+      '<button class="small ghost" data-a="skip">Überspringen</button></div>';
+  }else{
+    var res=resolveHand(),gr=guessResult();
+    if(res){
+      out+=resultBox(res,gr);
+    }else out+='<p class="note">Auswertung läuft \u2026</p>';
+    if(gr){
+      out+='<p style="margin-top:10px">Tipp auf '+esc(pname(gr.target))+': <b>'+gr.hits+' von '+gr.of+' Karten richtig</b>'+
+        (gr.hits===gr.of?' \u2713':'')+'</p>'+
+        '<div class="row"><span class="note">getippt</span><div class="cards">'+
+          gr.cards.map(function(r,i){return rankHtml(r,'sm '+(gr.marks[i]?'hit':'miss'));}).join('')+'</div>'+
+        '<span class="note">tatsächlich</span><div class="cards">'+cardsHtml(gr.real,'sm')+'</div></div>';
+    }
+    out+='<div class="hr"></div><div class="bar">'+
+      (isHost()?'<button class="primary" data-a="start">Neue Hand</button>'+addBotBtn():'<span class="note">Warten auf '+esc(pname(hostId()))+'\u2026</span>')+
+      '</div>';
+    out+=statsLine();
+  }
+  return out+'</div>';
+}
+
+/* ---------- Chat ---------- */
+var chatShown=-1,chatMode=null,chatSeenTs=null;
+function renderChat(){
+  var box=$('chat');if(!box)return;
+  var on=!!code,canWrite=!!(code&&!watching&&joined);
+  box.style.display=on?'':'none';
+  if(!on){chatShown=-1;chatMode=null;return;}
+  var mode=canWrite?'rw':'ro';
+  if(!$('chatmsgs')||chatMode!==mode){
+    box.innerHTML='<div class="panel"><h2>Chat</h2><div id="chatmsgs" class="chatmsgs"></div>'+
+      (canWrite?'<div class="row chatform"><input id="chatin" maxlength="300" placeholder="Nachricht \u2026" autocomplete="off">'+
+        '<button class="primary" data-a="chat">Senden</button></div>':
+        '<p class="note">Als Zuschauer liest du mit. Schreiben können nur Spieler.</p>')+'</div>';
+    chatShown=-1;chatMode=mode;
+  }
+  var list=S.chat||[],last=list.length?list[list.length-1].ts+'|'+list.length:'0';
+  if(last===chatShown)return;
+  /* Ton nur für neue Nachrichten anderer, nicht beim ersten Laden des Verlaufs */
+  var newest=list.length?list[list.length-1].ts:0;
+  if(chatSeenTs!=null&&list.some(function(c){return c.ts>chatSeenTs&&c.id!==uid;}))fx('chat');
+  chatSeenTs=Math.max(chatSeenTs||0,newest);
+  chatShown=last;
+  var mb=$('chatmsgs');if(!mb)return;
+  mb.innerHTML=list.length?list.map(function(c){
+    var d=new Date(c.ts),tm=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+    return '<div class="msg'+(c.id===uid?' me':'')+'"><span class="who">'+esc(c.name)+'</span> '+esc(c.text)+
+      ' <span class="tm">'+tm+'</span></div>';
+  }).join(''):'<p class="note">Noch keine Nachrichten.</p>';
+  mb.scrollTop=mb.scrollHeight;
+}
+
+/* Startseite: Restzeit geplanter Räume jede Sekunde; beim Erreichen der Startzeit neu zeichnen */
+setInterval(function(){
+  if(code||!document.querySelectorAll)return;
+  var els=document.querySelectorAll('[data-left]'),now=srvNow(),again=false;
+  for(var i=0;i<els.length;i++){var t=num(els[i].getAttribute('data-left'))||0;if(t<=now)again=true;else els[i].textContent=fmtLeft(t-now);}
+  if(again)render();
+},1000);
+/* Countdown braucht regelmäßiges Neuzeichnen */
+var cdShown=null;
+setInterval(function(){
+  if(!code||!cd.key){cdShown=null;return;}
+  try{tick();}catch(e){console.error(e);}
+  var k=cd.key?cd.key+'|'+cdLeft():null;
+  if(k!==cdShown){cdShown=k;fx('tick');render();}
+},250);
+
+/* ---------- Events ---------- */
+document.addEventListener('click',function(ev){
+  unlockAudio();
+  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react]'):null;
+  if(!el)return;
+  var a=el.getAttribute('data-a');
+  if(el.hasAttribute('data-chip')){takeChip(parseInt(el.getAttribute('data-chip'),10));return;}
+  if(el.hasAttribute('data-kick')){kickPlayer(el.getAttribute('data-kick'));return;}
+  if(el.hasAttribute('data-take')){takeOver(el.getAttribute('data-take'));return;}
+  if(el.hasAttribute('data-replace')){replaceBot(el.getAttribute('data-replace'));return;}
+  if(el.hasAttribute('data-react')){sendReact(el.getAttribute('data-react'));return;}
+  if(el.hasAttribute('data-nudge')){nudge(el.getAttribute('data-nudge'));return;}
+  uiErr='';
+  if(watching&&['start','abort','ready','force','confirm','reveal','skip'].indexOf(a)>=0)return;
+  if(a==='create')createRoom();
+  else if(a==='join')joinRoom();
+  else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
+  else if(a==='watch')watchRoom(el.getAttribute('data-code'));
+  else if(a==='jump')jumpIn(el.getAttribute('data-code'),el.getAttribute('data-id'));
+  else if(a==='play')playNow();
+  else if(a==='theme')toggleTheme();
+  else if(a==='noteok'){uiNote='';render();}
+  else if(a==='invite'){inviteOpen=!inviteOpen;render();}
+  else if(a==='copylink')copyLink(el.getAttribute('data-code'));
+  else if(a==='sharelink')shareLink(el.getAttribute('data-code'));
+  else if(a==='ics')icsDownload(el.getAttribute('data-code'));
+  else if(a==='plan')planRoom();
+  else if(a==='planopen'){planOpen=!planOpen;planShow=null;render();}
+  else if(a==='planlink'){var pc=el.getAttribute('data-code');planShow=planShow===pc?null:pc;render();}
+  else if(a==='planclose'){planShow=null;render();}
+  else if(a==='fx')toggleFx();
+  else if(a==='close')closeRoom();
+  else if(a==='addbot')addBot();
+  else if(a==='splearn')spToggleLearn();
+  else if(a==='vjoin')voiceJoin();
+  else if(a==='vmute')voiceMute();
+  else if(a==='vleave')voiceLeave();
+  else if(a==='vconsent')voiceConsent();
+  else if(a==='vcancel'){voiceDlg=null;render();}
+  else if(a==='vinfo'){voiceDlg='info';render();}
+  else if(a==='vrevoke')voiceRevoke();
+  else if(a==='reload'){try{location.reload();}catch(e){}}
+  else if(a==='sp')spStart();
+  else if(a==='spnext')spNewHand();
+  else if(a==='spbots')spSetBots(el.getAttribute('data-n'));
+  else if(a==='stats'){ev.preventDefault&&ev.preventDefault();statsOpen=!statsOpen;render();}
+  else if(a==='rename')renameRoom();
+  else if(a==='chat'){var ci=$('chatin');sendChat(ci&&ci.value);}
+  else if(a==='leave')leave();
+  else if(a==='start')startHand();
+  else if(a==='abort')abortHand();
+  else if(a==='ready')toggleReady();
+  else if(a==='force')advance();
+  else if(a==='confirm')confirmGuess();
+  else if(a==='reveal')revealMine();
+  else if(a==='skip')nextReveal().catch(showErr);
+});
+document.addEventListener('keydown',function(ev){
+  if(ev.key!=='Enter'||!ev.target)return;
+  if(ev.target.id==='chatin'){ev.preventDefault();sendChat(ev.target.value);}
+  else if(ev.target.id==='code'&&!code){ev.preventDefault();joinRoom();}
+  else if(ev.target.getAttribute&&ev.target.getAttribute('data-a')==='reload'){ev.preventDefault();try{location.reload();}catch(e){}}
+  else if(ev.target.id==='rname'&&!code){ev.preventDefault();createRoom();}
+});
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(!el.hasAttribute||!el.hasAttribute('data-g'))return;
+  var i=parseInt(el.getAttribute('data-g').slice(1),10);
+  setGuessCard(i,el.value===''?null:parseInt(el.value,10));
+});
+
+/* ---------- Start ---------- */
+try{var th=localStorage.getItem('kr.theme');if(th&&document.documentElement)document.documentElement.setAttribute('data-theme',th);}catch(e){}
+/* Nach Reload/Verbindungsabbruch: derselbe Browser kommt automatisch auf seinen Platz zurück */
+function rejoin(){
+  var c=null;try{c=localStorage.getItem('kr.room');}catch(e){}
+  if(!c||code)return;
+  api('state',{room:c,since:-1}).then(function(r){
+    var me=r.docs&&r.docs['players/'+uid];
+    if(!me||code){try{localStorage.removeItem('kr.room');}catch(e){}return;}
+    if(me.pub&&myPubJwk&&me.pub.x!==myPubJwk.x){
+      try{localStorage.removeItem('kr.room');}catch(e){}
+      uiNote='Dein Platz in Raum '+c+' wurde auf einem anderen Gerät übernommen. Du kannst zuschauen oder neu beitreten.';render();return;
+    }
+    applyConfig(r.config);myName=me.name||myName;enter(c);
+  }).catch(function(e){if(e&&/nicht gefunden/.test(e.message)){try{localStorage.removeItem('kr.room');}catch(x){}}});
+}
+render();
+/* Service Worker: hält die App auf dem Gerät vor (Übungsraum offline, z. B. im Flugzeug) */
+try{if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
+if(window.addEventListener){
+  window.addEventListener('online',function(){netDown=false;fetchRooms();render();});
+  window.addEventListener('offline',function(){netDown=true;render();});   // sofort anzeigen, nicht erst nach dem Neuladen
+}
+(function(){
+  try{
+    if(!window.crypto||!crypto.subtle){
+      fatal='Dieser Browser bietet keine Web-Crypto. Die Seite muss über https:// (oder localhost) laufen.';
+      render();return;
+    }
+    var u=null;try{u=localStorage.getItem('kr.uid');}catch(e){}
+    if(!u){u='u'+hx(rnd(8));try{localStorage.setItem('kr.uid',u);}catch(e){}}
+    uid=u;db=1;
+    api('config',{}).then(function(r){applyConfig(r.config);render();}).catch(function(){});
+    fetchRooms();fetchInviteInfo();
+    loadKeys().then(function(){
+      try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
+      render();
+      if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Übungsraum“ (auch offline)
+      else rejoin();
+      if(inviteCode&&myName){var ci=$('code');if(ci)ci.value=inviteCode;}
+    }).catch(function(e){fatal=(e&&e.message)||String(e);render();});
+  }catch(e){fatal=(e&&e.message)||String(e);render();}
+})();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Letzte Runde – Admin</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f6f5f2;--panel:#fff;--fg:#1b1b19;--muted:#74736d;--line:#dcdad4;--accent:#2f6b4f;--accent-fg:#fff;--red:#b23a2f;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131315;--panel:#1c1c1f;--fg:#e9e8e4;--muted:#9a9a93;--line:#323236;--accent:#4d9b73;--accent-fg:#0d0d0e;--red:#e0776c;}}
+:root[data-theme="dark"]{--bg:#131315;--panel:#1c1c1f;--fg:#e9e8e4;--muted:#9a9a93;--line:#323236;--accent:#4d9b73;--accent-fg:#0d0d0e;--red:#e0776c;}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 48px}
+h1{font-size:19px;margin:0 0 4px;font-weight:650}
+h2{font-size:13px;margin:0 0 10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}
+.note{font-size:12.5px;color:var(--muted)}
+.err{color:var(--red);font-size:13.5px}
+.ok{color:var(--accent);font-size:13.5px}
+button{font:inherit;font-weight:560;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.small{padding:5px 9px;font-size:13px;font-weight:500}
+button.danger{color:var(--red);border-color:var(--line)}
+input[type=text],input[type=password],input[type=number]{font:inherit;padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);width:100%}
+.grid{display:grid;grid-template-columns:1fr auto;gap:10px 14px;align-items:center}
+.grid label{font-size:14px}
+.grid input[type=number]{width:90px}
+.sw{display:flex;align-items:center;gap:8px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:4px 6px}
+td{padding:6px;border-top:1px solid var(--line)}
+code{font-family:ui-monospace,Menlo,monospace}
+.hr{height:1px;background:var(--line);margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+"use strict";
+var API='admin-api';
+var secret='',cfg=null,defs=null,msg='',err='';
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function call(a,body){
+  var o={method:body?'POST':'GET',headers:{'x-admin-secret':secret},cache:'no-store'};
+  if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body);}
+  return fetch(API+'?a='+a,o).then(function(r){
+    return r.text().then(function(t){
+      var j=null;try{j=JSON.parse(t);}catch(e){}
+      if(!r.ok)throw new Error((j&&j.error)||('Fehler '+r.status));
+      return j||{};
+    });
+  });
+}
+function login(s){
+  secret=s;
+  return call('login').then(function(r){
+    cfg=r.config;defs=r.defaults;
+    try{sessionStorage.setItem('kr.admin',s);}catch(e){}
+    err='';return rooms();
+  });
+}
+var roomList=[];
+function rooms(){return call('rooms').then(function(r){roomList=r.rooms||[];render();});}
+
+function render(){
+  var el=$('app');
+  if(!cfg){
+    el.innerHTML='<div class="panel"><h1>Letzte Runde – Admin</h1>'+
+      '<p class="note">Secret aus <code>data/admin-secret.txt</code> bzw. der Umgebungsvariable <code>ADMIN_SECRET</code>.</p>'+
+      '<input type="password" id="s" placeholder="Admin-Secret" autocomplete="current-password">'+
+      '<div class="bar"><button class="primary" id="go">Anmelden</button>'+
+      (err?'<span class="err">'+esc(err)+'</span>':'')+'</div></div>';
+    $('go').onclick=function(){
+      login($('s').value.trim()).catch(function(e){err=e.message;cfg=null;render();});
+    };
+    $('s').onkeydown=function(e){if(e.key==='Enter')$('go').click();};
+    return;
+  }
+  var num=function(k,label,min,max,hint){
+    return '<label for="f_'+k+'">'+label+(hint?'<br><span class="note">'+hint+'</span>':'')+'</label>'+
+      '<input type="number" id="f_'+k+'" min="'+min+'" max="'+max+'" value="'+cfg[k]+'">';
+  };
+  var sw=function(k,label,hint){
+    return '<label for="f_'+k+'">'+label+(hint?'<br><span class="note">'+hint+'</span>':'')+'</label>'+
+      '<div class="sw"><input type="checkbox" id="f_'+k+'"'+(cfg[k]?' checked':'')+'></div>';
+  };
+  var rows=roomList.map(function(r){
+    return '<tr><td><code>'+esc(r.code)+'</code>'+(r.name?'<br><span class="note">'+esc(r.name)+'</span>':'')+'</td><td>'+esc(r.players)+'</td><td>'+esc(r.online)+'</td>'+
+      '<td>'+esc(r.phase)+'</td><td>'+esc(r.hand)+'</td>'+
+      '<td class="note">'+(r.updated?new Date(r.updated).toLocaleString('de-DE'):'')+'</td>'+
+      '<td><button class="small danger" data-del="'+esc(r.code)+'">löschen</button></td></tr>';
+  }).join('');
+  el.innerHTML=
+    '<div class="panel"><h1>Letzte Runde – Admin</h1>'+
+      '<p class="note">Änderungen gelten ab der nächsten Hand; laufende Hände behalten ihre Einstellungen.</p>'+
+      '<div class="hr"></div><h2>Einstellungen</h2><div class="grid">'+
+      num('minPlayers','Mindestspieler',2,12,'unter 3 kann der Geber mitlesen')+
+      num('maxPlayers','Maximalspieler',2,12,'')+
+      num('holeCards','Handkarten je Spieler',1,5,'')+
+      num('roomTtlHours','Räume löschen nach (Stunden)',1,720,'')+
+      sw('allowSteal','Chips dürfen weggenommen werden','sonst nur aus der Mitte')+
+      sw('guessEnabled','Gemeinsamer Tipp vor dem Aufdecken','')+
+      sw('revealHighestFirst','Höchster Chip deckt zuerst auf','sonst ab Chip 1 aufwärts')+
+      sw('voiceEnabled','Voice-Chat','Spieler können per Mikrofon sprechen (direkt zwischen den Geräten, ohne TURN – in manchen Mobilfunk-/Firmennetzen klappt die Verbindung nicht)')+
+      '</div><div class="bar"><button class="primary" id="save">Speichern</button>'+
+      '<button id="reset">Standard</button>'+
+      (msg?'<span class="ok">'+esc(msg)+'</span>':'')+
+      (err?'<span class="err">'+esc(err)+'</span>':'')+'</div></div>'+
+    '<div class="panel"><h2>Räume ('+roomList.length+')</h2>'+
+      (rows?'<table><thead><tr><th>Code / Name</th><th>Spieler</th><th>online</th><th>Phase</th><th>Hand</th><th>zuletzt</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+           :'<p class="note">Keine Räume.</p>')+
+      '<div class="bar"><button class="small" id="refresh">Aktualisieren</button>'+
+      '<button class="small danger" id="delall">Alle Räume löschen</button></div></div>';
+
+  $('save').onclick=function(){
+    var body={};
+    ['minPlayers','maxPlayers','holeCards','roomTtlHours'].forEach(function(k){body[k]=Number($('f_'+k).value);});
+    ['allowSteal','guessEnabled','revealHighestFirst','voiceEnabled'].forEach(function(k){body[k]=$('f_'+k).checked;});
+    call('config',body).then(function(r){cfg=r.config;msg='Gespeichert.';err='';render();
+      setTimeout(function(){msg='';render();},2500);
+    }).catch(function(e){err=e.message;render();});
+  };
+  $('reset').onclick=function(){
+    if(!defs)return;
+    call('config',defs).then(function(r){cfg=r.config;msg='Auf Standard zurückgesetzt.';err='';render();}).catch(function(e){err=e.message;render();});
+  };
+  $('refresh').onclick=function(){rooms().catch(function(e){err=e.message;render();});};
+  $('delall').onclick=function(){
+    if(!confirm('Wirklich alle Räume löschen? Laufende Spiele werden beendet.'))return;
+    call('delroom',{all:true}).then(rooms).catch(function(e){err=e.message;render();});
+  };
+  Array.prototype.forEach.call(el.querySelectorAll('[data-del]'),function(b){
+    b.onclick=function(){
+      var c=b.getAttribute('data-del');
+      if(!confirm('Raum '+c+' löschen?'))return;
+      call('delroom',{code:c}).then(rooms).catch(function(e){err=e.message;render();});
+    };
+  });
+}
+var saved='';try{saved=sessionStorage.getItem('kr.admin')||'';}catch(e){}
+if(saved)login(saved).catch(function(){cfg=null;render();}); else render();
+})();
+</script>
+</body>
+</html>

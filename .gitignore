@@ -1,0 +1,17 @@
+# Zugangsdaten und interne Notizen (nie ins Repo)
+.env
+.env.*
+INTERN.md
+LOG.md
+SECURITY.md
+# Laufzeitdaten der App
+app/data/
+app/logs/
+app/tmp/
+data/
+logs/
+# Sicherungen und Sonstiges
+backups/
+node_modules/
+*.log
+.DS_Store

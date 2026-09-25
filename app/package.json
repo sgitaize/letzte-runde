@@ -1,0 +1,15 @@
+{
+  "name": "kartenrunde",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pokerkarten + Reihenfolge-Chips, Mehrspieler ueber Raumcode",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node scripts/setup.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
