@@ -12,7 +12,7 @@ const hook=`globalThis.__kr={S:function(){return S;},main:main,hand:hand,phase:p
  takeOver:takeOver,leave:leave,cd:function(){return cd;},online:function(){return online;},err:function(){return uiErr;},
  isOnline:isOnline,pmap:pmap,myPub:function(){return myPubJwk;},closeRoom:closeRoom,isHost:isHost,bestHand:bestHand,handName:handName,cmpHand:cmpHand,
  resolveHand:resolveHand,guessResult:guessResult,visibleBoard:visibleBoard,HAND_EX:HAND_EX,HAND_NAMES:HAND_NAMES,
- jumpIn:jumpIn,sendReact:sendReact,lastFx:function(){return lastFx;},inviteUrl:inviteUrl,renameRoom:renameRoom,calcStats:calcStats,statsOpen:function(){statsOpen=true;render();},roomName:roomName,planRoom:planRoom,planned:function(){return planned;},inviteInfo:function(){return inviteInfo;},note:function(){return uiNote;},nudge:nudge,toggleFx:toggleFx,
+ jumpIn:jumpIn,preStart:preStart,sendReact:sendReact,lastFx:function(){return lastFx;},inviteUrl:inviteUrl,renameRoom:renameRoom,calcStats:calcStats,statsOpen:function(){statsOpen=true;render();},roomName:roomName,planRoom:planRoom,planned:function(){return planned;},inviteInfo:function(){return inviteInfo;},note:function(){return uiNote;},nudge:nudge,toggleFx:toggleFx,
  openInvite:function(){inviteOpen=true;render();},inviteCode:function(){return inviteCode;}};\n`;
 const i=src.lastIndexOf('})();'); src=src.slice(0,i)+hook+src.slice(i);
 function client(name,ls,opts){
@@ -408,7 +408,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   // ---- Geplanter Raum: Link vorab, Beitritt erst ab Startzeit, erster Spieler wird Host ----
   const pad=x=>String(x).padStart(2,'0'), local=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());};
   const Pl=client('Paula'); await sleep(400);
-  const startAt=Math.ceil((Date.now()+8000)/1000)*1000;
+  const startAt=Math.ceil((Date.now()+20000)/1000)*1000;
   Pl.els.sname={value:'Spieleabend'}; Pl.els.stime={value:local(startAt)};
   Pl.__kr.planRoom(); await until(()=>Pl.__kr.planned().length===1,'Raum geplant');
   const pc=Pl.__kr.planned()[0].code;
@@ -432,22 +432,26 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(inf.startsAt===startAt&&inf.name==='Spieleabend'&&inf.players===0,'Server kennt Startzeit und Name');
   const Q=client('Quinn',null,{hash:'#'+pc}); await until(()=>Q.__kr.inviteInfo()&&Q.__kr.inviteInfo().startsAt,'Einladungsinfo');
   ok(/Spieleabend/.test(Q.els.app.innerHTML)&&/noch/.test(Q.els.app.innerHTML)&&/data-left/.test(Q.els.app.innerHTML),'Einladung zeigt Name, Startzeit und Restzeit');
-  Q.__kr.joinRoom(pc); await sleep(500);
-  ok(!Q.__kr.code()&&/öffnet erst/.test(Q.__kr.err()),'Beitreten vor Start im Client gesperrt: '+Q.__kr.err());
-  r=await post('set',pc+'&path=players/frueh',{name:'Frühvogel'},'frueh-schluessel-00000001');
-  ok(r.status===403,'Beitreten vor Start auch am Server gesperrt (403)');
+  // Wartebereich: schon vor dem Start beitreten, chatten; Spielbeginn erst zur Startzeit
+  ok(/Wartebereich/.test(Q.els.app.innerHTML),'Einladung: „Du kannst schon jetzt in den Wartebereich“');
+  Q.__kr.joinRoom(pc); await until(()=>Q.__kr.code()===pc&&Q.__kr.S().players.length===1,'Quinn im Wartebereich');
+  await until(()=>Q.__kr.isHost(),'Quinn wird Host'); ok(true,'Vor dem Start beitreten geht – wer zuerst drin ist, wird Host');
+  ok(/class="panel waitroom/.test(Q.els.app.innerHTML)&&/data-a="start" disabled/.test(Q.els.app.innerHTML),'Wartebereich mit Countdown, „Hand geben“ gesperrt');
+  const Ri=client('Rita',null,{hash:'#'+pc}); await sleep(600);
+  Ri.__kr.joinRoom(pc); await until(()=>Q.__kr.S().players.length===2&&Ri.__kr.code()===pc,'Rita im Wartebereich');
+  Q.__kr.sendChat('Bin schon da!'); await until(()=>Ri.__kr.S().chat.some(m=>m.text==='Bin schon da!'),'Chat im Wartebereich');
+  ok(true,'Chat im Wartebereich');
+  r=await post('set',pc+'&path=state/main',{phase:'deal',hand:1,stage:0,participants:[Q.__kr.uid(),Ri.__kr.uid()]},Q.ls['kr.sk']);
+  ok(r.status===403,'Spielbeginn vor der Startzeit am Server gesperrt (403)');
   ok((await post('create','ZZP1',{startsAt:Date.now()+40*86400000})).status===400,'Startzeit über 30 Tage → 400');
   ok((await post('create','ZZP2',{startsAt:Date.now()-5000})).status===400,'Startzeit in der Vergangenheit → 400');
-  await until(()=>Date.now()>startAt+300,'Startzeit erreicht',15000);
-  const Ri=client('Rita',null,{hash:'#'+pc}); await sleep(600);
-  Ri.__kr.joinRoom(pc); await until(()=>Ri.__kr.S().players.length===1,'Rita im Raum');
-  await until(()=>Ri.__kr.S().room&&Ri.__kr.S().room.hostId===Ri.__kr.uid(),'Rita wird Host');
-  ok(Ri.__kr.isHost(),'Erster Spieler nach Start ist Host');
-  Q.__kr.joinRoom(pc); await until(()=>Q.__kr.S().players.length===2,'Quinn im Raum');
-  ok(!Q.__kr.isHost()&&Q.__kr.S().room.hostId===Ri.__kr.uid(),'Zweiter Spieler ist nicht Host');
+  await until(()=>Date.now()>startAt+300,'Startzeit erreicht',30000);
+  await until(()=>!/class="panel waitroom/.test(Q.els.app.innerHTML),'Wartebereich endet von selbst',5000);
+  ok(!Q.__kr.preStart()&&!/· Start /.test(Q.els.app.innerHTML),'Zur Startzeit: Wartebereich weg, Start nicht mehr zeitlich gesperrt');
+  ok(!Ri.__kr.isHost()&&Ri.__kr.S().room.hostId===Q.__kr.uid(),'Zweiter Spieler ist nicht Host');
   r=await post('set',pc+'&path=players/'+Q.__kr.uid(),{name:'Quinn',joinedAt:1},Q.ls['kr.sk']);
   await sleep(300); const qd=(await (await fetch(BASE+'api?a=get&room='+pc+'&path=players/'+Q.__kr.uid())).json()).doc;
-  ok(qd.joinedAt>1000&&Ri.__kr.isHost(),'Gefälschtes Beitrittsdatum wird ignoriert, Host bleibt');
-  Ri.__kr.closeRoom(); await until(()=>!Q.__kr.code(),'geplanter Raum geschlossen');
+  ok(qd.joinedAt>1000&&Q.__kr.isHost(),'Gefälschtes Beitrittsdatum wird ignoriert, Host bleibt');
+  Q.__kr.closeRoom(); await until(()=>!Ri.__kr.code(),'geplanter Raum geschlossen');
   console.log('ALLE TESTS BESTANDEN');process.exit(0);
 })().catch(e=>{console.error(e.message);process.exit(1);});

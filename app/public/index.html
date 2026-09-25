@@ -208,6 +208,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .steal-box .chip.big{width:72px;height:72px;font-size:30px}.steal-txt{font-size:22px;line-height:1.3}
 .steal-box.anim{animation:stealIn .3s ease-out}@keyframes stealIn{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion: reduce){.steal-box.anim{animation:none}}
+.waitroom{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--panel))}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
 .pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
@@ -606,6 +607,9 @@ function phase(){return main().phase||'lobby';}
 function stage(){return Math.min(4,Math.max(0,num(main().stage)||0));}
 function parts(){ var p=main().participants; return (p&&p.length)?p:S.players.map(function(x){return x.id;}); }
 function pmap(){var m={};S.players.forEach(function(p){m[p.id]=p;});return m;}
+function preStart(){return !!(S.room&&num(S.room.startsAt)>srvNow());}   // geplanter Raum, Startzeit noch nicht erreicht
+var prevPre=null;
+setInterval(function(){if(!code)return;var p=preStart();if(p!==prevPre){prevPre=p;render();}},1000);   // zur Startzeit Wartebereich beenden, Start freigeben
 function roomName(){return (S.room&&typeof S.room.name==='string')?S.room.name:'';}
 function roomLabel(c,n){return n?'„'+n+'“ ('+c+')':'Raum '+c;}
 function pname(id){var p=pmap()[id];return p?p.name:'Spieler';}
@@ -1090,6 +1094,7 @@ function nextReveal(){
   return setMain(i>=ord.length?{phase:'done',revealIdx:i}:{revealIdx:i});
 }
 function startHand(){
+  if(preStart()){uiErr='Los geht’s erst zur Startzeit ('+fmtWhen(num(S.room.startsAt))+').';render();return;}
   var ps=S.players.map(function(p){return p.id;});
   var need=CFG.minPlayers||3;
   if(ps.length<need){uiErr='Mindestens '+need+' Spieler nötig.';render();return;}
@@ -2034,7 +2039,7 @@ function inviteHint(){
   if(ii&&ii.missing)return '<p class="err" style="margin-top:10px">Raum '+esc(inviteCode)+' gibt es nicht (mehr).</p>';
   if(ii&&ii.startsAt&&ii.startsAt>srvNow())
     return '<p class="info" style="margin-top:10px">📅 Du bist zu <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen. Start: <b>'+esc(fmtWhen(ii.startsAt))+'</b> \u2013 noch <b><span data-left="'+num(ii.startsAt)+'">'+fmtLeft(ii.startsAt-srvNow())+'</span></b>. '+
-      'Ab dann kannst du beitreten; wer zuerst drin ist, wird Host.</p><div class="bar"><button class="small ghost" data-a="ics" data-code="'+esc(inviteCode)+'">📅 In den Kalender</button></div>';
+      'Du kannst schon jetzt in den <b>Wartebereich</b> und mit den anderen chatten'+(voice.enabled?' oder sprechen':'')+'; los geht’s zur Startzeit. Wer zuerst drin ist, wird Host.</p><div class="bar"><button class="small ghost" data-a="ics" data-code="'+esc(inviteCode)+'">📅 In den Kalender</button></div>';
   return '<p class="info" style="margin-top:10px">Du wurdest in <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen \u2013 Namen eingeben und auf \u201eBeitreten\u201c tippen.'+
     (ii&&ii.startsAt&&!ii.players?' Du bist der Erste und wirst Host.':'')+'</p>';
 }
@@ -2054,7 +2059,7 @@ function roomsHtml(){
     var full=CFG.maxPlayers&&r.players>=CFG.maxPlayers;
     return '<div class="pl"><span class="code">'+esc(r.code)+'</span>'+
       '<div class="nm">'+(r.name?'<b>'+esc(r.name)+'</b><br>':'')+esc((r.names||[]).join(', '))+
-        '<div class="note">'+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
+        '<div class="note">'+(num(r.startsAt)>srvNow()?'\u23f3 Start '+esc(fmtWhen(num(r.startsAt)))+' \u00b7 ':'')+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
       (full?'':'<button class="small" data-a="joincode" data-code="'+esc(r.code)+'">Beitreten</button>')+
       '<button class="small ghost" data-a="watch" data-code="'+esc(r.code)+'">Zuschauen</button>'+
       ((r.free&&r.free.length)?'<div class="jump">'+r.free.map(function(f){
@@ -2096,7 +2101,6 @@ function joinRoom(pre){
   api('info',{room:c}).then(function(inf){
     srvOff=(num(inf.now)||Date.now())-Date.now();
     var t=num(inf.startsAt)||0;
-    if(t>srvNow()){uiErr=roomLabel(c,inf.name)+' öffnet erst '+fmtWhen(t)+' (noch '+fmtLeft(t-srvNow())+').';render();return null;}
     return api('state',{room:c,since:-1});
   }).then(function(r){
     if(!r)return;
@@ -2121,7 +2125,6 @@ function playNow(){
   var name=($('name')||{}).value||'';
   if(!name.trim()){uiErr='Bitte Namen eingeben.';render();return;}
   if(CFG.maxPlayers&&S.players.length>=CFG.maxPlayers){uiErr='Raum ist voll ('+CFG.maxPlayers+' Spieler).';render();return;}
-  if(S.room&&num(S.room.startsAt)>srvNow()){uiErr='Der Raum öffnet erst '+fmtWhen(num(S.room.startsAt))+'.';render();return;}
   myName=name.trim();
   try{localStorage.setItem('kr.name',myName);}catch(e){}
   var cur=docs['players/'+uid]||{};
@@ -2327,7 +2330,7 @@ function roomView(){
   out+='<div class="panel"><div class="spread">'+
     '<div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span>'+
       (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="Raum umbenennen">✎</button>':'')+'</h1>'+
-    '<div class="note">'+esc(phaseLabel())+(S.room&&num(S.room.startsAt)>srvNow()?' \u00b7 öffnet '+esc(fmtWhen(num(S.room.startsAt)))+'':'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
+    '<div class="note">'+esc(phaseLabel())+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
       '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
@@ -2349,9 +2352,12 @@ function roomView(){
   var L='',Rt='';
   var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+L+'</div><div class="col-r">'+Rt+'</div></div>';};
   if(ph==='lobby'){
+    if(preStart())L+='<div class="panel waitroom p-board"><p>\u23f3 <b>Wartebereich</b> \u2013 Start '+esc(fmtWhen(num(S.room.startsAt)))+
+      ' \u00b7 noch <b><span data-left="'+num(S.room.startsAt)+'">'+fmtLeft(num(S.room.startsAt)-srvNow())+'</span></b></p>'+
+      '<p class="note">Bis dahin: Chat'+(voice.enabled?', Voice-Chat':'')+' und Reaktionen. \u201eHand geben\u201c geht ab der Startzeit.</p></div>';
     L+='<div class="panel p-players"><div class="spread"><h2>Spieler ('+S.players.length+')</h2>'+reactBar()+'</div>'+playerList(false)+
       '<div class="hr"></div><div class="bar">'+
-      (isHost()?'<button class="primary" data-a="start"'+(S.players.length<(CFG.minPlayers||3)?' disabled':'')+'>Hand geben</button>'+addBotBtn():
+      (isHost()?'<button class="primary" data-a="start"'+(S.players.length<(CFG.minPlayers||3)||preStart()?' disabled':'')+'>Hand geben</button>'+addBotBtn():
         '<span class="note">Warten auf '+esc(pname(hostId()))+' \u2026</span>')+
       (S.players.length<(CFG.minPlayers||3)?'<span class="note">Mindestens '+(CFG.minPlayers||3)+' Spieler nötig.</span>':'')+
       '</div></div>';
@@ -2572,7 +2578,7 @@ function renderChat(){
 
 /* Startseite: Restzeit geplanter Räume jede Sekunde; beim Erreichen der Startzeit neu zeichnen */
 setInterval(function(){
-  if(code||!document.querySelectorAll)return;
+  if(!document.querySelectorAll)return;
   var els=document.querySelectorAll('[data-left]'),now=srvNow(),again=false;
   for(var i=0;i<els.length;i++){var t=num(els[i].getAttribute('data-left'))||0;if(t<=now)again=true;else els[i].textContent=fmtLeft(t-now);}
   if(again)render();

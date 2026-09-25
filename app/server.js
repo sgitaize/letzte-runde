@@ -708,7 +708,7 @@ function openRooms() {
       const free = r ? idleList(x.code, r).map((id) => ({ id: id, name: cleanName((r.docs['players/' + id] || {}).name).slice(0, 18) })) : [];
       if (r && r.bots && betweenHands(r)) for (const id of Object.keys(r.bots))   // zwischen den Händen: Bot-Plätze sind frei
         if (r.docs['players/' + id]) free.push({ id: id, name: cleanName(r.docs['players/' + id].name).slice(0, 18), bot: true });
-      return { code: x.code, name: x.name, players: x.players, names: x.names, phase: x.phase, hand: x.hand, free: free };
+      return { code: x.code, name: x.name, startsAt: x.startsAt || 0, players: x.players, names: x.names, phase: x.phase, hand: x.hand, free: free };
     });
   openRoomsAt = now;
   return openRoomsCache;
@@ -992,7 +992,6 @@ async function api(req, res, u) {
   if (a === 'set' && p.indexOf('players/') === 0) {
     const pid = p.slice(8), kh = keyHash(req);
     if (!kh) return json(res, 403, { error: 'Geraeteschluessel fehlt' });
-    if (!r.docs['players/' + pid] && notOpenYet(r)) return json(res, 403, { error: 'Raum ist noch nicht geöffnet' });
     if (isBotId(r, pid)) return json(res, 403, { error: 'Bot-Platz' });
     const free = !(r.keys && r.keys[pid]);
     const takeover = !free && r.keys[pid] !== kh && takeable(code, r, pid);
@@ -1011,6 +1010,8 @@ async function api(req, res, u) {
         joinedAt: (r.docs[p] && Number(r.docs[p].joinedAt)) || Date.now(),
         ready: (body.ready && typeof body.ready === 'object') ? { hand: Number(body.ready.hand) || 0, stage: Number(body.ready.stage) || 0 } : null };
     }
+    /* Geplanter Raum: Wartebereich (Beitritt, Chat, Voice) schon vorher, Spielbeginn erst zur Startzeit */
+    if (p === 'state/main' && body.phase === 'deal' && notOpenYet(r)) return json(res, 403, { error: 'Los geht’s erst zur geplanten Startzeit' });
     const prevMain = p === 'state/main' ? (r.docs['state/main'] || {}) : null;
     const v = change(code, p, body);
     /* Neue Hand gestartet (Phase „geben“, Handnummer +1) → Zähler für die Startseite */
