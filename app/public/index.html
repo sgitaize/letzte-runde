@@ -1463,21 +1463,21 @@ function spStage(st){
   sp.prevMe=prev.me||null;                  // dein Chip der Vorrunde (nimmst du ihn wieder, gilt die Absprache)
   sp.players.forEach(function(p){
     if(!p.bot)return;
-    var last=st>1?p.est:null;
-    p.est=spEstimate(p.id,st===4?300:160);  // erwarteter Rang am Ende (1 = schwächste Hand); mit vollem Tisch genauer
-    /* Der Mittelwert liegt fast immer nahe der Mitte → spreizen, damit starke Karten klar nach oben zeigen */
-    p.est=(sp.players.length+1)/2+(p.est-(sp.players.length+1)/2)*1.7;   // nicht kappen: die Reihenfolge starker Hände bleibt erhalten
-    p.bias=spGauss()*p.noise*(st===4?0.35:1); // Fehleinschätzung in dieser Runde (mit vollem Tisch geringer)
-    p.e=p.est+p.bias;
-    p.first=p.gut;p.lost=null;p.yieldTo={};p.perc={};p.anchor=null;
-    /* Hat die neue Tischkarte an meiner Einschätzung kaum etwas geändert, gilt die Reihenfolge der Vorrunde weiter:
-       ich gehe von meinem damaligen Chip aus (plus der kleinen Änderung) und greife nicht erst „aus dem Bauch“ */
-    if(last!=null&&prev[p.id]&&Math.abs(p.est-last)<0.5){p.anchor=prev[p.id];p.e=prev[p.id]+(p.est-last)*0.8;p.first=false;}
+    var last=st>1?p.est:null,mid=(sp.players.length+1)/2;
+    p.est=spEstimate(p.id,200);  // erwarteter Rang am Ende (1 = schwächste Hand); vor dem Flop Tabelle, mit vollem Tisch exakt
+    p.q=(p.est-1)/(sp.players.length-1);    // Anteil der Hände, die ich schlage (0…1)
+    /* Vor dem River liegt der Mittelwert fast immer nahe der Mitte → spreizen, damit starke Karten klar nach oben zeigen */
+    p.est=mid+(p.est-mid)*(st===4?1.2:1.7);   // nicht kappen: die Reihenfolge starker Hände bleibt erhalten
+    /* Fehleinschätzung: einmal je Hand gewürfelt und mit jeder Tischkarte kleiner. Neu würfeln je Runde ließ die Bots
+       ohne Grund zwischen den Runden springen; so ändern sie ihren Platz nur, wenn die Karte wirklich etwas ändert. */
+    if(st===1||p.bias0==null)p.bias0=spGauss()*p.noise;
+    p.e=p.est+p.bias0*[0,1,0.6,0.35,0.1][st];
+    /* Wie ein Mensch: kleine Änderungen sind kein Grund, den Platz zu wechseln → etwas an den Chip der Vorrunde gebunden */
+    if(prev[p.id])p.e+=(prev[p.id]-p.e)*[0,0,0.25,0.2,0][st];
+    p.first=p.gut;p.lost=null;p.yieldTo={};p.anchor=null;
+    /* Hat die neue Tischkarte an meiner Einschätzung kaum etwas geändert, greife ich zuerst wieder zu meinem Chip der Vorrunde */
+    if(last!=null&&prev[p.id]&&Math.abs(p.est-last)<0.5){p.anchor=prev[p.id];p.first=true;}
     p.next=now+(600+Math.random()*p.pace*1.6)*SP_TEMPO*spSpeed;
-  });
-  sp.players.forEach(function(p){            // Eindruck von den anderen; zwischen zwei „gleich gebliebenen“ Bots gilt die Vorrunde
-    if(!p.bot)return;
-    sp.players.forEach(function(q){if(q.bot&&q.id!==p.id)p.perc[q.id]=(p.anchor&&q.anchor)?0:spGauss()*(st===4?0.2:0.35);});
   });
   render();
 }
@@ -1510,8 +1510,10 @@ function spTarget(p,e){
     var held=sp.chips[q.id]||null;
     if(held&&(p.yieldTo[q.id]===held||(q.id==='me'&&(sp.meFixed===held||(p.anchor&&held===sp.prevMe))))){fixed[held]=1;return;}   // akzeptiert (selbst, am Tisch gesehen oder in der Vorrunde ausgemacht)
     var v;
-    if(q.bot)v=q.e+(p.perc[q.id]||0);
-    else v=held?held+(held>mid?-0.5:held<mid?0.5:0):mid;   // deine Ansage, etwas zur Mitte hin: man traut ihr nicht blind
+    /* Bots lesen einander über die Chips; hier direkt ihre Einschätzung, für alle gleich – sonst schieben sie sich
+       endlos Chips hin und her, weil jeder die anderen etwas anders sieht */
+    if(q.bot)v=q.e;
+    else v=held?held+(held>mid?-0.25:held<mid?0.25:0):(sp.prevMe||mid);   // deine Ansage (etwas zur Mitte hin); ohne Chip gilt deiner aus der Vorrunde
     list.push({id:q.id,v:v});
   });
   for(var c=1;c<=n;c++)if(!fixed[c])left.push(c);
@@ -1526,9 +1528,11 @@ function spBotAct(p){
     if(!cur)spTakeFor(p.id,spNearestFree(p.e));
     sp.ready[p.id]=true;p.next=Infinity;return;
   }
-  var e=p.e;
-  if(p.first){e+=spGauss()*0.9;p.first=false;}   // erster Griff aus dem Bauch
-  var t=spTarget(p,e);
+  var e=p.e,t;
+  if(p.first){                                        // erster Griff: eigener Chip der Vorrunde bzw. aus dem Bauch nur nach der eigenen Einschätzung
+    p.first=false;
+    t=p.anchor&&!spHolder(p.anchor)?p.anchor:cur?spTarget(p,e):spNearestFree(Math.max(1,Math.min(n,Math.round(e))));
+  }else t=spTarget(p,e);
   if(cur===t){                                        // passt → nach kurzer Ruhe klopfen
     if(!sp.ready[p.id]&&now-sp.stable[p.id]>(900+p.pace*0.6)*SP_TEMPO*spSpeed)sp.ready[p.id]=true;
     later(1);return;
@@ -1543,9 +1547,11 @@ function spBotAct(p){
      Bei dir: nur wenn ich mir sicher bin; wer gerade genau diesen Chip verloren hat, hängt daran. */
   var key=p.id+':'+t,cc=sp.contest[key]||0,pSteal;
   if(h==='me'){
-    var sure=Math.min(1,Math.abs(e-(n+1)/2)/((n-1)/2));          // wie weit außen sehe ich mich
-    pSteal=0.05+0.2*p.stub+0.35*sure+(lost===t?0.25:0)-0.4*cc-0.3*(sp.insist[t]||0);   // wer auf seinem Chip besteht, wirkt überzeugt
-  }else pSteal=0.85-0.3*cc;
+    /* Wie sicher bin ich? Starke/schwache Hand (weit außen) und Abstand zu deiner Ansage – beides zählt mit jeder Tischkarte mehr.
+       Wer auf seinem Chip besteht, wirkt überzeugt; nach zwei, drei Versuchen gebe ich nach. */
+    var above=e>t,sure=Math.max(0,Math.min(1,((above?p.q:1-p.q)-0.5)*2.2)),conf=[0,0.35,0.6,0.8,1][sp.stage];   // sicher über (bzw. unter) dir?
+    pSteal=0.05+0.08*p.stub+conf*0.75*sure+(lost===t?0.15:0)-0.25*cc-0.2*(sp.insist[t]||0);
+  }else pSteal=0.95-0.15*cc;                          // unter Bots gilt dieselbe Rangfolge → der andere rückt weiter
   pSteal=Math.max(0,Math.min(0.9,pSteal));
   sp.contest[key]=cc+1;
   if(Math.random()<pSteal){

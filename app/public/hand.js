@@ -82,11 +82,28 @@ function ownImproves(mine,board){
 
 /* Monte-Carlo: fremde Handkarten und fehlende Tischkarten zufällig ergänzen und zählen, wie viele Hände
    schwächer sind → erwarteter Rang 1..(others+1) am Ende (1 = schwächste Hand). */
+/* Vor dem Flop: Tabelle statt Monte-Carlo (sonst rechnet der Browser je Bot eine halbe Sekunde). Wert = Anteil gewonnener
+   Einzelduelle in Promille (Hausregel, Unentschieden halb), erzeugt mit tests/gen-preflop.js. Index siehe preKey. */
+var PRE=[495,303,338,531,314,351,343,373,564,333,367,353,388,378,407,600,329,366,356,393,376,410,399,432,628,339,379,359,394,385,418,408,439,427,459,663,363,398,372,405,390,424,415,448,436,464,454,483,692,387,422,400,429,406,435,433,459,452,477,472,496,485,513,721,411,443,421,457,436,462,445,475,468,494,484,509,504,526,519,547,748,436,469,446,481,460,489,475,503,487,511,503,529,516,546,537,565,555,578,776,468,492,480,506,493,521,505,529,520,537,526,546,544,568,562,579,581,601,586,607,802,495,526,510,539,517,550,536,565,545,574,558,583,564,589,585,603,601,623,615,632,616,637,825,545,568,554,577,566,589,583,603,582,603,593,616,604,622,613,633,628,650,641,658,649,668,658,674,854];
+function preKey(hole){
+  var a=Math.max(hole[0]%13,hole[1]%13),b=Math.min(hole[0]%13,hole[1]%13),s=Math.floor(hole[0]/13)===Math.floor(hole[1]/13)?1:0;
+  return a*a+2*b+s;   // je hohe Karte x liegen 2x+1 Einträge (b<x ungleichfarbig/gleichfarbig, Paar) → vor a: a·a
+}
 function estimateRank(hole,vis,others,K,sims){
+  if(!vis.length&&K===2&&PRE)return 1+others*PRE[preKey(hole)]/1000;
   var known={},deck=[],i,s,sum=0;
   sims=sims||160;
   hole.concat(vis).forEach(function(c){known[c]=1;});
   for(i=0;i<52;i++)if(!known[i])deck.push(i);
+  /* Voller Tisch, 2 Handkarten: exakt über alle möglichen Gegnerhände rechnen (kein Zufall → gleiche Hand, gleiche Einschätzung) */
+  if(vis.length===5&&K===2){
+    var me=bestHand(hole.concat(vis),hole),win=0,cnt=0;
+    for(i=0;i<deck.length;i++)for(var j=i+1;j<deck.length;j++){
+      var oh=[deck[i],deck[j]],y=cmpHand(me,bestHand(oh.concat(vis),oh));
+      win+=y>0?1:y===0?0.5:0;cnt++;
+    }
+    return 1+others*win/cnt;
+  }
   var need=others*K+(5-vis.length);
   for(s=0;s<sims;s++){
     var d=deck.slice();
@@ -101,7 +118,7 @@ function estimateRank(hole,vis,others,K,sims){
   return sum/sims;
 }
 
-var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank};
+var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,preKey:preKey};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else for(var k in api)root[k]=api[k];
 })(typeof globalThis!=='undefined'?globalThis:this);

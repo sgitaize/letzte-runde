@@ -225,15 +225,18 @@ module.exports = function createBots(ctx) {
     const vis = slotsFor(st).map((i) => R.board[i]);
     bots.forEach((id) => {
       const b = R.bots[id], pr = r.bots[id], last = st > 1 ? b.est : null;
-      b.est = mid + (H.estimateRank(b.hole.cards, vis, n - 1, K, st === 4 ? 200 : 120) - mid) * 1.7;
-      b.bias = gauss() * pr.noise * (st === 4 ? 0.35 : 1);
-      b.e = b.est + b.bias;
-      b.first = pr.gut; b.lost = null; b.yieldTo = {}; b.perc = {}; b.anchor = null; b.lastChip = null; b.stable = now;
+      /* Gleiche Logik wie im Übungsraum (index.html, spStage): vor dem Flop Tabelle, River exakt, Fehleinschätzung einmal je Hand */
+      const raw = H.estimateRank(b.hole.cards, vis, n - 1, K, 150);
+      b.q = (raw - 1) / (n - 1);                                   // Anteil der Hände, die ich schlage
+      b.est = mid + (raw - mid) * (st === 4 ? 1.2 : 1.7);
+      if (st === 1 || b.biasHand !== h) { b.bias0 = gauss() * pr.noise; b.biasHand = h; }
+      b.e = b.est + b.bias0 * [0, 1, 0.6, 0.35, 0.1][st];
       const pc = prev[id] != null ? Number(prev[id]) : null;
-      if (last != null && pc && Math.abs(b.est - last) < 0.5) { b.anchor = pc; b.e = pc + (b.est - last) * 0.8; b.first = false; }
+      if (pc) b.e += (pc - b.e) * [0, 0, 0.25, 0.2, 0][st];         // kleine Änderungen sind kein Grund, den Platz zu wechseln
+      b.first = pr.gut; b.lost = null; b.yieldTo = {}; b.anchor = null; b.lastChip = null; b.stable = now;
+      if (last != null && pc && Math.abs(b.est - last) < 0.5) { b.anchor = pc; b.first = true; }
       b.next = now + (600 + Math.random() * pr.pace * 1.6) * TEMPO;
     });
-    bots.forEach((id) => { const b = R.bots[id]; bots.forEach((q) => { if (q !== id) b.perc[q] = (b.anchor && R.bots[q].anchor) ? 0 : gauss() * (st === 4 ? 0.2 : 0.35); }); });
   }
   function target(r, m, R, h, id, e) {
     const ps = partsOf(m), n = ps.length, mid = (n + 1) / 2, b = R.bots[id], fixed = {}, list = [], left = [];
@@ -241,7 +244,9 @@ module.exports = function createBots(ctx) {
       if (q === id) { list.push({ id: q, v: e }); return; }
       const held = chipOf(r, h, q), bot = isBot(r, q);
       if (held && (b.yieldTo[q] === held || (!bot && (R.humanFixed[q] === held || (b.anchor && held === Number(R.prev[q])))))) { fixed[held] = 1; return; }
-      const v = bot && R.bots[q] ? R.bots[q].e + (b.perc[q] || 0) : held ? held + (held > mid ? -0.5 : held < mid ? 0.5 : 0) : mid;
+      /* Bots: für alle dieselbe Einschätzung (sonst endloses Hin und Her); Menschen: ihr Chip, ohne Chip der aus der Vorrunde */
+      const pv = Number(R.prev[q]) || mid;
+      const v = bot && R.bots[q] ? R.bots[q].e : held ? held + (held > mid ? -0.25 : held < mid ? 0.25 : 0) : pv;
       list.push({ id: q, v });
     });
     for (let c = 1; c <= n; c++) if (!fixed[c]) left.push(c);
@@ -263,9 +268,12 @@ module.exports = function createBots(ctx) {
       return true;
     };
     if (mv >= 8) { if (!cur) { const f = nearestFree(r, h, n, b.e); if (f) take(f); } else if (!readyOf(r, h, st, id)) setReady(code, r, h, st, id); b.next = now + 2000; return; }
-    let e = b.e;
-    if (b.first) { e += gauss() * 0.9; b.first = false; }
-    const t = target(r, m, R, h, id, e);
+    const e = b.e;
+    let t;
+    if (b.first) {                                               // erster Griff: Chip der Vorrunde bzw. nur nach eigener Einschätzung
+      b.first = false;
+      t = b.anchor && !holderOf(r, h, b.anchor) ? b.anchor : cur ? target(r, m, R, h, id, e) : nearestFree(r, h, n, Math.max(1, Math.min(n, Math.round(e))));
+    } else t = target(r, m, R, h, id, e);
     if (!t) { later(1); return; }
     if (cur === t) {
       if (!readyOf(r, h, st, id) && now - b.stable > (900 + pr.pace * 0.6) * TEMPO) setReady(code, r, h, st, id);
@@ -279,9 +287,9 @@ module.exports = function createBots(ctx) {
     const key = id + ':' + t, cc = R.contest[key] || 0;
     let p;
     if (!isBot(r, holder)) {
-      const sure = Math.min(1, Math.abs(e - (n + 1) / 2) / ((n - 1) / 2));
-      p = 0.05 + 0.2 * pr.stub + 0.35 * sure + (lost === t ? 0.25 : 0) - 0.4 * cc - 0.3 * (R.insist[t] || 0);
-    } else p = 0.85 - 0.3 * cc;
+      const sure = Math.max(0, Math.min(1, ((e > t ? b.q : 1 - b.q) - 0.5) * 2.2)), conf = [0, 0.35, 0.6, 0.8, 1][st];   // sicher über/unter dir?
+      p = 0.05 + 0.08 * pr.stub + conf * 0.75 * sure + (lost === t ? 0.15 : 0) - 0.25 * cc - 0.2 * (R.insist[t] || 0);
+    } else p = 0.95 - 0.15 * cc;
     p = Math.max(0, Math.min(0.9, p));
     R.contest[key] = cc + 1;
     if (Math.random() < p && take(t)) {
