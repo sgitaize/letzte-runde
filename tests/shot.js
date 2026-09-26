@@ -1,6 +1,6 @@
 /* Screenshots der echten Seite in Chromium (headless, über das DevTools-Protokoll, ohne Zusatzpakete).
    Startet einen lokalen Server (Port 3995) aus einer Wegwerf-Kopie von app/ und fotografiert
-   Übungsraum und Mehrspieler-Raum (1 Mensch + 3 Bots) in mehreren Bildschirmgrößen.
+   Singleplayer und Mehrspieler-Raum (1 Mensch + 3 Bots) in mehreren Bildschirmgrößen.
    Nutzung: node --experimental-websocket tests/shot.js <ausgabe-ordner> [breite x höhe ...]
    Beispiel: node --experimental-websocket tests/shot.js /tmp/shots 1024x768 1366x768 390x844 */
 'use strict';
@@ -51,10 +51,10 @@ async function cdp() {
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
   await js('document.getElementById("name").value="Simon";1');
-  // Übungsraum mit 5 Bots, Runde 2 und Handende
+  // Singleplayer mit 5 Bots, Runde 2 und Handende
   await js('localStorage.setItem("kr.sp.bots","5");1');
   await click('[data-a="sp"]');
-  await until('/Übungsraum/.test(document.body.innerText)');
+  await until('/Singleplayer/.test(document.body.innerText)');
   if (process.env.LEARN && !(await js('!!document.querySelector(".coach")'))) await click('[data-a="splearn"]');
   await sleep(2500);
   await shoot('sp-runde1');

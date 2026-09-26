@@ -37,8 +37,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Übungsraum",
-      "short_name": "Üben",
+      "name": "Singleplayer",
+      "short_name": "Singleplayer",
       "description": "Allein gegen Bots – auch offline",
       "url": "./?sp=1",
       "icons": [

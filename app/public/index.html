@@ -218,6 +218,9 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
 .pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:10px 0}
+.usage{margin-top:12px}.usage summary{font-size:15px;font-weight:600;color:var(--fg)}
+.ubars{display:flex;gap:6px;align-items:flex-end;height:92px;margin:4px 0 10px}.ub{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.ubb{width:100%;max-width:34px;background:var(--gold);border-radius:4px 4px 0 0;min-height:2px}.ubv,.ubl{font-size:11px;color:var(--muted);white-space:nowrap}.ubv{font-variant-numeric:tabular-nums}
 .tile{background:var(--chip);border-radius:10px;padding:8px 10px;text-align:center}
 .tile .v{font-size:22px;font-weight:700}.tile .l{font-size:12px;opacity:.75}
 .stbl{width:100%;border-collapse:collapse;font-size:14px}.stbl th,.stbl td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line,rgba(127,127,127,.2))}
@@ -1414,7 +1417,15 @@ function spStart(){
   uiErr='';uiNote='';statsOpen=false;
   sp={hand:0,stats:[],players:[],bubble:{}};
   try{var st=JSON.parse(localStorage.getItem('kr.sp.stats')||'[]');if(Array.isArray(st))sp.stats=st.slice(-150);}catch(e){}
+  spUsage();   // Nutzung einmal laden (bzw. aus der bisherigen Liste anlegen), bevor neue Hände dazukommen
   spNewHand();
+}
+var spUse=null;
+function spUsage(){
+  if(spUse)return spUse;
+  try{var u=JSON.parse(localStorage.getItem('kr.sp.usage')||'null');if(u&&u.d&&Array.isArray(u.h)&&u.h.length===24)spUse=u;}catch(e){}
+  if(!spUse){spUse=usageOf(sp&&sp.stats);try{localStorage.setItem('kr.sp.usage',JSON.stringify(spUse));}catch(e){}}
+  return spUse;
 }
 function spLeave(){sp=null;statsOpen=false;render();fetchRooms();}
 function spMakePlayers(){
@@ -1629,6 +1640,8 @@ function spFinish(){
     guess:sp.gr?{target:sid(sp.gr.target),hits:sp.gr.hits,of:sp.gr.of}:null});
   sp.stats=sp.stats.slice(-150);
   try{localStorage.setItem('kr.sp.stats',JSON.stringify(sp.stats));}catch(e){}
+  var u=spUsage();usageAdd(u,sp.stats[sp.stats.length-1],uid);var ks=Object.keys(u.d).sort();ks.slice(0,-400).forEach(function(k){delete u.d[k];});
+  try{localStorage.setItem('kr.sp.usage',JSON.stringify(u));}catch(e){}
   sp.players.forEach(function(p){if(p.bot&&Math.random()<0.5)botReact(p.id,sp.res.win?(Math.random()<0.5?0:4):[1,2,3][Math.floor(Math.random()*3)]);});
   fx(sp.res.win?'turn':'nudge');
   render();
@@ -1650,12 +1663,12 @@ function spView(){
   var ps=sp.players,n=ps.length,ph=sp.phase,st=sp.stage,out='';
   var label=ph==='play'?'Runde '+st+' von 4':ph==='guess'?'Tipp':'Hand fertig';
   out+='<div class="panel"><div class="spread"><div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
-    '<h1>🤖 Übungsraum</h1><div class="note">Hand '+num(sp.hand)+' · '+label+' · du + '+(n-1)+' Bots</div></div>'+
+    '<h1>🤖 Singleplayer</h1><div class="note">Hand '+num(sp.hand)+' · '+label+' · du + '+(n-1)+' Bots</div></div>'+
     '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
     '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
     '<div class="bar" style="margin-top:8px">'+spLearnBtn()+'<span class="note">Mitspieler:</span>'+spBotBtns()+
       (spBots!==n-1?'<span class="note">ab der nächsten Hand '+(spBots+1)+' Spieler</span>':'')+'</div></div>';
-  if(statsOpen)out+=statsPanel(sp.stats);
+  if(statsOpen)out+=statsPanel(sp.stats,spUsage());
   out+=stealHtml();
   if(sp.cd)out+='<div class="cd-overlay" role="alertdialog" aria-live="assertive"><div class="cd-box"><div class="cd-lbl">'+
     (st<4?'Gleich kommen neue Tischkarten':'Gleich wird aufgedeckt')+'</div><div class="cd-num">'+Math.max(1,spCdLeft())+'</div>'+
@@ -1967,8 +1980,8 @@ function reportSpHand(){
 }
 function offlineBanner(){
   if(!isOffline())return '';
-  return '<div class="panel offline"><p class="info">📴 <b>Offline</b> – Räume gehen gerade nicht, der Übungsraum schon.</p>'+
-    '<div class="bar"><button class="primary" data-a="sp">🤖 Übungsraum spielen</button></div></div>';
+  return '<div class="panel offline"><p class="info">📴 <b>Offline</b> – Räume gehen gerade nicht, der Singleplayer schon.</p>'+
+    '<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button></div></div>';
 }
 
 /* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
@@ -2056,10 +2069,10 @@ function countsHtml(){
   if(!playCounts)return '';
   var f=function(n){return Number(n).toLocaleString('de-DE');};
   return '<p class="playcount">\ud83c\udccf Bisher gespielt: <b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?'Hand':'Hände')+' in Räumen \u00b7 <b>'+
-    f(playCounts.sp)+'</b> im Übungsraum</p>';
+    f(playCounts.sp)+'</b> im Singleplayer</p>';
 }
 function roomsHtml(){
-  var pin='<div class="plist"><div class="pl sp"><span class="code">\ud83e\udd16</span><div class="nm"><b>Übungsraum</b>'+
+  var pin='<div class="plist"><div class="pl sp"><span class="code">\ud83e\udd16</span><div class="nm"><b>Singleplayer</b>'+
     '<div class="note">Allein gegen Bots \u00b7 immer offen</div></div><button class="small primary" data-a="sp">Spielen</button></div></div>';
   if(openRooms==null)return pin+'<p class="note">Lade offene Räume \u2026</p>';
   if(!openRooms.length)return pin+'<p class="note">Gerade keine offenen Räume.</p>';
@@ -2215,7 +2228,7 @@ function statsLine(list){
   return '<p class="note statsline">📊 '+st.wins+' von '+st.hands+' Händen richtig ('+pct(st.wins,st.hands)+')'+
     (st.streak>1?' \u00b7 Serie: '+st.streak+' \u2713':'')+' \u00b7 <a href="#" data-a="stats">Statistik</a></p>';
 }
-function statsPanel(list){
+function statsPanel(list,usage){
   list=list||S.stats;
   var st=calcStats(list);
   var out='<div class="panel stats"><div class="spread"><h2>📊 Statistik</h2><button class="small ghost" data-a="stats">Schließen</button></div>';
@@ -2236,7 +2249,37 @@ function statsPanel(list){
     }).join('')+'</tbody></table></div>';
   var last=list.slice(-12).map(function(e){return '<span class="dot '+(e.win?'ok':'bad')+'" title="Hand '+num(e.hand)+'">'+(e.win?'\u2713':'\u2717')+'</span>';}).join('');
   out+='<p class="note" style="margin-top:8px">Letzte Hände: '+last+'</p>';
-  return out+'</div>';
+  return out+usageHtml(usage||usageOf(list))+'</div>';
+}
+/* Nutzung: je Kalendertag (lokale Zeit) [Hände, Reihenfolge richtig, eigene Hand richtig] + Hände je Stunde.
+   Singleplayer führt das dauerhaft in kr.sp.usage (unabhängig von den letzten 150 Händen), Räume rechnen aus der Liste. */
+function dayKey(ts){var d=new Date(ts),p=function(n){return (n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function usageAdd(u,e,me){
+  if(!e||!num(e.ts)||!Array.isArray(e.players))return;
+  var k=dayKey(e.ts),d=u.d[k]||(u.d[k]=[0,0,0]),mine=e.players.filter(function(p){return p.id===me;})[0];
+  d[0]++;if(e.players.every(function(p){return p.ok;}))d[1]++;if(mine&&mine.ok)d[2]++;
+  u.h[new Date(e.ts).getHours()]++;
+}
+function usageNew(){var h=[];for(var i=0;i<24;i++)h.push(0);return {d:{},h:h};}
+function usageOf(list){var u=usageNew();(list||[]).forEach(function(e){usageAdd(u,e,uid);});return u;}
+function usageHtml(u){
+  var keys=Object.keys(u.d).sort();if(!keys.length)return '';
+  var t=[0,0,0],wd=[0,0,0,0,0,0,0],WD=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  keys.forEach(function(k){var d=u.d[k];t[0]+=d[0];t[1]+=d[1];t[2]+=d[2];wd[(new Date(k+'T12:00').getDay()+6)%7]+=d[0];});
+  var tile=function(v,l){return '<div class="tile"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';};
+  var bars=function(vals,labels){var mx=Math.max.apply(null,vals)||1;
+    return '<div class="ubars">'+vals.map(function(v,i){return '<div class="ub" title="'+labels[i]+': '+v+' Hände"><div class="ubv">'+(v||'')+'</div>'+
+      '<div class="ubb" style="height:'+Math.round(v*60/mx)+'px"></div><div class="ubl">'+labels[i]+'</div></div>';}).join('')+'</div>';};
+  var tod=[[5,11],[11,17],[17,22],[22,29]].map(function(r){var s=0;for(var i=r[0];i<r[1];i++)s+=u.h[i%24];return s;});
+  var rows=keys.slice(-14).reverse().map(function(k){var d=u.d[k],dt=new Date(k+'T12:00');
+    return '<tr><td class="rc">'+WD[(dt.getDay()+6)%7]+' '+dt.getDate()+'.'+(dt.getMonth()+1)+'.</td><td>'+d[0]+'</td><td class="rc">'+pct(d[1],d[0])+'</td><td class="rc">'+pct(d[2],d[0])+'</td></tr>';}).join('');
+  return '<details class="usage"><summary>📅 Nutzung &amp; Erfolgsrate</summary>'+
+    '<div class="tiles">'+tile(keys.length,'Spieltage')+tile(String(Math.round(t[0]/keys.length*10)/10).replace('.',','),'Hände je Spieltag')+
+      tile(pct(t[1],t[0]),'Reihenfolge richtig')+tile(pct(t[2],t[0]),'eigene Hand richtig')+'</div>'+
+    '<p class="note">Hände nach Wochentag</p>'+bars(wd,WD)+
+    '<p class="note">Hände nach Tageszeit</p>'+bars(tod,['Morgen','Mittag','Abend','Nacht'])+
+    '<div class="stwrap"><table class="stbl"><thead><tr><th>Tag</th><th>Hände</th><th>Reihenfolge</th><th>eigene Hand</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p class="note">Anteil richtiger Hände. „Reihenfolge“: alle lagen richtig. „Eigene Hand“: dein Chip passte zu deiner Hand.'+(keys.length>14?' Tabelle: letzte 14 Spieltage.':'')+'</p></details>';
 }
 
 /* ---------- Darstellung ---------- */
@@ -2281,13 +2324,17 @@ function render(){
   if(fatal){el.innerHTML='<div class="panel"><h1 class="brand">Letzte Runde</h1><p class="err">'+esc(fatal)+'</p></div>';return;}
   if(!db){el.innerHTML='<div class="panel"><p class="muted">Lädt …</p></div>';return;}
   el.className='wrap'+(code||sp?' inroom':'')+(code&&watching?' watching':'');
-  try{document.title=(sp?'Übungsraum – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
+  try{document.title=(sp?'Singleplayer – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
   ['name','code','rname','sname','stime'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
   /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
   var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
   ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
+  /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
+  var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
+  [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
   el.innerHTML = sp?spView():code?roomView():startView();
+  [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
@@ -2327,8 +2374,8 @@ function startView(){
   '</div>'+
   '<div class="panel installhelp"><details><summary>\ud83d\udcf2 Als App speichern (auch offline spielbar)</summary>'+
     '<p><b>iPhone / iPad (Safari):</b> unten auf das Teilen-Symbol (Quadrat mit Pfeil) tippen \u2192 \u201eZum Home-Bildschirm\u201c \u2192 \u201eHinzufügen\u201c. Danach startet \u201eLetzte Runde\u201c wie eine App vom Home-Bildschirm.</p>'+
-    '<p><b>Android (Chrome):</b> oben rechts auf \u22ee tippen \u2192 \u201eApp installieren\u201c bzw. \u201eZum Startbildschirm hinzufügen\u201c. Lange auf das Symbol drücken zeigt den Kurzbefehl \u201eÜbungsraum\u201c.</p>'+
-    '<p><b>Offline:</b> Einmal mit Internet öffnen \u2013 danach läuft der Übungsraum (inkl. Lernmodus und Statistik) auch ohne Netz, z. B. im Flugzeug. Räume mit anderen brauchen Internet.</p>'+
+    '<p><b>Android (Chrome):</b> oben rechts auf \u22ee tippen \u2192 \u201eApp installieren\u201c bzw. \u201eZum Startbildschirm hinzufügen\u201c. Lange auf das Symbol drücken zeigt den Kurzbefehl \u201eSingleplayer\u201c.</p>'+
+    '<p><b>Offline:</b> Einmal mit Internet öffnen \u2013 danach läuft der Singleplayer (inkl. Lernmodus und Statistik) auch ohne Netz, z. B. im Flugzeug. Räume mit anderen brauchen Internet.</p>'+
     '<p><b>Aktualisieren:</b> passiert automatisch \u2013 jedes Mal, wenn du die App mit Internet öffnest, holt sie sich die neueste Version. Klappt das mal nicht: App ganz schließen (aus der App-Übersicht wischen) und neu öffnen oder oben auf das Logo tippen.</p>'+
   '</details></div>'+
   '<div id="playcount">'+countsHtml()+'</div>'+
@@ -2721,7 +2768,7 @@ if(window.addEventListener){
     loadKeys().then(function(){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
-      if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Übungsraum“ (auch offline)
+      if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else rejoin();
       if(inviteCode&&myName){var ci=$('code');if(ci)ci.value=inviteCode;}
     }).catch(function(e){fatal=(e&&e.message)||String(e);render();});

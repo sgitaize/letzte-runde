@@ -328,7 +328,8 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
     ok(st.hands===2&&st.wins===(w2?1:0),'Statistik: 2 Hände, '+st.wins+' richtig, beste Serie '+st.best);
     ok(st.guesses>=1&&st.of>=st.hits,'Statistik zählt Tipp ('+st.hits+'/'+st.of+')');
     A.__kr.statsOpen(); const h=A.els.app.innerHTML;
-    ok(/Statistik<\/h2>/.test(h)&&/Tipp-Treffer/.test(h)&&/class="me"/.test(h)&&(h.match(/<tr/g)||[]).length===4,'Statistik-Panel mit Kacheln und Tabelle (3 Spieler)');
+    ok(/Statistik<\/h2>/.test(h)&&/Tipp-Treffer/.test(h)&&/class="me"/.test(h)&&(h.split('<details class="usage"')[0].match(/<tr/g)||[]).length===4,'Statistik-Panel mit Kacheln und Tabelle (3 Spieler)');
+    ok(/<details class="usage"><summary>📅 Nutzung/.test(h)&&/<th>Reihenfolge<\/th>/.test(h),'Raum-Statistik: ausklappbare Nutzung & Erfolgsrate');
     ok(/Deine Treffsicherheit/.test(h)&&/<th>R1<\/th>/.test(h)&&/Runde 4<\/small><b>\d+ %/.test(h),'Statistik: Treffsicherheit je Runde (Zeile + Spalten R1–R4)'); }
   if(!ex.win){
     ok(A.els.app.innerHTML.includes('Nicht ganz')&&/vertauscht mit [^<]+ · wäre Chip \d/.test(A.els.app.innerHTML),'Hand 2: „Nicht ganz“ + „vertauscht mit … · wäre Chip …“');
@@ -395,14 +396,14 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(/geschlossen/.test(D.__kr.err())&&/geschlossen/.test(E.__kr.err())&&/geschlossen/.test(A2.__kr.err()),'Host schließt Raum → alle bekommen Hinweis');
   const rl=await (await fetch(BASE+'api?a=rooms')).json();
   ok(!rl.rooms.some(x=>x.code===code),'Raum verschwindet aus der Liste');
-  // Zähler für die Startseite: gespielte Hände in Räumen und im Übungsraum
+  // Zähler für die Startseite: gespielte Hände in Räumen und im Singleplayer
   ok(rl.counts&&rl.counts.mp>=2,'Startseite: Zähler Hände in Räumen ('+rl.counts.mp+')');
   const sp0=rl.counts.sp;
   for(let k=0;k<3;k++)await fetch(BASE+'api?a=sphand',{method:'POST',headers:{'Content-Type':'application/json','x-forwarded-for':'203.0.113.77'},body:'{}'});
   const rl2=await (await fetch(BASE+'api?a=rooms')).json();
-  ok(rl2.counts.sp===sp0+1,'Übungsraum-Zähler: 3 Meldungen in Folge von einer IP zählen nur einmal');
-  await until(()=>/Bisher gespielt: <b>\d+<\/b> Hände? in Räumen · <b>\d+<\/b> im Übungsraum/.test(V.els.playcount.innerHTML),'Zähler auf der Startseite',8000);
-  ok(true,'Startseite zeigt „Bisher gespielt: … Hände in Räumen · … im Übungsraum“');
+  ok(rl2.counts.sp===sp0+1,'Singleplayer-Zähler: 3 Meldungen in Folge von einer IP zählen nur einmal');
+  await until(()=>/Bisher gespielt: <b>\d+<\/b> Hände? in Räumen · <b>\d+<\/b> im Singleplayer/.test(V.els.playcount.innerHTML),'Zähler auf der Startseite',8000);
+  ok(true,'Startseite zeigt „Bisher gespielt: … Hände in Räumen · … im Singleplayer“');
   { const h=V.els.app.innerHTML; ok(h.indexOf('id="playcount"')>h.indexOf('So läuft eine Hand')&&/href="impressum.html">Impressum<\/a>/.test(h)&&/impressum.html#datenschutz/.test(h)&&/href="https:\/\/github.com\/sgitaize\/letzte-runde"/.test(h),'Startseite: Statistik ganz unten, darunter Impressum, Datenschutz und GitHub'); }
   { const imp=await (await fetch(BASE+'impressum.html')).text(); ok(/Sachsenstr\. 1/.test(imp)&&/§ 5 Digitale-Dienste-Gesetz/.test(imp)&&/id="datenschutz"/.test(imp),'Impressum + Datenschutz erreichbar'); }
   // ---- Geplanter Raum: Link vorab, Beitritt erst ab Startzeit, erster Spieler wird Host ----

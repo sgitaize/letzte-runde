@@ -1,5 +1,5 @@
-/* Offline (Übungsraum ohne Netz, z. B. im Flugzeug) in echtem Chromium: App einmal online laden, dann den Server
-   abschalten und neu laden → Seite kommt aus dem Service Worker, Offline-Hinweis, komplette Übungsraum-Hand,
+/* Offline (Singleplayer ohne Netz, z. B. im Flugzeug) in echtem Chromium: App einmal online laden, dann den Server
+   abschalten und neu laden → Seite kommt aus dem Service Worker, Offline-Hinweis, komplette Singleplayer-Hand,
    Kurzbefehl ?sp=1; Server wieder an → offline gespielte Hände werden nachgezählt.
    Nutzung: node --experimental-websocket tests/offline.js [app-verzeichnis] */
 'use strict';
@@ -49,11 +49,11 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
   await until('/Letzte Runde/.test(document.body.innerText)&&!!document.querySelector(\'[data-a="sp"]\')', 'Seite offline');
   ok(true, 'Ohne Server: Seite kommt trotzdem (aus dem Speicher des Geräts)');
   await until('/Offline/.test(document.body.innerText)', 'Offline-Hinweis', 10000);
-  ok(true, 'Offline-Hinweis „Räume gehen gerade nicht, der Übungsraum schon“');
+  ok(true, 'Offline-Hinweis „Räume gehen gerade nicht, der Singleplayer schon“');
 
-  // 3) Übungsraum offline: komplette Hand, dann gleich die nächste
+  // 3) Singleplayer offline: komplette Hand, dann gleich die nächste
   await click('.panel.offline [data-a="sp"]');
-  await until('/Übungsraum/.test(document.body.innerText)&&!!document.querySelector(".p-board")', 'Übungsraum offline');
+  await until('/Singleplayer/.test(document.body.innerText)&&!!document.querySelector(".p-board")', 'Singleplayer offline');
   if (!(await js('!!document.querySelector(".coach")'))) await click('[data-a="splearn"]');
   await until('/passender Chip/.test((document.querySelector(".coach")||{}).textContent||"")', 'Lernmodus offline', 5000);
   ok(true, 'Lernmodus funktioniert offline (Einschätzung + passender Chip)');
@@ -66,7 +66,7 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
       await sleep(300);
     }
     if (!(await js('!!document.querySelector(".p-reveal")'))) console.log('    Bildschirm: ' + (await js('document.body.innerText.replace(/\\s+/g," ").slice(0,500)')));
-    ok(await js('!!document.querySelector(".p-reveal")'), 'Offline: Übungsraum-Hand ' + hand + ' komplett gespielt');
+    ok(await js('!!document.querySelector(".p-reveal")'), 'Offline: Singleplayer-Hand ' + hand + ' komplett gespielt');
     if (hand === 1) { await click('[data-a="spnext"]'); await until('!!!document.querySelector(".p-reveal")', 'nächste Hand'); }
   }
   ok(await js('JSON.parse(localStorage.getItem("kr.sp.stats")||"[]").length>=2'), 'Offline: Statistik auf dem Gerät gespeichert');
@@ -74,8 +74,8 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
 
   // 4) Kurzbefehl ?sp=1 offline
   await nav(URL0 + '?sp=1');
-  await until('/Übungsraum/.test(document.body.innerText)&&!!document.querySelector(".p-board")', 'Kurzbefehl offline', 15000);
-  ok(true, 'Kurzbefehl …/?sp=1 startet den Übungsraum direkt (offline)');
+  await until('/Singleplayer/.test(document.body.innerText)&&!!document.querySelector(".p-board")', 'Kurzbefehl offline', 15000);
+  ok(true, 'Kurzbefehl …/?sp=1 startet den Singleplayer direkt (offline)');
 
   // 4b) Netz „hängt“ (Flugzeug-WLAN ohne Internet): Server nimmt Verbindungen an, antwortet aber nie
   const hang = require('net').createServer(() => { /* nie antworten */ });
@@ -84,9 +84,9 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')&&typeof spStart!=="number"', 'Seite bei hängendem Netz', 15000);
   await click('[data-a="sp"]');
-  await until('!!document.querySelector(".p-board")', 'Übungsraum bei hängendem Netz', 15000);
+  await until('!!document.querySelector(".p-board")', 'Singleplayer bei hängendem Netz', 15000);
   const tt = Date.now() - t;
-  ok(tt < 6000, 'Hängendes Netz: App in ' + (tt / 1000).toFixed(1) + ' s bedienbar, Übungsraum startet');
+  ok(tt < 6000, 'Hängendes Netz: App in ' + (tt / 1000).toFixed(1) + ' s bedienbar, Singleplayer startet');
   await click('[data-a="leave"]'); t = Date.now();
   await until('/Offline/.test(document.body.innerText)', 'Offline-Hinweis bei hängendem Netz', 15000);
   ok(true, 'Hängendes Netz: Offline-Hinweis nach ' + ((Date.now() - t) / 1000).toFixed(1) + ' s, ohne Neuladen');

@@ -197,7 +197,7 @@ let srv;
   ok(true, 'Nach der Hand holt Fritz seinen Platz zurück');
   await playHandWithRoles([E, F], 'Eva + Fritz (zurück) + Bot');
 
-  ok(seenSay > 0 && seenReact > 0, 'Bots zeigen im Raum Sprechblasen und Reaktionen wie im Übungsraum (' + seenSay + '/' + seenReact + ' Momente)');
+  ok(seenSay > 0 && seenReact > 0, 'Bots zeigen im Raum Sprechblasen und Reaktionen wie im Singleplayer (' + seenSay + '/' + seenReact + ' Momente)');
   const log = fs.readFileSync(path.join(TMP, 'logs', 'app.log'), 'utf8');
   const errs = log.split('\n').filter((l) => / ERROR /.test(l));
   ok(!errs.length, 'Server-Log ohne Fehler' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));

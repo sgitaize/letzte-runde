@@ -5,7 +5,7 @@ Kooperatives Pokerkarten-Spiel für den Browser – inspiriert von „The Gang�
 Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Handy, Tablet und PC, als App installierbar.
 
 <p>
-  <img src="docs/uebungsraum-ipad.png" alt="Übungsraum im Querformat auf dem iPad" width="620">
+  <img src="docs/uebungsraum-ipad.png" alt="Singleplayer im Querformat auf dem iPad" width="620">
   <img src="docs/raum-handy.png" alt="Raum auf dem Handy" width="200">
 </p>
 
@@ -14,9 +14,9 @@ Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Ha
 - **Räume mit Code und Link** – Einladung per Link/QR-Code mit Vorschau in WhatsApp & Co., Raumnamen, geplante Räume mit Startzeit (Zeitzone des Planenden), Zuschauen, Einspringen für Spieler, die offline gegangen sind
 - **Ablauf wie am Tisch** – 4 Runden (Hand, Flop, Turn, River), Chips aus der Mitte oder von anderen nehmen, „👊 Bereit“ und 3-2-1-Countdown, gemeinsamer Tipp auf die Karten des höchsten Chips, Aufdecken mit 10-s-Countdown
 - **Hausregeln** – eine Kombination zählt nur, wenn die eigenen Karten sie verbessern (ein Paar nur auf dem Tisch zählt nicht); Flush und Straße nach der eigenen höchsten Karte benannt
-- **Bots** – Übungsraum allein gegen 2–5 Bots (läuft komplett im Browser, auch **offline**) und Bots zum Auffüllen echter Räume. Bots schätzen ihre Hand per Monte-Carlo-Simulation, verhandeln um Chips und merken sich Absprachen über die Runden
-- **Lernmodus** im Übungsraum – zeigt, was die eigene Hand wert ist, welcher Chip passt und nach der Hand, warum etwas anders gehört
-- **Statistik** – Quote, Serien, Tipp-Treffer, Treffsicherheit je Runde
+- **Bots** – Singleplayer allein gegen 2–5 Bots (läuft komplett im Browser, auch **offline**) und Bots zum Auffüllen echter Räume. Bots schätzen ihre Hand per Monte-Carlo-Simulation, verhandeln um Chips und merken sich Absprachen über die Runden
+- **Lernmodus** im Singleplayer – zeigt, was die eigene Hand wert ist, welcher Chip passt und nach der Hand, warum etwas anders gehört
+- **Statistik** – Quote, Serien, Tipp-Treffer, Treffsicherheit je Runde; ausklappbar „Nutzung & Erfolgsrate“: Spieltage, Hände nach Wochentag und Tageszeit, Anteil richtiger Reihenfolge und richtiger eigener Hand je Tag
 - **Extras** – Chat mit Ton, schnelle Reaktionen (👍 😂 😬 🤔 🔥), optionaler Voice-Chat (WebRTC, direkt zwischen den Geräten, mit Einwilligung), Hell/Dunkel, Querformat-Layout für Tablets
 
 ## Fair und sicher
@@ -52,9 +52,9 @@ app/
   server.js        HTTP + WebSocket, Räume als JSON-Dateien, Rechteprüfung, Grenzen
   bots.js          Bots im Mehrspieler-Raum (serverseitig)
   public/
-    index.html     das komplette Spiel (UI, Protokoll, Übungsraum, Lernmodus)
+    index.html     das komplette Spiel (UI, Protokoll, Singleplayer, Lernmodus)
     hand.js        Handbewertung + Monte-Carlo – gemeinsam für Browser und Server
-    sw.js          Service Worker (Übungsraum offline)
+    sw.js          Service Worker (Singleplayer offline)
     admin.html     Admin-Bereich
 tests/             End-to-End-, Angriffs-, Bot-, Voice- und Offline-Tests
 design/            Logo-Quellen (SVG)
@@ -66,7 +66,7 @@ design/            Logo-Quellen (SVG)
 tests/run.sh
 ```
 
-Startet alle Testreihen parallel (je eigener Server) und gibt je Reihe eine Zeile aus; Details landen in `/tmp/kr-tests/`. Enthalten sind komplette Hände mit simulierten Browsern, Angriffe auf den Server, Bots in echten Räumen, Übungsraum und Lernmodus sowie Voice-Chat und Offline-Modus in echtem Chromium (übersprungen, wenn `chromium` fehlt). `tests/shot.js` erstellt Screenshots in mehreren Bildschirmgrößen.
+Startet alle Testreihen parallel (je eigener Server) und gibt je Reihe eine Zeile aus; Details landen in `/tmp/kr-tests/`. Enthalten sind komplette Hände mit simulierten Browsern, Angriffe auf den Server, Bots in echten Räumen, Singleplayer und Lernmodus sowie Voice-Chat und Offline-Modus in echtem Chromium (übersprungen, wenn `chromium` fehlt). `tests/shot.js` erstellt Screenshots in mehreren Bildschirmgrößen.
 
 ## Lizenz
 

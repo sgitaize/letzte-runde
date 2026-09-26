@@ -1,4 +1,4 @@
-/* Übungsraum (Einzelspieler gegen Bots): läuft ohne Server. Prüft Bot-Verhalten, Ablauf über 4 Runden,
+/* Singleplayer (Einzelspieler gegen Bots): läuft ohne Server. Prüft Bot-Verhalten, Ablauf über 4 Runden,
    Auswertung, Statistik und dass keine Anfrage an den Server geht.
    Nutzung: node tests/singleplayer.js app/public/index.html */
 'use strict';
@@ -35,15 +35,15 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
 
 (async () => {
   await sleep(300);
-  ok(/data-a="sp"/.test(X.roomsHtml()) && /Übungsraum/.test(X.roomsHtml()), 'Startseite: Übungsraum immer in der Raumliste');
+  ok(/data-a="sp"/.test(X.roomsHtml()) && /Singleplayer/.test(X.roomsHtml()), 'Startseite: Singleplayer immer in der Raumliste');
   ok(/class="brand" data-a="reload"/.test(els.app.innerHTML), 'Startseite: Logo lädt die Seite neu');
   const f0 = fetches;
   X.setSpeed(0.03);
   X.spStart();
   const S = X.sp;
-  ok(S() && S().players.length === 4 && S().phase === 'play' && S().stage === 1, 'Übungsraum startet: du + 3 Bots, Runde 1');
-  ok(/Übungsraum/.test(els.app.innerHTML) && /data-chip="4"/.test(els.app.innerHTML), 'Ansicht mit Tisch, Chips und Spielern');
-  ok(/class="brand sm" data-a="reload"/.test(els.app.innerHTML), 'Übungsraum: Logo lädt die Seite neu');
+  ok(S() && S().players.length === 4 && S().phase === 'play' && S().stage === 1, 'Singleplayer startet: du + 3 Bots, Runde 1');
+  ok(/Singleplayer/.test(els.app.innerHTML) && /data-chip="4"/.test(els.app.innerHTML), 'Ansicht mit Tisch, Chips und Spielern');
+  ok(/class="brand sm" data-a="reload"/.test(els.app.innerHTML), 'Singleplayer: Logo lädt die Seite neu');
   ok(/Mitspieler:/.test(els.app.innerHTML) && /data-a="spbots" data-n="5"/.test(els.app.innerHTML), 'Auswahl der Mitspieler im Kopf sichtbar');
   X.spSetBots(4); ok(S().players.length === 5 && S().stage === 1, 'Runde 1 ohne eigenen Chip: 4 Bots gelten sofort');
   S().stage = 2; X.spSetBots(2);
@@ -190,7 +190,7 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   X.spNewHand(); X.spTake(2); X.spTakeFor(bots()[0].id, 2);
   ok(/class="steal-pop"[^]*hat dir Chip 2 genommen/.test(els.app.innerHTML), 'Großes Popup, wenn dir ein Bot den Chip wegnimmt');
   await sleep(1800); ok(!/class="steal-pop"/.test(els.app.innerHTML), 'Popup verschwindet nach 1,6 s von selbst');
-  X.sendReact(0); ok(/class="react-pop"[^>]*>👍/.test(els.app.innerHTML), 'Reaktion 👍 im Übungsraum');
+  X.sendReact(0); ok(/class="react-pop"[^>]*>👍/.test(els.app.innerHTML), 'Reaktion 👍 im Singleplayer');
   // Lernmodus
   ok(/data-a="splearn"/.test(els.app.innerHTML) && !/class="panel coach/.test(els.app.innerHTML), 'Knopf „🎓 Lernmodus“, standardmäßig aus');
   X.spToggleLearn(); X.spNewHand(); await sleep(50);
@@ -204,13 +204,19 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   ok(/class="panel coach p-coach /.test(els.app.innerHTML) && /(Du lagst richtig|passte nicht)/.test(els.app.innerHTML) && /Deine Chips je Runde/.test(els.app.innerHTML), 'Lernmodus erklärt nach der Hand (richtig/warum falsch, Chips je Runde)');
   X.spToggleLearn(); ok(!/class="panel coach/.test(els.app.innerHTML), 'Lernmodus lässt sich ausschalten');
   const stats = JSON.parse(ls['kr.sp.stats'] || '[]');
-  ok(stats.every((e) => e.players.every((p) => Array.isArray(p.rounds) && p.rounds.length === 4)), 'Übungsraum: Treffer je Runde gespeichert');
-  ok(/Deine Treffsicherheit/.test(X.statsPanel(stats)), 'Übungsraum: Treffsicherheit je Runde in der Statistik');
+  ok(stats.every((e) => e.players.every((p) => Array.isArray(p.rounds) && p.rounds.length === 4)), 'Singleplayer: Treffer je Runde gespeichert');
+  ok(/Deine Treffsicherheit/.test(X.statsPanel(stats)), 'Singleplayer: Treffsicherheit je Runde in der Statistik');
   ok(stats.length === 4 && stats.every((e) => e.players.some((p) => p.id === X.uid())), 'Statistik lokal gespeichert (4 Hände, du mit deiner ID)');
+  { const u = JSON.parse(ls['kr.sp.usage'] || 'null'), days = u ? Object.values(u.d) : [];
+    ok(u && days.reduce((s, d) => s + d[0], 0) === 4 && u.h.reduce((s, x) => s + x, 0) === 4, 'Nutzung je Tag/Stunde dauerhaft gespeichert (4 Hände)');
+    const me = stats.filter((e) => e.players.find((p) => p.id === X.uid()).ok).length, all = stats.filter((e) => e.players.every((p) => p.ok)).length;
+    ok(days.reduce((s, d) => s + d[1], 0) === all && days.reduce((s, d) => s + d[2], 0) === me, 'Nutzung: Reihenfolge richtig (' + all + ') und eigene Hand richtig (' + me + ') gezählt');
+    const h = X.statsPanel(stats, u);
+    ok(/<details class="usage"><summary>📅 Nutzung/.test(h) && /Reihenfolge richtig/.test(h) && /eigene Hand richtig/.test(h) && /Hände nach Wochentag/.test(h) && /Hände nach Tageszeit/.test(h), 'Statistik: ausklappbare Nutzung (Tage, Wochentag, Tageszeit, Erfolgsrate)'); }
   ok(ls['kr.sp.bots'] === '2', 'Bot-Anzahl gemerkt');
   const spCalls = fetchUrls.slice(f0);
-  ok(spCalls.length > 0 && spCalls.every((u) => /\?a=sphand$/.test(u)), 'Übungsraum fragt den Server nur für den Zähler an (' + spCalls.length + '× sphand, sonst nichts)');
-  X.leave(); ok(!S() && /Übungsraum/.test(els.app.innerHTML), 'Verlassen → Startseite');
+  ok(spCalls.length > 0 && spCalls.every((u) => /\?a=sphand$/.test(u)), 'Singleplayer fragt den Server nur für den Zähler an (' + spCalls.length + '× sphand, sonst nichts)');
+  X.leave(); ok(!S() && /Singleplayer/.test(els.app.innerHTML), 'Verlassen → Startseite');
   ok(errors === 0, 'Keine Fehler in der Konsole');
   console.log('EINZELSPIELER-TEST BESTANDEN'); process.exit(0);
 })().catch((e) => { console.error(e.message); process.exit(1); });
