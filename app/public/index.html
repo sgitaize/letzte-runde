@@ -209,6 +209,11 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .steal-box.anim{animation:stealIn .3s ease-out}@keyframes stealIn{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion: reduce){.steal-box.anim{animation:none}}
 .waitroom{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--panel))}
+.gslots{display:flex;gap:10px;margin:6px 0}.gslot{padding:3px;border-radius:10px;border:2px solid transparent;background:none}
+.gslot.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 40%,transparent)}
+.gpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin:8px 0;max-width:520px}
+.gcard{padding:2px;border:2px solid transparent;border-radius:9px;background:none;display:flex;justify-content:center}.gcard.on{border-color:var(--accent)}
+.gcard .card,.gslot .card{margin:0}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
 .pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
@@ -453,6 +458,7 @@ var SK=(function(){
   if(!k||k.length<16){k=hx(rnd(24));try{localStorage.setItem('kr.sk',k);}catch(e){}}
   return k;
 })();
+var kickCheck=false;
 var docs={},ver=-1,pollTimer=null,pollBusy=false,offline=false;
 function api(a,params,body,ms){
   var qs='?a='+encodeURIComponent(a);
@@ -507,7 +513,14 @@ function applyDocs(){
   S.stats=(docs['stats']&&Array.isArray(docs['stats'].hands))?docs['stats'].hands:[];
   if(code&&joined&&!watching){
     var me=docs['players/'+uid];
-    if(!me){uiErr='Du wurdest vom Host aus dem Raum entfernt.';leave();return;}
+    if(!me){                                 // erst beim Server nachfragen – ein einzelner veralteter Stand ist kein Rauswurf
+      if(!kickCheck){kickCheck=true;var kc=code;
+        api('state',{room:kc,since:-1,u:uid}).then(function(r){kickCheck=false;if(code!==kc)return;
+          if(r.docs&&r.docs['players/'+uid]){ver=r.version;docs=r.docs;applyDocs();}
+          else{uiErr='Du wurdest vom Host aus dem Raum entfernt.';leave();}
+        }).catch(function(){kickCheck=false;});}
+      return;
+    }
     if(me.bot){                              // Host hat den Platz an einen Bot gegeben, während wir offline waren
       voiceLeave();joined=false;watching=true;myHand=null;
       try{localStorage.removeItem('kr.room');}catch(e){}
@@ -1652,7 +1665,7 @@ function spView(){
   /* Tisch */
   var vis=ph==='play'?spVisible(st):sp.board,fresh=ph==='play'?(st===2?[0,1,2]:st===3?[3]:st===4?[4]:[]):[],bh='';
   for(var i=0;i<5;i++)bh+=i<vis.length?cardHtml(vis[i],fresh.indexOf(i)>=0?'fresh':''):'<div class="card empty"></div>';
-  out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+(fresh.length?'<span class="tag new">Neu aufgedeckt</span>':'')+'</div>'+
+  out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
     '<div class="cards board">'+bh+'</div></div>';
   var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: rechte Spalte)
   var afterBoard=out.length;                // Tipp/Auflösung kommen direkt unter den Tisch, über Lernmodus und eigene Hand
@@ -1706,12 +1719,7 @@ function spView(){
     var gp='';
     if(t==='me')gp+='<div class="panel p-guess"><h2>Tipp</h2><p>Du hast den höchsten Chip – die Bots tippen jetzt deine '+sp.K+' Karten …</p></div>';
     else{
-      var pick='';
-      for(var q=0;q<sp.K;q++){
-        var v=sp.guess[q],o='<option value="">Karte</option>';
-        RANK_NAME.forEach(function(x,kk){o+='<option value="'+kk+'"'+(v===kk?' selected':'')+'>'+x+'</option>';});
-        pick+='<div class="row" style="gap:6px">'+rankHtml(v,'sm')+'<select data-g="r'+q+'">'+o+'</select></div>';
-      }
+      var pick=guessPicker(sp.guess,true);
       gp+='<div class="panel p-guess"><h2>Tipp</h2><p>Welche '+sp.K+' Karten hat <b>'+esc(spPl(t).name)+'</b> (höchster Chip)? Nur der Wert zählt.</p>'+
         '<div class="row" style="gap:14px">'+pick+'</div><div class="hr"></div><div class="bar">'+
         '<button class="primary" data-a="confirm"'+(sp.guess.every(function(x){return x!=null;})?'':' disabled')+'>Tipp bestätigen</button></div></div>';
@@ -2276,7 +2284,11 @@ function render(){
   try{document.title=(sp?'Übungsraum – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
   ['name','code','rname','sname','stime'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
+  /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
+  var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
+  ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
   el.innerHTML = sp?spView():code?roomView():startView();
+  ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
   renderChat();
@@ -2383,7 +2395,7 @@ function roomView(){
     if(shown.indexOf(i)>=0&&bc[i]!=null)bh+=cardHtml(bc[i],fresh.indexOf(i)>=0?'fresh':'');
     else bh+='<div class="card empty"></div>';
   }
-  L+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+(fresh.length?'<span class="tag new">Neu aufgedeckt</span>':'')+'</div>'+
+  L+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
     '<div class="cards board">'+bh+'</div></div>';
   var afterBoard=L.length;                  // Aufdecken/Auflösung kommt direkt unter den Tisch, über die eigene Hand
 
@@ -2487,19 +2499,22 @@ function playerList(inHand){
   return out+'</div>';
 }
 
+/* Tipp: Kartenwerte als Karten zum Antippen statt Auswahlliste – robust, wenn andere gleichzeitig tippen */
+var gActive=0;
+function guessPicker(vals,edit){
+  if(gActive>=vals.length)gActive=0;
+  var slots=vals.map(function(v,i){return '<button class="gslot'+(edit&&i===gActive?' on':'')+'" data-gslot="'+i+'"'+(edit?'':' disabled')+' aria-label="Tipp '+(i+1)+'">'+rankHtml(v,'sm')+'</button>';}).join('');
+  var grid=edit?'<div class="gpick">'+RANK_NAME.map(function(x,k){return '<button class="gcard'+(vals[gActive]===k?' on':'')+'" data-grank="'+k+'" aria-label="'+x+'">'+rankHtml(k,'sm')+'</button>';}).join('')+'</div>'+
+    '<p class="note">Feld antippen (gold), dann den Kartenwert wählen \u2013 springt danach zum nächsten Feld.</p>':'';
+  return '<div class="gslots">'+slots+'</div>'+grid;
+}
+function pickRank(k){var i=gActive;setGuessCard(i,k);gActive=(i+1)%HC();render();}
 function guessPanel(){
   var g=S.guess||{cards:[null,null],confirmed:{}},t=main().target,gs=guessers();
   var conf=g.confirmed||{},n=0;gs.forEach(function(i){if(conf[i])n++;});
   var me=canGuess();
-  var sel=function(i){
-    var v=(g.cards&&g.cards[i]!=null)?g.cards[i]:null;
-    var o='<option value="">Karte</option>';
-    RANK_NAME.forEach(function(x,k){o+='<option value="'+k+'"'+(v===k?' selected':'')+'>'+x+'</option>';});
-    return '<div class="row" style="gap:6px">'+rankHtml(v,'sm')+
-      (me?'<select data-g="r'+i+'">'+o+'</select>':'')+'</div>';
-  };
-  var K=HC(),pick='';
-  for(var z=0;z<K;z++)pick+=sel(z);
+  var K=HC(),vals=[];for(var z=0;z<K;z++)vals.push(g.cards&&g.cards[z]!=null?g.cards[z]:null);
+  var pick=guessPicker(vals,me);
   return '<div class="panel"><h2>Gemeinsamer Tipp</h2>'+
     (uid===t?'<p>Du hast den höchsten Chip \u2013 die anderen tippen jetzt deine '+K+' Karten. Du tippst nicht mit.</p>':
       '<p>Welche '+K+' Karten hat <b>'+esc(pname(t))+'</b> (höchster Chip)? Nur der Wert zählt, die Farbe nicht.</p>')+
@@ -2595,7 +2610,7 @@ setInterval(function(){
 /* ---------- Events ---------- */
 document.addEventListener('click',function(ev){
   unlockAudio();
-  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify]'):null;
+  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify],[data-gslot],[data-grank]'):null;
   if(!el)return;
   var a=el.getAttribute('data-a');
   if(el.hasAttribute('data-chip')){takeChip(parseInt(el.getAttribute('data-chip'),10));return;}
@@ -2604,6 +2619,8 @@ document.addEventListener('click',function(ev){
   if(el.hasAttribute('data-replace')){replaceBot(el.getAttribute('data-replace'));return;}
   if(el.hasAttribute('data-react')){sendReact(el.getAttribute('data-react'));return;}
   if(el.hasAttribute('data-botify')){botifyStart(el.getAttribute('data-botify'));return;}
+  if(el.hasAttribute('data-gslot')){gActive=parseInt(el.getAttribute('data-gslot'),10)||0;render();return;}
+  if(el.hasAttribute('data-grank')){pickRank(parseInt(el.getAttribute('data-grank'),10));return;}
   if(el.hasAttribute('data-nudge')){nudge(el.getAttribute('data-nudge'));return;}
   uiErr='';
   if(watching&&['start','abort','ready','force','confirm','reveal','skip'].indexOf(a)>=0)return;

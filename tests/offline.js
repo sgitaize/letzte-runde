@@ -61,7 +61,7 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
     for (let i = 0; i < 600 && !(await js('!!document.querySelector(".p-reveal")')); i++) {
       await js('(function(){var r=document.querySelector(\'[data-a="ready"]\');var mine=document.querySelector(".pl.me .chip:not(.ph)");' +
         'if(!mine){var c=document.querySelector(".p-chips [data-chip]");if(c)c.click();}else if(r&&!r.disabled&&/Bereit$/.test(r.textContent))r.click();' +
-        'var s=document.querySelectorAll("select[data-g]");s.forEach(function(x,k){if(!x.value){x.value=String(12-k);x.dispatchEvent(new Event("change",{bubbles:true}));}});' +
+        'var gk=document.querySelectorAll("[data-grank]");if(gk.length&&document.querySelector(".gslot .card.empty")){gk[12].click();}' +
         'var cf=document.querySelector(\'[data-a="confirm"]\');if(cf&&!cf.disabled)cf.click();return 1;})()');
       await sleep(300);
     }

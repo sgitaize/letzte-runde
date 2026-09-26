@@ -16,6 +16,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require('net');
 
 /* Log-Datei für Betrieb ohne Shell-Zugang (per FTP lesbar): logs/app.log
    Schutz gegen Log-Flut: höchstens LOG_PER_MIN Zeilen je Minute, ab LOG_MAX wird nach app.log.1 rotiert. */
@@ -1127,7 +1128,7 @@ function fail(res, e) {
   console.error('Anfragefehler', (e && e.message) || e);
   try { if (!res.headersSent) json(res, 500, { error: 'Serverfehler' }); else res.end(); } catch (x) { /* egal */ }
 }
-const server = http.createServer((req, res) => {
+function handleReq(req, res) {
   try {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
@@ -1152,13 +1153,53 @@ const server = http.createServer((req, res) => {
     }
     serveStatic(req, res, u);
   } catch (e) { fail(res, e); }
-});
-server.on('upgrade', (req, sock) => {
+}
+function handleUpgrade(req, sock) {
   sock.on('error', () => { /* vor dem Handshake: still schließen */ });
   let u;
   try { u = new URL(req.url, 'http://x'); } catch (e) { sock.destroy(); return; }
   if (u.pathname === '/ws' || u.pathname.endsWith('/ws')) { try { upgrade(req, sock); } catch (e) { console.error('upgrade', e.message); drop(sock); } } else sock.destroy();
-});
+}
+
+/* ------------------------------------------------ Nur eine Instanz führt -- */
+/* Passenger startet unter Last manchmal weitere Prozesse. Jeder hätte seinen eigenen Spielstand im Speicher
+   (→ Spieler „verschwinden“, Host wechselt, Chips springen). Deshalb: Der erste Prozess öffnet tmp/leader.sock
+   und bedient alles; weitere Prozesse reichen Anfragen und WebSockets nur dorthin durch. Fällt der Führende weg,
+   übernimmt der nächste. */
+const LEADER_SOCK = process.env.KR_LEADER_SOCK || path.join(ROOT, 'tmp', 'leader.sock');
+let isLeader = false, leaderSrv = null;
+function tryLead(cb) {
+  try { fs.mkdirSync(path.dirname(LEADER_SOCK), { recursive: true }); } catch (e) { /* egal */ }
+  const s = http.createServer(handleReq);
+  s.on('upgrade', handleUpgrade);
+  s.once('error', (e) => {
+    if (e.code !== 'EADDRINUSE') { console.error('leader', e.message); return cb(false); }
+    const probe = net.connect(LEADER_SOCK);             // lebt der Führende noch?
+    probe.once('connect', () => { probe.destroy(); cb(false); });
+    probe.once('error', () => { try { fs.unlinkSync(LEADER_SOCK); } catch (x) { /* egal */ } tryLead(cb); });
+  });
+  s.listen(LEADER_SOCK, () => { isLeader = true; leaderSrv = s; console.log('Führende Instanz (pid ' + process.pid + ')'); cb(true); });
+}
+function proxyReq(req, res) {
+  const p = http.request({ socketPath: LEADER_SOCK, path: req.url, method: req.method, headers: req.headers }, (pr) => {
+    res.writeHead(pr.statusCode, pr.headers); pr.pipe(res);
+  });
+  p.on('error', () => tryLead((ok) => { if (ok) handleReq(req, res); else { try { res.writeHead(503); res.end(); } catch (e) { /* egal */ } } }));
+  req.pipe(p);
+}
+function proxyUpgrade(req, sock, head) {
+  sock.on('error', () => { /* egal */ });
+  const c = net.connect(LEADER_SOCK, () => {
+    let h = req.method + ' ' + req.url + ' HTTP/1.1\r\n';
+    for (let i = 0; i < req.rawHeaders.length; i += 2) h += req.rawHeaders[i] + ': ' + req.rawHeaders[i + 1] + '\r\n';
+    c.write(h + '\r\n'); if (head && head.length) c.write(head);
+    sock.pipe(c).pipe(sock);
+  });
+  c.on('error', () => sock.destroy());
+  sock.on('close', () => c.destroy());
+}
+const server = http.createServer((req, res) => (isLeader ? handleReq(req, res) : proxyReq(req, res)));
+server.on('upgrade', (req, sock, head) => (isLeader ? handleUpgrade(req, sock) : proxyUpgrade(req, sock, head)));
 /* Langsame/hängende Verbindungen nicht ewig offen halten (Slowloris) */
 server.headersTimeout = 20000;
 server.requestTimeout = 30000;
@@ -1166,4 +1207,7 @@ server.keepAliveTimeout = 10000;
 server.maxHeadersCount = 60;
 server.on('clientError', (e, sock) => { try { if (sock.writable) sock.end('HTTP/1.1 400 Bad Request\r\n\r\n'); else sock.destroy(); } catch (x) { /* egal */ } });
 server.on('error', (e) => { console.error('Serverfehler', e); if (e.code === 'EADDRINUSE') process.exit(1); });
-server.listen(PORT, () => console.log('Kartenrunde läuft auf Port ' + PORT));
+tryLead((ok) => {
+  if (!ok) console.log('Weitere Instanz (pid ' + process.pid + ') – reicht alles an die führende weiter');
+  server.listen(PORT, () => console.log('Kartenrunde läuft auf Port ' + PORT + ' (pid ' + process.pid + ')'));
+});
