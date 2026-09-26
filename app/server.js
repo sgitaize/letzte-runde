@@ -1173,7 +1173,7 @@ function tryLead(cb) {
   const s = http.createServer(handleReq);
   s.on('upgrade', handleUpgrade);
   s.once('error', (e) => {
-    if (e.code !== 'EADDRINUSE') { console.error('leader', e.message); return cb(false); }
+    if (e.code !== 'EADDRINUSE') { console.error('leader', e.message); isLeader = true; return cb(true); }   // Leitung geht nicht → allein weiterarbeiten
     const probe = net.connect(LEADER_SOCK);             // lebt der Führende noch?
     probe.once('connect', () => { probe.destroy(); cb(false); });
     probe.once('error', () => { try { fs.unlinkSync(LEADER_SOCK); } catch (x) { /* egal */ } tryLead(cb); });
@@ -1207,7 +1207,11 @@ server.keepAliveTimeout = 10000;
 server.maxHeadersCount = 60;
 server.on('clientError', (e, sock) => { try { if (sock.writable) sock.end('HTTP/1.1 400 Bad Request\r\n\r\n'); else sock.destroy(); } catch (x) { /* egal */ } });
 server.on('error', (e) => { console.error('Serverfehler', e); if (e.code === 'EADDRINUSE') process.exit(1); });
+/* Unter Passenger darf ohne Weiteres nur ein Server lauschen. Mit autoInstall:false meldet sich der Hauptserver
+   ausdrücklich an (listen('passenger')); die interne Leitung tmp/leader.sock ist dann zusätzlich erlaubt. */
+const PP = typeof PhusionPassenger !== 'undefined' ? PhusionPassenger : null;   // eslint-disable-line no-undef
+if (PP) { try { PP.configure({ autoInstall: false }); } catch (e) { console.error('Passenger', e.message); } }
 tryLead((ok) => {
   if (!ok) console.log('Weitere Instanz (pid ' + process.pid + ') – reicht alles an die führende weiter');
-  server.listen(PORT, () => console.log('Kartenrunde läuft auf Port ' + PORT + ' (pid ' + process.pid + ')'));
+  server.listen(PP ? 'passenger' : PORT, () => console.log('Kartenrunde läuft ' + (PP ? 'unter Passenger' : 'auf Port ' + PORT) + ' (pid ' + process.pid + ')'));
 });
