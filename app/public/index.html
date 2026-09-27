@@ -222,6 +222,26 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .usage{margin-top:12px}.usage summary{font-size:15px;font-weight:600;color:var(--fg)}
 .ubars{display:flex;gap:6px;align-items:flex-end;height:92px;margin:4px 0 10px}.ub{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
 .ubb{width:100%;max-width:34px;background:var(--gold);border-radius:4px 4px 0 0;min-height:2px}.ubv,.ubl{font-size:11px;color:var(--muted);white-space:nowrap}.ubv{font-variant-numeric:tabular-nums}
+.rings{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-around;margin:10px 0}
+.ring{position:relative;width:96px;text-align:center}.ring svg{width:84px;height:84px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}.ring .rbg{stroke:var(--chip)}.ring .rfg{stroke-linecap:round;transition:stroke-dasharray .6s}
+.ring .rv{position:absolute;top:0;left:0;right:0;height:84px;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700}
+.ring .rv small{font-size:12px;opacity:.7}.rl{font-size:12px;color:var(--muted);line-height:1.3}
+.streak{text-align:center;min-width:96px}.fire{font-size:26px}.fire b{font-size:28px;margin-left:4px}
+.sthead{font-size:13px;font-weight:650;margin:12px 0 5px}.sthead small{font-weight:400;color:var(--muted)}
+.strip{display:flex;gap:3px}.strip span{flex:1;max-width:22px;height:18px;border-radius:4px}.strip .ok{background:#2e9d57}.strip .bad{background:#c0392b;opacity:.75}
+.trend{width:100%;height:56px;display:block}.trend .tline{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.trend .tarea{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:none}.trend .tmid{stroke:var(--line);stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.accbars{display:flex;gap:10px;align-items:flex-end}.acc{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+.acc b{font-size:13px}.acc small{font-size:11px;color:var(--muted)}.accb{width:100%;max-width:44px;height:64px;background:var(--chip);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden}
+.accb i{display:block;width:100%;background:var(--accent);border-radius:6px 6px 0 0}
+.plbars{display:flex;flex-direction:column;gap:6px}.plb{display:flex;align-items:center;gap:8px;font-size:14px}.plb.mine{font-weight:650}
+.plb .nm{width:34%;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.plb .pv{width:44px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.hbar{flex:1;height:12px;background:var(--chip);border-radius:6px;overflow:hidden}.hbar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.stmath{margin-top:12px}.stmath summary{font-size:14px;color:var(--muted)}
+.calw{display:flex;gap:4px;margin:4px 0 10px}.cald{display:grid;grid-template-rows:repeat(7,1fr);gap:3px;font-size:9px;color:var(--muted);line-height:1}
+.cal{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;grid-auto-columns:minmax(0,18px);gap:3px}
+.cal span{aspect-ratio:1;border-radius:3px;background:var(--chip)}.cal span.on{background:var(--accent)}.cal span.cz{background:none}
 .tile{background:var(--chip);border-radius:10px;padding:8px 10px;text-align:center}
 .tile .v{font-size:22px;font-weight:700}.tile .l{font-size:12px;opacity:.75}
 .stbl{width:100%;border-collapse:collapse;font-size:14px}.stbl th,.stbl td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line,rgba(127,127,127,.2))}
@@ -2235,27 +2255,55 @@ function statsLine(list){
   return '<p class="note statsline">📊 '+st.wins+' von '+st.hands+' Händen richtig ('+pct(st.wins,st.hands)+')'+
     (st.streak>1?' \u00b7 Serie: '+st.streak+' \u2713':'')+' \u00b7 <a href="#" data-a="stats">Statistik</a></p>';
 }
+/* Grafik-Bausteine der Statistik: Ring (Anteil), Balken, Verlauf – Zahlen gibt es ausklappbar darunter */
+function ringSvg(a,b,sub,col){
+  var f=b?a/b:0,r=26,c=2*Math.PI*r;
+  return '<div class="ring"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="'+r+'" class="rbg"/>'+
+    (b?'<circle cx="32" cy="32" r="'+r+'" class="rfg" style="stroke:'+(col||'var(--accent)')+'" stroke-dasharray="'+(f*c).toFixed(1)+' '+c.toFixed(1)+'"/>':'')+
+    '</svg><div class="rv">'+(b?Math.round(f*100)+'<small>%</small>':'–')+'</div><div class="rl">'+sub+'</div></div>';
+}
+function hbar(f,col){return '<span class="hbar"><i style="width:'+Math.round((f||0)*100)+'%'+(col?';background:'+col:'')+'"></i></span>';}
+/* Gleitender Anteil richtiger Hände (letzte 5) als Linie */
+function trendSvg(list){
+  if(list.length<6)return '';
+  var pts=[],w=5;
+  for(var i=w-1;i<list.length;i++){var k=0;for(var j=i-w+1;j<=i;j++)if(list[j].win)k++;pts.push(k/w);}
+  var n=pts.length,xy=pts.map(function(v,i){return (n>1?i*100/(n-1):50).toFixed(1)+','+(28-v*26).toFixed(1);}).join(' ');
+  return '<div class="sthead">Formkurve <small>(Anteil richtig, je 5 Hände)</small></div>'+
+    '<svg class="trend" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="15" x2="100" y2="15" class="tmid"/>'+
+    '<polyline points="0,30 '+xy+' 100,30" class="tarea"/><polyline points="'+xy+'" class="tline"/></svg>';
+}
 function statsPanel(list,usage){
   list=list||S.stats;
   var st=calcStats(list);
   var out='<div class="panel stats"><div class="spread"><h2>📊 Statistik</h2><button class="small ghost" data-a="stats">Schließen</button></div>';
   if(!st.hands)return out+'<p class="note">Noch keine fertige Hand in diesem Raum.</p></div>';
-  var tile=function(v,l){return '<div class="tile"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';};
-  out+='<div class="tiles">'+tile(st.hands,'Hände')+tile(st.wins,'richtig')+tile(pct(st.wins,st.hands),'Quote')+
-    tile(st.streak,'aktuelle Serie')+tile(st.best,'beste Serie')+
-    (st.guesses?tile(pct(st.hits,st.of),'Tipp-Treffer')+tile(st.perfect+'/'+st.guesses,'Tipps komplett'):'')+'</div>';
+  out+='<div class="rings">'+ringSvg(st.wins,st.hands,st.wins+' von '+st.hands+' richtig')+
+    (st.guesses?ringSvg(st.hits,st.of,'Tipp-Treffer','var(--gold)'):'')+
+    '<div class="streak"><div class="fire">'+(st.streak>1?'🔥':'✨')+'<b>'+st.streak+'</b></div><div class="rl">in Folge richtig</div>'+
+      '<div class="rl">Rekord: <b>'+st.best+'</b></div></div></div>';
+  var last=list.slice(-20);
+  out+='<div class="sthead">Letzte Hände <small>(neueste rechts)</small></div><div class="strip">'+
+    last.map(function(e){return '<span class="'+(e.win?'ok':'bad')+'" title="Hand '+num(e.hand)+': '+(e.win?'richtig':'daneben')+'"></span>';}).join('')+'</div>';
+  out+=trendSvg(list);
   var rows=Object.keys(st.pl).map(function(k){return st.pl[k];}).sort(function(a,b){return (b.ok/b.n)-(a.ok/a.n)||b.n-a.n;});
   var me=st.pl[uid];
   if(me&&me.r.some(function(q){return q[1];}))
-    out+='<p class="accline">\ud83c\udfaf Deine Treffsicherheit: '+me.r.map(function(q,i){return '<span class="acc"><small>Runde '+(i+1)+'</small><b>'+pct(q[0],q[1])+'</b></span>';}).join('')+'</p>';
-  out+='<div class="stwrap"><table class="stbl"><thead><tr><th>Spieler</th><th>Hände</th><th>richtig platziert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+(st.guesses?'<th>getippt (komplett)</th>':'')+'</tr></thead><tbody>'+
+    out+='<div class="sthead">🎯 Deine Treffsicherheit <small>(Chip lag schon richtig)</small></div><div class="accbars">'+
+      me.r.map(function(q,i){var f=q[1]?q[0]/q[1]:0;return '<div class="acc"><b>'+pct(q[0],q[1])+'</b><div class="accb"><i style="height:'+Math.round(f*100)+'%"></i></div><small>Runde '+(i+1)+'</small></div>';}).join('')+'</div>';
+  out+='<div class="sthead">Richtig platziert</div><div class="plbars">'+rows.map(function(x){
+    return '<div class="plb'+(x.id===uid?' mine':'')+'"><span class="nm">'+esc(x.name)+'</span>'+hbar(x.ok/x.n)+'<span class="pv">'+pct(x.ok,x.n)+'</span></div>';}).join('')+'</div>';
+  var tile=function(v,l){return '<div class="tile"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';};
+  out+='<details class="stmath"><summary>🔢 Zahlen &amp; Tabelle</summary><div class="tiles">'+tile(st.hands,'Hände')+tile(st.wins,'richtig')+tile(pct(st.wins,st.hands),'Quote')+
+    tile(st.streak,'aktuelle Serie')+tile(st.best,'beste Serie')+
+    (st.guesses?tile(pct(st.hits,st.of),'Tipp-Treffer')+tile(st.perfect+'/'+st.guesses,'Tipps komplett'):'')+'</div>'+
+    '<div class="stwrap"><table class="stbl"><thead><tr><th>Spieler</th><th>Hände</th><th>richtig platziert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+(st.guesses?'<th>getippt (komplett)</th>':'')+'</tr></thead><tbody>'+
     rows.map(function(x){
       return '<tr'+(x.id===uid?' class="me"':'')+'><td>'+esc(x.name)+'</td><td>'+num(x.n)+'</td><td>'+num(x.ok)+' ('+pct(x.ok,x.n)+')</td>'+
         x.r.map(function(q){return '<td class="rc">'+pct(q[0],q[1])+'</td>';}).join('')+
         (st.guesses?'<td>'+num(x.tgt)+(x.tgt?' ('+num(x.tgtHit)+')':'')+'</td>':'')+'</tr>';
-    }).join('')+'</tbody></table></div>';
-  var last=list.slice(-12).map(function(e){return '<span class="dot '+(e.win?'ok':'bad')+'" title="Hand '+num(e.hand)+'">'+(e.win?'\u2713':'\u2717')+'</span>';}).join('');
-  out+='<p class="note" style="margin-top:8px">Letzte Hände: '+last+'</p>';
+    }).join('')+'</tbody></table></div>'+
+    '<p class="note">R1–R4: Anteil der Hände, in denen der Chip in dieser Runde schon zur endgültigen Stärke passte. „Getippt“: wie oft der Spieler Tipp-Ziel war (in Klammern: komplett erraten).</p></details>';
   return out+usageHtml(usage||usageOf(list))+'</div>';
 }
 /* Nutzung: je Kalendertag (lokale Zeit) [Hände, Reihenfolge richtig, eigene Hand richtig] + Hände je Stunde.
@@ -2281,12 +2329,28 @@ function usageHtml(u){
   var rows=keys.slice(-14).reverse().map(function(k){var d=u.d[k],dt=new Date(k+'T12:00');
     return '<tr><td class="rc">'+WD[(dt.getDay()+6)%7]+' '+dt.getDate()+'.'+(dt.getMonth()+1)+'.</td><td>'+d[0]+'</td><td class="rc">'+pct(d[1],d[0])+'</td><td class="rc">'+pct(d[2],d[0])+'</td></tr>';}).join('');
   return '<details class="usage"><summary>📅 Nutzung &amp; Erfolgsrate</summary>'+
-    '<div class="tiles">'+tile(keys.length,'Spieltage')+tile(String(Math.round(t[0]/keys.length*10)/10).replace('.',','),'Hände je Spieltag')+
-      tile(pct(t[1],t[0]),'Reihenfolge richtig')+tile(pct(t[2],t[0]),'eigene Hand richtig')+'</div>'+
+    '<div class="rings">'+ringSvg(t[1],t[0],'Reihenfolge richtig')+ringSvg(t[2],t[0],'eigene Hand richtig','var(--gold)')+
+      '<div class="streak"><div class="fire">📅<b>'+keys.length+'</b></div><div class="rl">Spieltage</div><div class="rl">⌀ <b>'+String(Math.round(t[0]/keys.length*10)/10).replace('.',',')+'</b> Hände/Tag</div></div></div>'+
+    calHtml(u)+
     '<p class="note">Hände nach Wochentag</p>'+bars(wd,WD)+
     '<p class="note">Hände nach Tageszeit</p>'+bars(tod,['Morgen','Mittag','Abend','Nacht'])+
-    '<div class="stwrap"><table class="stbl"><thead><tr><th>Tag</th><th>Hände</th><th>Reihenfolge</th><th>eigene Hand</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<p class="note">Anteil richtiger Hände. „Reihenfolge“: alle lagen richtig. „Eigene Hand“: dein Chip passte zu deiner Hand.'+(keys.length>14?' Tabelle: letzte 14 Spieltage.':'')+'</p></details>';
+    '<details class="stmath"><summary>🔢 Tage als Tabelle</summary><div class="stwrap"><table class="stbl"><thead><tr><th>Tag</th><th>Hände</th><th>Reihenfolge</th><th>eigene Hand</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p class="note">Anteil richtiger Hände. „Reihenfolge“: alle lagen richtig. „Eigene Hand“: dein Chip passte zu deiner Hand.'+(keys.length>14?' Tabelle: letzte 14 Spieltage.':'')+'</p></details></details>';
+}
+/* Kalender der letzten 12 Wochen (Spalte = Woche, Mo oben): je mehr Hände, desto kräftiger */
+function calHtml(u){
+  var today=new Date();today.setHours(12,0,0,0);
+  var start=new Date(today);start.setDate(start.getDate()-((today.getDay()+6)%7)-7*11);
+  var mx=1;Object.keys(u.d).forEach(function(k){if(u.d[k][0]>mx)mx=u.d[k][0];});
+  var cells='';
+  for(var i=0;i<84;i++){
+    var d=new Date(start);d.setDate(start.getDate()+i);
+    if(d>today){cells+='<span class="cz"></span>';continue;}
+    var v=u.d[dayKey(d.getTime())],n=v?v[0]:0;
+    cells+='<span'+(n?' style="opacity:'+(.3+.7*n/mx).toFixed(2)+'" class="on"':'')+' title="'+d.getDate()+'.'+(d.getMonth()+1)+'.: '+
+      (n?n+' Hände, '+pct(v[1],n)+' richtig':'nicht gespielt')+'"></span>';
+  }
+  return '<p class="note">Spieltage (letzte 12 Wochen)</p><div class="calw"><div class="cald"><span>Mo</span><span></span><span>Mi</span><span></span><span>Fr</span><span></span><span>So</span></div><div class="cal">'+cells+'</div></div>';
 }
 
 /* ---------- Darstellung ---------- */

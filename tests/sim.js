@@ -330,7 +330,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
     A.__kr.statsOpen(); const h=A.els.app.innerHTML;
     ok(/Statistik<\/h2>/.test(h)&&/Tipp-Treffer/.test(h)&&/class="me"/.test(h)&&(h.split('<details class="usage"')[0].match(/<tr/g)||[]).length===4,'Statistik-Panel mit Kacheln und Tabelle (3 Spieler)');
     ok(/<details class="usage"><summary>📅 Nutzung/.test(h)&&/<th>Reihenfolge<\/th>/.test(h),'Raum-Statistik: ausklappbare Nutzung & Erfolgsrate');
-    ok(/Deine Treffsicherheit/.test(h)&&/<th>R1<\/th>/.test(h)&&/Runde 4<\/small><b>\d+ %/.test(h),'Statistik: Treffsicherheit je Runde (Zeile + Spalten R1–R4)'); }
+    ok(/Deine Treffsicherheit/.test(h)&&/<th>R1<\/th>/.test(h)&&/<b>\d+ %<\/b><div class="accb"><i style="height:\d+%"><\/i><\/div><small>Runde 4<\/small>/.test(h),'Statistik: Treffsicherheit je Runde (Zeile + Spalten R1–R4)'); }
   if(!ex.win){
     ok(A.els.app.innerHTML.includes('Nicht ganz')&&/vertauscht mit [^<]+ · wäre Chip \d/.test(A.els.app.innerHTML),'Hand 2: „Nicht ganz“ + „vertauscht mit … · wäre Chip …“');
     const nBad=(A.els.app.innerHTML.match(/tag res bad/g)||[]).length;
