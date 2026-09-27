@@ -36,6 +36,7 @@ async function cdp() {
   const click = (sel) => js('(function(){var e=document.querySelector(' + JSON.stringify(sel) + ');if(e){e.click();return true;}return false;})()');
   const until = async (expr, ms) => { const t = Date.now(); while (Date.now() - t < (ms || 30000)) { if (await js(expr)) return true; await sleep(250); } return false; };
   async function shoot(name) {
+    if (process.env.SKIN) await js('(function(){document.querySelector(\'[data-a="skin"]\').click();var b=document.querySelector(\'[data-a="skinset"][data-v="' + process.env.SKIN + '"]\');b.click();return 1;})()');   // Design über das Menü wählen, z. B. SKIN=win95
     for (const [w, h] of SIZES) {
       await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: Number(process.env.DSF) || 1, mobile: w < 600 });
       await sleep(400);
