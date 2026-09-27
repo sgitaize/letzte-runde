@@ -621,7 +621,7 @@ function applyDocs(){
   pl.sort(function(a,b){return (a.joinedAt||0)-(b.joinedAt||0)||(a.id<b.id?-1:1);});
   S.players=pl;S.chips=ch;S.reveal=rv;
   S.chat=(docs['chat']&&docs['chat'].msgs)||[];
-  S.react={};S.say={};for(var rk in docs){var mr=/^(react|say)\/(.+)$/.exec(rk);if(mr)S[mr[1]][mr[2]]=docs[rk];}
+  S.react={};S.say={};S.open={};for(var rk in docs){var mr=/^(react|say|open)\/(.+)$/.exec(rk);if(mr)S[mr[1]][mr[2]]=docs[rk];}
   S.stats=(docs['stats']&&Array.isArray(docs['stats'].hands))?docs['stats'].hands:[];
   if(code&&joined&&!watching){
     var me=docs['players/'+uid];
@@ -2182,6 +2182,8 @@ function stealHtml(){
 }
 /* Sprechblase eines Bots im Raum (nur der Server schreibt say/<bot>), wie im Übungsraum gut 4 s sichtbar */
 function sayOf(id){var q=(S.say||{})[id];return q&&typeof q.t==='string'&&Date.now()-(q.ts-(srvOff||0))<REACT_MS?q.t:null;}
+/* Server-Bot unsicher → „offen für Wechsel“ (Dokument open/<bot>, gilt nur für diese Hand, Runde und diesen Chip) */
+function isOpenBot(id,h,c){var o=(S.open||{})[id];return !!(o&&o.hand===h&&o.stage===stage()&&o.chip===c);}
 function sayHtml(id){var t=sayOf(id);return t?'<div class="say">\ud83d\udcac '+esc(t)+'</div>':'';}
 function reactHtml(id){var e=reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
 function reactBar(){
@@ -2909,6 +2911,7 @@ function playerList(inHand){
       '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+'</div>'+
       (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
+      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?'<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04 offen</span>':'')+
       (inHand&&ph==='play'?(isReady(p)?'<span class="tag ok" title="bereit">\ud83d\udc4a</span>':'<span class="tag">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa Platz übernehmen</button>':'')+
       (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa Platz übernehmen</button>':

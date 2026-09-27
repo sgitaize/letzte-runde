@@ -1,7 +1,7 @@
 /**
  * Bots im Mehrspieler-Raum („Raum auffüllen“). Laufen auf dem Server und benutzen dieselben Dokumente
- * wie ein Browser: geben (wenn sie eine Rolle haben), eigene Karten entschlüsseln, Chips nehmen,
- * klopfen, Tipp bestätigen, aufdecken. Den Ablauf (Phasenwechsel) treiben weiter die Menschen.
+ * wie ein Browser: geben (wenn sie eine Rolle haben), eigene Karten entschlüsseln, Chips nehmen (unsicher →
+ * „offen für Wechsel“, open/<bot>), klopfen, Tipp abgeben/bestätigen, aufdecken. Den Ablauf treiben weiter die Menschen.
  *
  * Datenschutz: Rollen beim Geben gehen zuerst an Menschen (roleOrder). Ab 2 Menschen hält der Server
  * höchstens eine der drei Rollen und kann damit keine Menschen-Karte lesen. Ein Bot kennt nur seine Karten.
@@ -233,7 +233,7 @@ module.exports = function createBots(ctx) {
       b.e = b.est + b.bias0 * [0, 1, 0.6, 0.35, 0.1][st];
       const pc = prev[id] != null ? Number(prev[id]) : null;
       if (pc) b.e += (pc - b.e) * [0, 0, 0.25, 0.2, 0][st];         // kleine Änderungen sind kein Grund, den Platz zu wechseln
-      b.first = pr.gut; b.lost = null; b.yieldTo = {}; b.anchor = null; b.lastChip = null; b.stable = now;
+      b.first = pr.gut; b.lost = null; b.yieldTo = {}; b.anchor = null; b.lastChip = null; b.stable = now; b.open = false; b.openShown = null; b.seen = {};
       if (last != null && pc && Math.abs(b.est - last) < 0.5) { b.anchor = pc; b.first = true; }
       b.next = now + (600 + Math.random() * pr.pace * 1.6) * TEMPO;
     });
@@ -267,7 +267,7 @@ module.exports = function createBots(ctx) {
       if (prevHolder && isBot(r, prevHolder) && R.bots[prevHolder]) R.bots[prevHolder].next = now + (500 + Math.random() * r.bots[prevHolder].pace) * TEMPO;
       return true;
     };
-    if (mv >= 8) { if (!cur) { const f = nearestFree(r, h, n, b.e); if (f) take(f); } else if (!readyOf(r, h, st, id)) setReady(code, r, h, st, id); b.next = now + 2000; return; }
+    if (mv >= 8) { markOpen(code, r, h, st, id, false); if (!cur) { const f = nearestFree(r, h, n, b.e); if (f) take(f); } else if (!readyOf(r, h, st, id)) setReady(code, r, h, st, id); b.next = now + 2000; return; }
     const e = b.e;
     let t;
     if (b.first) {                                               // erster Griff: Chip der Vorrunde bzw. nur nach eigener Einschätzung
@@ -280,8 +280,23 @@ module.exports = function createBots(ctx) {
       later(1); return;
     }
     const holder = holderOf(r, h, t), lost = b.lost; b.lost = null;
+    /* Hat ein Mensch seit meinem letzten Blick einen Chip neben meinem Ziel genommen? Dann begründe ich meinen Zug damit */
+    let moved = null;
+    partsOf(m).forEach((q) => {
+      if (isBot(r, q)) return;
+      const hc = chipOf(r, h, q);
+      if (hc && hc !== b.seen[q] && Math.abs(hc - t) <= 1 && !moved) moved = { id: q, c: hc };
+      b.seen[q] = hc;
+    });
     if (!holder) {
-      if (take(t)) { R.moves[id] = mv + 1; if (cur && Math.random() < 0.5) say(code, r, id, cur < t ? 'Hmm, doch besser als gedacht' : 'Ach nee, doch nicht so gut'); }
+      if (take(t)) {
+        R.moves[id] = mv + 1;
+        /* Unsicher (Einschätzung liegt zwischen zwei Chips, früh in der Hand besonders) → offen für Wechsel */
+        markOpen(code, r, h, st, id, Math.abs(e - t) > (st <= 2 ? 0.3 : 0.5), t);
+        if (cur && moved) say(code, r, id, (r.docs['players/' + moved.id] || {}).name + ', du nimmst die ' + moved.c + '? Dann bin ich eher die ' + t);
+        else if (b.open && Math.random() < 0.7) say(code, r, id, 'Ich nehm erstmal die ' + t + ' – bin offen für Wechsel');
+        else if (cur && Math.random() < 0.5) say(code, r, id, cur < t ? 'Hmm, doch besser als gedacht' : 'Ach nee, doch nicht so gut');
+      }
       later(1.2); return;
     }
     const key = id + ':' + t, cc = R.contest[key] || 0;
@@ -293,7 +308,7 @@ module.exports = function createBots(ctx) {
     p = Math.max(0, Math.min(0.9, p));
     R.contest[key] = cc + 1;
     if (Math.random() < p && take(t)) {
-      R.moves[id] = mv + 1;
+      R.moves[id] = mv + 1; markOpen(code, r, h, st, id, false);
       if (!isBot(r, holder)) say(code, r, id, cc || lost === t ? 'Nee, die ' + t + ' brauch ich wirklich 😤' : 'Die ' + t + ' nehm ich lieber');
       else if (Math.random() < 0.5) say(code, r, id, 'Ich glaub, die ' + t + ' ist meine');
       later(1.3); return;
@@ -309,10 +324,24 @@ module.exports = function createBots(ctx) {
     const ps = partsOf(m), now = Date.now();
     if (ps.every((id) => readyOf(r, h, st, id))) return;          // alle bereit → 3-2-1 läuft im Browser, nicht mehr eingreifen
     for (const x of Object.keys(R.lostBy)) if (holderOf(r, h, R.lostBy[x]) === x) { R.insist[R.lostBy[x]] = (R.insist[R.lostBy[x]] || 0) + 1; delete R.lostBy[x]; }
+    /* Ein Mensch hat einen Chip bewegt → die Bots sehen es und denken bald neu nach */
+    const hsig = ps.filter((q) => !isBot(r, q)).map((q) => q + ':' + chipOf(r, h, q)).join();
+    if (R.humanSig !== hsig) {
+      if (R.humanSig != null) bots.forEach((id) => { const b = R.bots[id]; b.next = Math.min(b.next, now + (300 + Math.random() * r.bots[id].pace * 0.7) * TEMPO); });
+      R.humanSig = hsig;
+    }
     for (const id of bots) {
       const b = R.bots[id], cur = chipOf(r, h, id);
       if (b.lastChip && cur !== b.lastChip) {
-        b.lost = b.lastChip; b.lastChip = cur; b.next = Math.min(b.next, now + (500 + Math.random() * r.bots[id].pace) * TEMPO);
+        const n = b.lastChip, taker = holderOf(r, h, n);
+        b.lastChip = cur; b.next = Math.min(b.next, now + (500 + Math.random() * r.bots[id].pace) * TEMPO);
+        if (b.open && taker && taker !== id) {                   // war „offen für Wechsel“ → gibt ihn ohne Streit ab und ordnet sich neu ein
+          markOpen(code, r, h, st, id, false);
+          b.yieldTo[taker] = n;
+          if (!isBot(r, taker)) R.humanFixed[taker] = n;
+          const tn = (r.docs['players/' + taker] || {}).name;
+          say(code, r, id, isBot(r, taker) ? 'Okay, ' + tn + ' nimmt die ' + n : 'Passt ' + tn + ', nimm die ' + n + ' – ich such mir was anderes');
+        } else b.lost = n;
         if (Math.random() < 0.25) react(code, r, id, Math.random() < 0.5 ? 2 : 3);      // 😬 / 🤔
       }
       if (now >= b.next) botAct(code, r, m, R, h, st, id);
@@ -320,6 +349,22 @@ module.exports = function createBots(ctx) {
   }
 
   /* ------------------------------------------------ Tipp + Aufdecken -------- */
+  /* Wie im Übungsraum (spBotGuess): Ausschlussverfahren (hand.js inferHole). Die Bots kennen ihre eigenen Karten, gehen davon
+     aus, dass der Spieler mit dem höchsten Chip alle schlägt, und gewichten nach seinem Chip-Verlauf. Meist die
+     wahrscheinlichste Wert-Kombination, ab und zu die zweit-/drittbeste. */
+  function botGuess(m, R, t, K) {
+    if (R.board.some((c) => c == null)) return null;
+    const own = Object.keys(R.bots).filter((id) => id !== t && R.bots[id].hole).map((id) => R.bots[id].hole.cards);
+    const ch = {}, hist = m.chipHist || {};
+    for (let s = 1; s <= 4; s++) { const c = Number((hist[String(s)] || {})[t]); if (c) ch[s] = c; }
+    let top = [];
+    try { top = H.valueOdds(H.inferHole({ board: R.board, dead: [].concat(...own), chips: ch, n: partsOf(m).length, K, beats: own })).slice(0, 3); } catch (e) { /* Fallback unten */ }
+    top = top.filter((x) => x.vals.length === K);
+    if (!top.length) return Array.from({ length: K }, (_, i) => 12 - i);
+    let x = Math.random() * top.reduce((a, o) => a + o.w * o.w, 0);
+    for (const o of top) { x -= o.w * o.w; if (x <= 0) return o.vals.slice(); }
+    return top[0].vals.slice();
+  }
   function guessStep(code, r, m, R, h, bots) {
     const g = r.docs['state/guess'];
     if (!g || g.hand !== h) return;
@@ -328,8 +373,8 @@ module.exports = function createBots(ctx) {
     if (!humans.length && !filled) {                            // niemand außer Bots tippt → Bots tippen selbst
       if (!R.guessAt) { R.guessAt = now + 2500 * TEMPO; return; }
       if (now < R.guessAt) return;
-      const bd = R.board.filter((c) => c != null).map((c) => c % 13).sort((x, y) => y - x);
-      const cards = g.cards.map(() => (Math.random() < 0.45 && bd.length ? bd.splice(Math.floor(Math.random() * Math.min(3, bd.length)), 1)[0] : 8 + Math.floor(Math.random() * 5)));
+      const cards = botGuess(m, R, t, g.cards.length);
+      if (!cards) return;                                        // Tisch/Karten noch nicht entschlüsselt → nächster Takt
       set(code, r, 'state/guess', { hand: h, cards, confirmed: {} });
       return;
     }
@@ -360,6 +405,15 @@ module.exports = function createBots(ctx) {
   /* ------------------------------------------------ Sprechblasen + Reaktionen (wie im Übungsraum) -- */
   /* Nur der Server schreibt say/<bot> und react/<bot>; Browser zeigen sie gut 4 s neben dem Namen */
   function say(code, r, id, text) { set(code, r, 'say/' + id, { t: String(text).slice(0, 80), ts: Date.now() }); }
+  /* „🔄 offen“ im Browser: open/<bot> = {hand, stage, chip}; nur schreiben, wenn sich die Anzeige ändert */
+  function markOpen(code, r, h, st, id, on, chip) {
+    const R = rt.get(code), b = R && R.bots[id]; if (!b) return;
+    b.open = !!on;
+    const sig = on ? h + '.' + st + '.' + chip : null;
+    if (b.openShown === sig || (!on && !b.openShown)) return;
+    b.openShown = sig;
+    set(code, r, 'open/' + id, { hand: h, stage: st, chip: on ? chip : null });
+  }
   function react(code, r, id, e) { set(code, r, 'react/' + id, { e: e, ts: Date.now() }); }
   /* Nach der Hand: Ergebnis selbst ausrechnen (aufgedeckte Karten + Tisch + Chips aus Runde 4 + Tipp) und gelegentlich reagieren */
   function doneReactions(code, r, m, R, h, bots) {

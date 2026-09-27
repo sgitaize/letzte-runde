@@ -41,8 +41,8 @@ async function until(f, what, ms = 60000) { const t = Date.now(); while (Date.no
 const post = (a, code, body, key) => fetch(BASE + 'api?a=' + a + '&room=' + code, { method: 'POST',
   headers: { 'Content-Type': 'application/json', 'x-kr-key': key || 'fremder-schluessel-1234567890' }, body: JSON.stringify(body) });
 const bots = (X) => X.K.S().players.filter((p) => p.bot).map((p) => p.id);
-let seenSay = 0, seenReact = 0;   // Sprechblasen/Reaktionen der Bots, gesehen in Browsern der Menschen
-setInterval(() => { for (const X of clientsAll) { const h = X.els.app.innerHTML; if (/class="say"/.test(h)) seenSay++; if (/class="react-pop"/.test(h)) seenReact++; } }, 200).unref();
+let seenSay = 0, seenReact = 0, seenOpen = 0;   // Sprechblasen/Reaktionen der Bots, gesehen in Browsern der Menschen
+setInterval(() => { for (const X of clientsAll) { const h = X.els.app.innerHTML; if (/class="say"/.test(h)) seenSay++; if (/class="react-pop"/.test(h)) seenReact++; if (/class="tag open"/.test(h)) seenOpen++; } }, 200).unref();
 const clientsAll = [];
 
 /* Eine komplette Hand spielen: Menschen nehmen den Chip, der zu ihrer Einschätzung passt, klopfen, tippen, decken auf */
@@ -159,6 +159,7 @@ let srv;
   await playHandWithRoles([C], 'Cora 2 (1 Mensch + 2 Bots, Cora hat den höchsten Chip)', null, true);
   const g = C.K.S().guess;
   ok(C.K.main().target === C.K.uid() && g && g.cards.every((x) => x != null) && Object.keys(g.confirmed || {}).length === 2, 'Bots tippen selbst, wenn nur Bots tippen können');
+  ok(g.cards.length === 2 && g.cards.every((x) => Number.isInteger(x) && x >= 0 && x <= 12) && g.cards[0] >= g.cards[1], 'Bot-Tipp per Ausschlussverfahren (inferHole): ' + g.cards.join('+'));
 
   // Offline-Spieler durch Bot ersetzen (Host, doppelte Bestätigung), Rückkehr und Platz zurückholen
   const E = client('Eva'), F = client('Fritz'); await sleep(500);
@@ -197,6 +198,7 @@ let srv;
   ok(true, 'Nach der Hand holt Fritz seinen Platz zurück');
   await playHandWithRoles([E, F], 'Eva + Fritz (zurück) + Bot');
 
+  ok(seenOpen > 0, 'Unsichere Bots zeigen „🔄 offen“ (' + seenOpen + ' Momente)');
   ok(seenSay > 0 && seenReact > 0, 'Bots zeigen im Raum Sprechblasen und Reaktionen wie im Singleplayer (' + seenSay + '/' + seenReact + ' Momente)');
   const log = fs.readFileSync(path.join(TMP, 'logs', 'app.log'), 'utf8');
   const errs = log.split('\n').filter((l) => / ERROR /.test(l));
