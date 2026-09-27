@@ -40,6 +40,7 @@ async function cdp() {
     for (const [w, h] of SIZES) {
       await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: Number(process.env.DSF) || 1, mobile: w < 600 });
       await sleep(400);
+      if (process.env.SCROLL) await js('(function(){var e=document.querySelector("' + process.env.SCROLL + '");if(e)e.scrollIntoView();return 1;})()');   // z. B. SCROLL=.p-insight
       const r = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       const f = path.join(OUT, name + '-' + w + 'x' + h + '.png');
       fs.writeFileSync(f, Buffer.from(r.result.data, 'base64'));
@@ -57,6 +58,7 @@ async function cdp() {
   await click('[data-a="sp"]');
   await until('/Singleplayer/.test(document.body.innerText)');
   if (process.env.LEARN && !(await js('!!document.querySelector(".coach")'))) await click('[data-a="splearn"]');
+  if (process.env.INSIGHT && !(await js('!!document.querySelector(".p-insight")'))) await click('[data-a="spinsight"]');
   await sleep(2500);
   await shoot('sp-runde1');
   // Hand bis zum Ende spielen: freien Chip nehmen, klopfen; Tipp mit Ass/König bestätigen

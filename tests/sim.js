@@ -250,7 +250,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(t===T.__kr.uid(),'Ziel = Spieler mit höchstem Chip');
   ok(A.__kr.guessers().length===2&&A.__kr.guessers().indexOf(t)<0,'Ziel-Spieler tippt nicht mit');
   await until(()=>T.els.app.innerHTML.includes('Du tippst nicht mit'),'Hinweis beim Ziel');
-  { const g=GU[0].els.app.innerHTML; ok(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine'),'Tipp steht oben unter dem Tisch (wie die Auflösung), über der eigenen Hand'); }
+  { const g=GU[0].els.app.innerHTML; ok(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine'),'Tipp steht oben unter dem Tisch (wie die Auflösung), über der eigenen Hand'+(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine')?'':' '+[g.indexOf('p-board'),g.indexOf('p-guess'),g.indexOf('p-mine')]+g.slice(0,300))); }
   ok(!T.els.app.innerHTML.includes('data-grank=')&&/data-grank=/.test(GU[0].els.app.innerHTML),'Tipp als Karten zum Antippen; Ziel-Spieler hat keine Auswahl');
   const real=T.__kr.myHand().cards.map(c=>c%13);
   const wrong=[0,1,2,3,4,5,6,7,8,9,10,11,12].find(r=>real.indexOf(r)<0);

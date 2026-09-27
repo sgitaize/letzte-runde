@@ -141,7 +141,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 /* Raum-Aufbau: im Hochformat eine Spalte in der gewohnten Reihenfolge (Spalten lösen sich auf) … */
 .cols{display:flex;flex-direction:column}
 .col-l,.col-r{display:contents}
-.p-board{order:1}.p-guess,.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:5}.p-guess{order:6}.cols .endbar{order:7}
+.p-board{order:1}.p-guess,.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:0}.p-guess{order:6}.cols .endbar{order:7}
 /* … ab Tablet-Größe im Querformat nebeneinander, ohne Scrollen: links Tisch/Karten/Chips, rechts Spieler + Chat */
 @media (orientation:landscape) and (min-width:900px) and (min-height:560px){
   :root{--rw:clamp(320px,34vw,460px);--chatH:clamp(170px,30vh,300px)}
@@ -201,6 +201,12 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .coachtip,.coachok,.coachwarn{padding:6px 10px;border-radius:8px}.coachtip{background:color-mix(in srgb,var(--coachc) 14%,transparent)}
 .coachok{background:color-mix(in srgb,#2e9d57 14%,transparent)}.coachwarn{background:color-mix(in srgb,#e0a31a 20%,transparent)}
 .coachlist{margin:4px 0 4px 18px;padding:0}.coachlist li{margin:3px 0}.coach b.ok{color:#2e9d57}
+.insight{width:100%;max-width:460px;display:block;margin:4px 0}.insight .ig{stroke:var(--line);stroke-width:1}.insight .it{fill:var(--muted);font-size:11px}
+.insight .il{fill:var(--fg);font-size:12px}.insight .il.me{font-weight:700}.insight .id{stroke:var(--panel,#fff);stroke-width:2}
+.ilegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px}.ileg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.p-insight{order:4}
+.coachreads{margin:6px 0}.coachreads summary{cursor:pointer;font-weight:600}
+.tag.open{border-style:dashed;border-color:var(--gold,#c9a227);color:var(--gold,#c9a227)}
 .installhelp summary{cursor:pointer;font-weight:600}.installhelp p{margin:8px 0;font-size:14px}
 .sitefoot{text-align:center;margin:18px 0 6px;font-size:13px;color:var(--muted)}.sitefoot a{color:inherit}
 .steal-pop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60}
@@ -1361,6 +1367,7 @@ window.krCelebrate=function(){celebrate();};   // für Tests/Screenshots
 var cascadeStop=null;
 function celebrate(){
   if(cascadeStop)cascadeStop();
+  if(typeof document.createElement!=='function')return;   // ohne echtes DOM (Tests)
   if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   var W=window.innerWidth,H=window.innerHeight,dpr=Math.min(2,window.devicePixelRatio||1);
   var cv=document.createElement('canvas');cv.className='cascade';cv.width=W*dpr;cv.height=H*dpr;
@@ -1654,7 +1661,7 @@ function spNewHand(){
   sp.players.forEach(function(p){sp.hole[p.id]=deck.splice(0,K);});
   sp.board=deck.splice(0,5);
   sp.hist={};sp.target=null;sp.guess=[];for(var i=0;i<K;i++)sp.guess.push(null);
-  sp.botGuess=null;sp.botGuessAt=0;sp.res=null;sp.gr=null;sp.bubble={};
+  sp.botGuess=null;sp.botGuessAt=0;sp.res=null;sp.gr=null;sp.bubble={};sp.reads={};
   spStage(1);
 }
 function spVisible(st){return sp.board.slice(0,st>=4?5:st===3?4:st===2?3:0);}
@@ -1675,7 +1682,7 @@ function spStage(st){
     p.e=p.est+p.bias0*[0,1,0.6,0.35,0.1][st];
     /* Wie ein Mensch: kleine Änderungen sind kein Grund, den Platz zu wechseln → etwas an den Chip der Vorrunde gebunden */
     if(prev[p.id])p.e+=(prev[p.id]-p.e)*[0,0,0.25,0.2,0][st];
-    p.first=p.gut;p.lost=null;p.yieldTo={};p.anchor=null;
+    p.first=p.gut;p.lost=null;p.yieldTo={};p.anchor=null;p.open=false;p.seenMe=null;
     /* Hat die neue Tischkarte an meiner Einschätzung kaum etwas geändert, greife ich zuerst wieder zu meinem Chip der Vorrunde */
     if(last!=null&&prev[p.id]&&Math.abs(p.est-last)<0.5){p.anchor=prev[p.id];p.first=true;}
     p.next=now+(600+Math.random()*p.pace*1.6)*SP_TEMPO*spSpeed;
@@ -1690,9 +1697,13 @@ function spTakeFor(id,n){
   if(prev&&prev!==id){
     delete sp.chips[prev];sp.ready[prev]=false;
     var pp=spPl(prev);
-    if(pp&&pp.bot){pp.lost=n;pp.next=Date.now()+(500+Math.random()*pp.pace)*SP_TEMPO*spSpeed;}
+    if(pp&&pp.bot&&pp.open){              // war „offen für Wechsel“ → gibt ihn ohne Streit ab und ordnet sich neu ein
+      pp.open=false;pp.yieldTo[id]=n;if(id==='me')sp.meFixed=n;
+      pp.next=Date.now()+(500+Math.random()*pp.pace)*SP_TEMPO*spSpeed;
+      spSay(prev,id==='me'?'Passt, nimm die '+n+' – ich such mir was anderes':'Okay, '+spPl(id).name+' nimmt die '+n);
+    }else if(pp&&pp.bot){pp.lost=n;pp.next=Date.now()+(500+Math.random()*pp.pace)*SP_TEMPO*spSpeed;}
     if(pp&&pp.bot&&Math.random()<0.25)botReact(prev,Math.random()<0.5?2:3);          // 😬 / 🤔
-    if(prev==='me'){sp.lostMe=n;stealPop(spPl(id).name,n);fx('steal');}
+    if(prev==='me'){sp.lostMe=n;sp.lostMeTo=id;stealPop(spPl(id).name,n);fx('steal');}
   }
   sp.chips[id]=n;sp.ready[id]=false;sp.stable[id]=Date.now();
 }
@@ -1739,9 +1750,14 @@ function spBotAct(p){
     later(1);return;
   }
   var h=spHolder(t),lost=p.lost;p.lost=null;
+  var meNow=sp.chips.me||null,meMoved=meNow&&meNow!==p.seenMe;p.seenMe=meNow;
   if(!h){
     spTakeFor(p.id,t);sp.moves[p.id]=mv+1;
-    if(cur&&Math.random()<0.5)spSay(p.id,cur<t?'Hmm, doch besser als gedacht':'Ach nee, doch nicht so gut');
+    /* Unsicher (Einschätzung liegt zwischen zwei Chips, früh in der Hand besonders) → offen für Wechsel */
+    p.open=Math.abs(e-t)>(sp.stage<=2?0.3:0.5);
+    if(cur&&meMoved&&Math.abs(meNow-t)<=1)spSay(p.id,'Du nimmst die '+meNow+'? Dann bin ich eher die '+t);
+    else if(p.open&&Math.random()<0.7)spSay(p.id,'Ich nehm erstmal die '+t+' – bin offen für Wechsel');
+    else if(cur&&Math.random()<0.5)spSay(p.id,cur<t?'Hmm, doch besser als gedacht':'Ach nee, doch nicht so gut');
     later(1.2);return;
   }
   /* Chip hat jemand. Bei Bots: die Rangfolge spricht für mich → nehmen (jedes Hin und Her macht nachgiebiger).
@@ -1759,7 +1775,7 @@ function spBotAct(p){
     sp.moves[p.id]=mv+1;
     if(h==='me')spSay(p.id,cc||lost===t?'Nee, die '+t+' brauch ich wirklich 😤':'Die '+t+' nehm ich lieber');
     else if(Math.random()<0.5)spSay(p.id,'Ich glaub, die '+t+' ist meine');
-    spTakeFor(p.id,t);later(1.3);return;
+    spTakeFor(p.id,t);p.open=false;later(1.3);return;
   }
   p.yieldTo[h]=t;                                     // akzeptieren und neu einordnen
   if(h==='me')sp.meFixed=t;                           // die anderen haben es gesehen
@@ -1793,6 +1809,8 @@ function spTake(n){
   if(!sp||sp.phase!=='play'||sp.cd||!(n>=1&&n<=sp.players.length))return;
   if(sp.chips.me===n){delete sp.chips.me;sp.ready.me=false;}
   else{var hb=spHolder(n);if(hb&&hb!=='me'&&(sp.lostMe===n))sp.insist[n]=(sp.insist[n]||0)+1;spTakeFor('me',n);}
+  var now=Date.now();   // die Bots sehen deinen Zug und denken bald neu nach
+  sp.players.forEach(function(p){if(p.bot&&p.next!==Infinity)p.next=Math.min(p.next,now+(300+Math.random()*p.pace*0.7)*SP_TEMPO*spSpeed);});
   render();
 }
 function spReady(){
@@ -1810,12 +1828,19 @@ function spEndStage(){
   if(sp.target==='me'){sp.botGuess=spBotGuess();sp.botGuessAt=Date.now()+2500*spSpeed;}
   render();
 }
-/* Bots tippen die Karten des Spielers: hohe Werte, gern passend zum Tisch (wer die 1 hat, hat oft ein Paar) */
+/* Bots tippen die Karten des Spielers per Ausschlussverfahren (hand.js inferHole): Sie kennen ihre eigenen Karten,
+   gehen davon aus, dass du alle schlägst (höchster Chip), und gewichten nach deinem Chip-Verlauf. Meist die
+   wahrscheinlichste Kombination, ab und zu die zweit-/drittbeste (auch Bots liegen mal daneben). */
+function spInferFor(id,dead,beats){
+  var ch={};for(var r=1;r<=4;r++){var c=spChipOfStage(id,r);if(c)ch[r]=c;}
+  return inferHole({board:sp.board,dead:dead,chips:ch,n:sp.players.length,K:sp.K,beats:beats});
+}
 function spBotGuess(){
-  var b=sp.board.map(function(c){return c%13;}).sort(function(x,y){return y-x;}),out=[];
-  for(var i=0;i<sp.K;i++)
-    out.push(Math.random()<0.45&&b.length?b.splice(Math.floor(Math.random()*Math.min(3,b.length)),1)[0]:8+Math.floor(Math.random()*5));
-  return out;
+  if(typeof inferHole!=='function')return [12,11];   // alte hand.js aus dem Speicher (Netz hing) – nicht abstürzen
+  var others=sp.players.filter(function(p){return p.id!=='me';}).map(function(p){return sp.hole[p.id];});
+  var top=valueOdds(spInferFor('me',[].concat.apply([],others),others)).slice(0,3),x=Math.random()*top.reduce(function(a,t){return a+t.w*t.w;},0);
+  for(var i=0;i<top.length;i++){x-=top[i].w*top[i].w;if(x<=0)return top[i].vals.slice();}
+  return top.length?top[0].vals.slice():[12,11];
 }
 function spGuessSet(i,v){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&i>=0&&i<sp.K){sp.guess[i]=(v>=0&&v<=12)?v:null;render();}}
 function spGuessConfirm(){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&sp.guess.every(function(x){return x!=null;}))spFinish();}
@@ -1874,7 +1899,7 @@ function spView(){
     '<h1>🤖 Singleplayer</h1><div class="note">Hand '+num(sp.hand)+' · '+label+' · du + '+(n-1)+' Bots</div></div>'+
     '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
     '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
-    '<div class="bar" style="margin-top:8px">'+spLearnBtn()+'<span class="note">Mitspieler:</span>'+spBotBtns()+
+    '<div class="bar" style="margin-top:8px">'+spLearnBtn()+spInsightBtn()+'<span class="note">Mitspieler:</span>'+spBotBtns()+
       (spBots!==n-1?'<span class="note">ab der nächsten Hand '+(spBots+1)+' Spieler</span>':'')+'</div></div>';
   if(statsOpen)out+=statsPanel(sp.stats,spUsage());
   out+=stealHtml();
@@ -1920,20 +1945,21 @@ function spView(){
       (c?'<div class="chip r'+(ph==='play'?st:4)+(clickable?'':' static')+(id==='me'?' mine':'')+'"'+(clickable?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">–</div>')+
       '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag">🤖</span>':' <span class="tag you">du</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
         (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+'</div>'+
+      (ph==='play'&&p.bot&&p.open&&c?'<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">🔄 offen</span>':'')+
       (ph==='play'?(sp.ready[id]&&c?'<span class="tag ok" title="bereit">👊</span>':'<span class="tag">'+(p.bot?'🤔':'…')+'</span>'):'')+
       cards+verdict+'</div>';
   });
-  var Rt='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
+  var Rt=(spInsight?insightHtml():'')+'<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
 
   if(ph==='play'){
     var free='';
     for(var k=1;k<=n;k++)if(!spHolder(k))free+='<div class="chip r'+st+'" data-chip="'+k+'">'+k+'</div>';
     var waiting=ps.filter(function(p){return !(sp.chips[p.id]&&sp.ready[p.id]);}).map(function(p){return p.id==='me'?'dich':p.name;});
-    out+='<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
+    out='<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
       '<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+n+' = beste. Chip antippen zum Nehmen (auch von den Bots), eigenen Chip antippen legt ihn zurück.</p>'+
       '<div class="hr"></div><div class="bar"><button class="'+(sp.ready.me?'':'primary')+'" data-a="ready"'+(sp.chips.me?'':' disabled')+'>'+
       (sp.ready.me?'Bereit zurücknehmen':'👊 Bereit')+'</button>'+
-      (waiting.length?'<span class="note">Warten auf: '+esc(waiting.join(', '))+'</span>':'<span class="note">Alle bereit</span>')+'</div></div>';
+      (waiting.length?'<span class="note">Warten auf: '+esc(waiting.join(', '))+'</span>':'<span class="note">Alle bereit</span>')+'</div></div>'+out;   // über dem Tisch
   }
   if(ph==='guess'){
     var t=sp.target;
@@ -2192,20 +2218,84 @@ function offlineBanner(){
     '<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button></div></div>';
 }
 
+/* ---------- Insight: Positionswechsel aller Spieler über die Runden als Verlauf (Chip je Runde, oben = höchster) ---------- */
+var spInsight=false;try{spInsight=localStorage.getItem('kr.sp.insight')==='1';}catch(e){}
+function spToggleInsight(){spInsight=!spInsight;try{localStorage.setItem('kr.sp.insight',spInsight?'1':'0');}catch(e){}render();}
+function spInsightBtn(){return '<button class="small '+(spInsight?'primary':'ghost')+'" data-a="spinsight" title="Insight: Positionswechsel als Grafik">📈 Insight'+(spInsight?' an':'')+'</button>';}
+var SERIES=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300'];   // feste Reihenfolge je Sitzplatz (Farbe folgt dem Spieler, nicht dem Rang)
+function insightHtml(){
+  var ps=sp.players,n=ps.length,ph=sp.phase,last=ph==='play'?sp.stage:4,done=ph==='done'&&sp.res,cols=done?5:4;
+  var W=360,top=14,rowH=24,H=top+(n-1)*rowH+30,x0=24,xw=W-x0-86,xs=function(r){return x0+(r-1)*xw/(cols-1);},ys=function(c){return top+(n-c)*rowH;};
+  var g='',lines='',dots='',labels='',legend='',lab=[];
+  for(var c=1;c<=n;c++)g+='<line x1="'+x0+'" x2="'+xs(cols)+'" y1="'+ys(c)+'" y2="'+ys(c)+'" class="ig"/><text x="'+(x0-10)+'" y="'+(ys(c)+4)+'" class="it" text-anchor="end">'+c+'</text>';
+  for(var r=1;r<=cols;r++)g+='<text x="'+xs(r)+'" y="'+(H-6)+'" class="it" text-anchor="middle">'+(r===5?'Echt':'R'+r)+'</text>';
+  ps.forEach(function(p,i){
+    var col=SERIES[i%SERIES.length],pts=[],lastPt=null;
+    for(var r=1;r<=last;r++){var v=ph==='play'&&r===sp.stage?(sp.chips[p.id]||null):spChipOfStage(p.id,r);pts.push(v?[xs(r),ys(v),r,v]:null);}
+    var seg=[];
+    pts.concat([null]).forEach(function(q){if(q){seg.push(q[0]+','+q[1]);lastPt=q;}else{if(seg.length>1)lines+='<polyline points="'+seg.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(p.id==='me'?3:2)+'" stroke-linejoin="round"/>';seg=[];}});
+    pts.forEach(function(q){if(q)dots+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="5" fill="'+col+'" class="id"><title>'+esc(p.name)+' · Runde '+q[2]+': Chip '+q[3]+'</title></circle>';});
+    if(done&&lastPt){var x=sp.res.by[p.id],ev=(x.lo+x.hi)/2,ex=xs(5),ey=ys(ev);
+      lines+='<line x1="'+lastPt[0]+'" y1="'+lastPt[1]+'" x2="'+ex+'" y2="'+ey+'" stroke="'+col+'" stroke-width="2" stroke-dasharray="4 3"/>';
+      dots+='<circle cx="'+ex+'" cy="'+ey+'" r="5" fill="none" stroke="'+col+'" stroke-width="2"><title>'+esc(p.name)+' · richtig wäre '+(x.lo===x.hi?x.lo:x.lo+'–'+x.hi)+'</title></circle>';}
+    if(lastPt)lab.push({y:done?ys((sp.res.by[p.id].lo+sp.res.by[p.id].hi)/2):ys(lastPt[3]),me:p.id==='me',t:p.id==='me'?'Du':p.name,col:col});
+    legend+='<span class="ileg"><i style="background:'+col+'"></i>'+esc(p.id==='me'?'Du':p.name)+'</span>';
+  });
+  lab.sort(function(a,b){return a.y-b.y;}).forEach(function(l,i){if(i&&l.y<lab[i-1].y+13)l.y=lab[i-1].y+13;   // Gleichstand: untereinander
+    labels+='<text x="'+(xs(cols)+10)+'" y="'+(l.y+4)+'" class="il'+(l.me?' me':'')+'">'+esc(l.t)+'</text>';});
+  return '<div class="panel p-insight"><div class="spread"><h2>📈 Insight: Positionen je Runde</h2><button class="small ghost" data-a="spinsight">aus</button></div>'+
+    '<svg class="insight" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Chip je Spieler und Runde">'+g+lines+dots+labels+'</svg>'+
+    '<div class="ilegend">'+legend+'</div><p class="note">Oben = höchster Chip. Jede Linie ist ein Spieler; Knick = Positionswechsel.'+(done?' Gestrichelt: wo er/sie richtig gestanden hätte (Echt).':'')+'</p></div>';
+}
+
 /* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
 var spLearn=false;try{spLearn=localStorage.getItem('kr.sp.learn')==='1';}catch(e){}
 function spToggleLearn(){spLearn=!spLearn;try{localStorage.setItem('kr.sp.learn',spLearn?'1':'0');}catch(e){}render();}
 function spLearnBtn(){return '<button class="small '+(spLearn?'primary':'ghost')+'" data-a="splearn" title="Lernmodus: Tipps und Erklärungen">🎓 Lernmodus'+(spLearn?' an':'')+'</button>';}
 /* Einschätzung der eigenen Hand je Runde (gleiches Verfahren wie die Bots, einmal pro Runde gerechnet) */
-function spCoachEst(){
-  var k=sp.hand+'.'+sp.stage;sp.coach=sp.coach||{};
-  if(sp.coach[k]==null)sp.coach[k]=spEstimate('me',300);
-  var n=sp.players.length,raw=sp.coach[k],e=(n+1)/2+(raw-(n+1)/2)*1.7;
+function spCoachEst(r){
+  r=r||sp.stage;var k=sp.hand+'.'+r;sp.coach=sp.coach||{};
+  if(sp.coach[k]==null)sp.coach[k]=estimateRank(sp.hole.me,spVisible(r),sp.players.length-1,sp.K,300);
+  var n=sp.players.length,raw=sp.coach[k],e=Math.max(1,Math.min(n,(n+1)/2+(raw-(n+1)/2)*1.7));   // gespreizt, aber nie außerhalb 1…n
   return {raw:raw,e:e,sug:Math.max(1,Math.min(n,Math.round(e))),n:n};
 }
 function whyStronger(a,b){        // a ist stärker als b: kurze Begründung
   if(a.cat!==b.cat)return HAND_NAMES[a.cat]+' schlägt '+HAND_NAMES[b.cat];
   return 'beide '+HAND_NAMES[a.cat]+' – die höheren Werte entscheiden';
+}
+/* Rückschluss aus deiner Sicht: was verraten die Chips eines Mitspielers bis Runde st? (nur sichtbare Tischkarten,
+   deine Karten scheiden aus) → Wahrscheinlichkeit je Kartenwert und je Handart. Zwischengespeichert je Chip-Stand. */
+function spRead(id,st){
+  var ch={},r;for(r=1;r<st;r++){var c=spChipOfStage(id,r);if(c)ch[r]=c;}
+  var cur=sp.phase==='play'&&st===sp.stage?sp.chips[id]:spChipOfStage(id,st);if(cur)ch[st]=cur;
+  var key=id+'|'+st+'|'+JSON.stringify(ch);sp.reads=sp.reads||{};
+  if(sp.reads[key])return sp.reads[key];
+  var vis=spVisible(st),list=inferHole({board:vis,dead:sp.hole.me,chips:ch,n:sp.players.length,K:sp.K}),cat={};
+  list.forEach(function(x){var h=bestHand(x.hole.concat(vis),x.hole);cat[h.cat]=(cat[h.cat]||0)+x.w;});
+  return (sp.reads[key]={ch:ch,ro:rankOdds(list),cat:cat,vo:valueOdds(list).slice(0,3)});
+}
+function spFresh(st){return st===2?sp.board.slice(0,3):st===3?[sp.board[3]]:st===4?[sp.board[4]]:[];}
+function pc(x){return Math.round(x*100)+' %';}
+function cardName(c){return RANK_NAME[c%13]+SUITS[Math.floor(c/13)];}
+/* Eine Zeile je Mitspieler: Sprünge erklären (2 → 4 = hat vermutlich eine neue Tischkarte getroffen), sonst die Lesart */
+function readLine(p,st){
+  var R=spRead(p.id,st),cur=R.ch[st],prev=st>1?R.ch[st-1]:null,nm='<b>'+esc(p.name)+'</b>';
+  if(!cur)return '';
+  var cats=Object.keys(R.cat).sort(function(a,b){return R.cat[b]-R.cat[a];}),c0=+cats[0];
+  var top=0;R.ro.forEach(function(x,i){if(x>R.ro[top])top=i;});
+  if(prev&&cur-prev>=2){
+    var best=null;spFresh(st).forEach(function(c){var x=R.ro[c%13];if(!best||x>best.p)best={c:c,p:x};});
+    return nm+' sprang von '+prev+' auf '+cur+' → '+(best&&best.p>=0.3?'hat vermutlich eine '+esc(RANK_NAME[best.c%13])+' (Paar mit '+esc(cardName(best.c))+', '+pc(best.p)+')':'die neue Karte hat vermutlich geholfen (Paar, Straßen- oder Farbchance)');
+  }
+  if(prev&&prev-cur>=2)return nm+' ging von '+prev+' auf '+cur+' runter → die neue Karte hilft nicht, oder die anderen wirken stärker';
+  var traj=[1,2,3,4].filter(function(r){return R.ch[r];}).map(function(r){return R.ch[r];}).join('→');
+  return nm+' ('+traj+'): vermutlich '+esc(HAND_NAMES[c0])+' ('+pc(R.cat[c0])+')'+(R.ro[top]>=0.35?', wahrscheinlich mit '+esc(RANK_NAME[top])+' ('+pc(R.ro[top])+')':'');
+}
+function coachReads(st){
+  var ls=sp.players.filter(function(p){return p.bot;}).map(function(p){return readLine(p,st);}).filter(Boolean);
+  if(!ls.length)return '';
+  return '<details class="coachreads" open><summary>🔎 Was die Chips der anderen verraten</summary><ul class="coachlist">'+ls.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ul>'+
+    '<p class="note">Ausschlussverfahren: deine eigenen Karten kann keiner haben; aus dem Chip-Verlauf je Runde wird gerechnet, welche Karten dazu passen.</p></details>';
 }
 function coachPlay(){
   var c=spCoachEst(),st=sp.stage,mine=sp.hole.me,vis=spVisible(st),my=bestHand(mine.concat(vis),mine),cur=sp.chips.me||null,out='';
@@ -2224,13 +2314,18 @@ function coachPlay(){
   else if(cur===c.sug)out+='<p class="coachok">✓ Dein Chip '+cur+' passt zu deiner Hand.</p>';
   else if(Math.abs(cur-c.e)<0.8)out+='<p class="coachok">✓ Chip '+cur+' ist vertretbar – deine Hand liegt zwischen '+Math.floor(c.e)+' und '+Math.ceil(c.e)+'.</p>';
   else out+='<p class="coachwarn">⚠ Chip '+cur+' ist eher zu '+(cur>c.e?'hoch':'niedrig')+': '+(cur>c.e?'Viele andere Hände schlagen '+esc(handName(my))+'.':'Deine Hand schlägt vermutlich mehr Mitspieler, als die '+cur+' sagt.')+' Besser wäre die <b>'+c.sug+'</b>'+(holder&&holder!=='me'?' (hat '+esc(spPl(holder).name)+')':'')+'.</p>';
+  if(sp.lostMe&&sp.lostMeTo&&spPl(sp.lostMeTo))out+='<p class="note">'+esc(spPl(sp.lostMeTo).name)+' hat dir die '+sp.lostMe+' weggenommen → ist sich sicher, dorthin zu gehören. Ein „🔄 offen“ heißt dagegen: unsicher, gibt den Chip ohne Streit ab.</p>';
+  out+=coachReads(st);
   out+='<p class="note">Die Chips der anderen sind ihre Einschätzung: Wer eine hohe Zahl festhält, hält seine Hand für stark. Holt sich ein Bot seinen Chip zurück, ist er sich sicher.</p>';
   return out;
 }
 function coachGuess(){
   var t=sp.target;if(t==='me')return '<p>Die Bots tippen deine Karten. Du hattest den höchsten Chip – also sollten sie auf starke Karten tippen.</p>';
-  var b=sp.board.map(function(c){return RANK_NAME[c%13];});
-  return '<p>'+esc(spPl(t).name)+' hat den höchsten Chip – vermutlich ein Paar mit einer Tischkarte ('+esc(b.join(', '))+') oder hohe Karten wie Ass und König.</p>';
+  var ch={};for(var r=1;r<=4;r++){var c=spChipOfStage(t,r);if(c)ch[r]=c;}
+  var vo=valueOdds(inferHole({board:sp.board,dead:sp.hole.me,chips:ch,n:sp.players.length,K:sp.K,beats:[sp.hole.me]})).slice(0,3);
+  return '<p>'+esc(spPl(t).name)+' hat den höchsten Chip – muss also deine Hand schlagen. Aus dem Chip-Verlauf ('+[1,2,3,4].map(function(r){return ch[r]||'–';}).join('→')+') und deinen Karten (die hat '+esc(spPl(t).name)+' sicher nicht) passen am besten:</p>'+
+    '<ul class="coachlist">'+vo.map(function(v){return '<li><b>'+v.vals.map(function(x){return esc(RANK_NAME[x]);}).join(' + ')+'</b> ('+pc(v.w)+')</li>';}).join('')+'</ul>'+
+    '<p class="note">Die Prozente sind Wahrscheinlichkeiten, keine Gewissheit – ähnliche Werte zusammen ergeben oft mehr als die Spitze.</p>';
 }
 function coachDone(){
   var res=sp.res,by=res.by,me=by.me,out='',nm=function(id){return id==='me'?'du':esc(spPl(id).name);};
@@ -2245,12 +2340,40 @@ function coachDone(){
     });
     out+='</ul>';
   }
+  out+=coachRounds(me);
   var hits=[1,2,3,4].map(function(r){var c=spChipOfStage('me',r);return c==null?'–':(c>=me.lo&&c<=me.hi?'<b class="ok">'+c+' ✓</b>':c);});
   out+='<p>Deine Chips je Runde: '+hits.map(function(h,i){return 'R'+(i+1)+' '+h;}).join(' · ')+'. Früh danebenliegen ist normal – wichtig ist, dass du mit jeder Tischkarte nachziehst.</p>';
   var botBad=sp.players.filter(function(p){return p.bot&&!by[p.id].ok;});
   if(botBad.length)out+='<p class="note">Auch die Bots lagen daneben: '+botBad.map(function(p){return esc(p.name)+' (Chip '+by[p.id].chip+', richtig '+(by[p.id].lo===by[p.id].hi?by[p.id].lo:by[p.id].lo+'–'+by[p.id].hi)+')';}).join(', ')+'.</p>';
   if(sp.gr&&sp.gr.hits<sp.gr.of&&sp.target!=='me')out+='<p class="note">Beim Tipp auf '+esc(spPl(sp.target).name)+' hättest du '+sp.gr.real.map(function(c){return RANK_NAME[c%13];}).join(' und ')+' tippen müssen.</p>';
   return out;
+}
+/* Runde für Runde: wo hättest du hingehört, warum, und woran hättest du es merken können? */
+function coachRounds(me){
+  var n=sp.players.length,mine=sp.hole.me,li=[];
+  for(var r=1;r<=4;r++){
+    var c=spChipOfStage('me',r);if(!c)continue;
+    var E=spCoachEst(r),vis=spVisible(r),h=bestHand(mine.concat(vis),mine),should,ok;
+    if(r===4){ok=c>=me.lo&&c<=me.hi;should=me.lo===me.hi?''+me.lo:me.lo+'–'+me.hi;}
+    else{ok=Math.abs(c-E.e)<0.8;should=''+E.sug;}
+    if(ok)continue;
+    var high=r===4?c>me.hi:c>E.e,pct=Math.round((E.raw-1)/(n-1)*100);
+    var why=r===1?'vor dem Flop zählt nur die Starthand ('+mine.map(function(x){return RANK_NAME[x%13];}).join(', ')+') – sie schlägt im Schnitt etwa '+pct+' % der anderen'
+      :r===4?'mit allen Karten war deine Hand ('+handName(h)+') Platz '+should+' von '+n
+      :'deine Hand ('+handName(h)+') schlägt im Schnitt etwa '+pct+' % der anderen';
+    var ind='',prevH=r>1?bestHand(mine.concat(spVisible(r-1)),mine):null,fresh=spFresh(r).map(cardName).join(', ');
+    var jump=function(dir){var f=null;sp.players.forEach(function(p){if(!p.bot||f)return;var a=spChipOfStage(p.id,r-1),b=spChipOfStage(p.id,r);if(a&&b&&(b-a)*dir>=2)f=esc(p.name)+' ging in Runde '+r+' von '+a+' auf '+b+(dir>0?' hoch – die neue Karte hat dort geholfen':' runter – darüber wurde Platz frei');});return f;};
+    /* Rückblick mit aufgedeckten Karten: wer lag in dieser Runde falsch herum zu dir? */
+    var hind=function(){var f=null;sp.players.forEach(function(p){
+      if(p.id==='me'||f)return;var b=spChipOfStage(p.id,r);if(!b||(high?b>=c:b<=c))return;
+      var oh=bestHand(sp.hole[p.id].concat(vis),sp.hole[p.id]),d=cmpHand(oh,h);
+      if(high&&d>0)f='im Nachhinein: '+esc(p.name)+' hatte nur die '+b+', aber '+esc(handName(oh))+' – stärker als deine Hand';
+      if(!high&&d<0)f='im Nachhinein: '+esc(p.name)+' hatte die '+b+' mit nur '+esc(handName(oh))+' – schwächer als deine Hand';});return f;};
+    if(high)ind=(r>1&&jump(1))||hind()||(r>1&&prevH&&prevH.cat===h.cat?'die neuen Tischkarten ('+fresh+') haben deine Hand nicht verbessert':r===1?'kleine oder ungleiche Karten ohne Paar gehören vor dem Flop eher nach unten':'andere haben mehr Chancen auf Paar, Straße oder Farbe');
+    else ind=(r>1&&prevH&&h.cat>prevH.cat?'mit '+fresh+' hattest du plötzlich '+handName(h)+' – ein klarer Sprung nach oben':'')||(r>1&&jump(-1))||(r===1?(h.cat>=1?'ein Paar auf der Hand ist vor dem Flop stark':'Ass oder König auf der Hand gehören vor dem Flop eher nach oben'):'')||hind()||'deine Hand war schon stark – dann ruhig früh hoch greifen';
+    li.push('<li><b>Runde '+r+':</b> Du hattest die '+c+', '+(r===4?'richtig':'besser')+' wäre die <b>'+should+'</b> gewesen – '+esc(why)+'. <span class="note">Indikator: '+ind+'.</span></li>');
+  }
+  return li.length?'<p><b>Runde für Runde</b></p><ul class="coachlist">'+li.join('')+'</ul>':'<p class="coachok">✓ In jeder Runde passte dein Chip zu dem, was man wissen konnte.</p>';
 }
 function spCoach(){
   if(!spLearn||!sp)return null;
@@ -2694,6 +2817,7 @@ function roomView(){
     if(shown.indexOf(i)>=0&&bc[i]!=null)bh+=cardHtml(bc[i],fresh.indexOf(i)>=0?'fresh':'');
     else bh+='<div class="card empty"></div>';
   }
+  var beforeBoard=L.length;                 // Chips zum Nehmen kommen über den Tisch (Simon 2026-09-27: näher dran)
   L+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
     '<div class="cards board">'+bh+'</div></div>';
   var afterBoard=L.length;                  // Aufdecken/Auflösung kommt direkt unter den Tisch, über die eigene Hand
@@ -2714,14 +2838,14 @@ function roomView(){
   if(ph==='play'){
     var free='';
     for(var n=1;n<=ps.length;n++) if(!chipHolder(n)) free+='<div class="chip r'+stage()+'" data-chip="'+n+'">'+n+'</div>';
-    L+='<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
+    L=L.slice(0,beforeBoard)+'<div class="panel p-chips"><h2>Chips in der Mitte</h2><div class="row">'+(free||'<span class="note">alle vergeben</span>')+'</div>'+
       '<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+ps.length+' = beste. Chip antippen zum Nehmen'+(optb('allowSteal')?' (auch von anderen)':'')+', eigenen Chip antippen legt ihn zurück.</p>'+
       '<div class="hr"></div><div class="bar">'+
       (ps.indexOf(uid)>=0?'<button class="'+(isReady(m[uid])?'':'primary')+'" data-a="ready"'+(chipOf(uid)?'':' disabled')+'>'+
         (isReady(m[uid])?'Bereit zurücknehmen':'\ud83d\udc4a Bereit')+'</button>':'')+
       waitingHtml(ps.filter(function(id){return !isReady(m[id]);}),'Alle bereit')+
       '<button class="small ghost" data-a="abort">Hand abbrechen</button>'+
-      '</div></div>';
+      '</div></div>'+L.slice(beforeBoard);
   }
 
   if(ph==='guess')L=L.slice(0,afterBoard)+'<div class="p-guess">'+guessPanel()+'</div>'+L.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
@@ -2952,6 +3076,7 @@ document.addEventListener('click',function(ev){
   else if(a==='botok')botifyConfirm();
   else if(a==='botcancel'){botifyDlg=null;render();}
   else if(a==='splearn')spToggleLearn();
+  else if(a==='spinsight')spToggleInsight();
   else if(a==='vjoin')voiceJoin();
   else if(a==='vmute')voiceMute();
   else if(a==='vleave')voiceLeave();

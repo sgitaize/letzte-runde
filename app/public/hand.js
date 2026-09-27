@@ -118,7 +118,66 @@ function estimateRank(hole,vis,others,K,sims){
   return sum/sims;
 }
 
-var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,preKey:preKey};
+/* Rückschluss (Ausschlussverfahren): Welche Handkarten passen zu den Chips, die jemand je Runde genommen hat?
+   o = {board:[bis 5 Tischkarten], dead:[Karten, die er sicher nicht hat], chips:{1..4: Chip}, n: Spielerzahl, K: Handkarten,
+        beats:[[Karten]…] Hände, die er am Ende schlagen soll (weich gewichtet)}.
+   Jede mögliche Hand bekommt ein Gewicht: je Runde passt ihre Stärke (Anteil schwächerer Hände bei den damals sichtbaren
+   Tischkarten; vor dem Flop Tabelle PRE) zum genommenen Chip? Liefert [{hole,w}] mit Summe 1, stärkstes Gewicht zuerst. */
+var SEEN=[0,3,4,5];
+function inferHole(o){
+  var K=o.K||2,n=o.n,dead={},deck=[],combos=[],i,j,k;
+  (o.board||[]).concat(o.dead||[]).forEach(function(c){dead[c]=1;});
+  for(i=0;i<52;i++)if(!dead[i])deck.push(i);
+  if(K===2){for(i=0;i<deck.length;i++)for(j=i+1;j<deck.length;j++)combos.push([deck[i],deck[j]]);}
+  else{
+    var seen={};
+    for(k=0;k<1500;k++){
+      var d=deck.slice();for(i=0;i<K;i++){j=i+Math.floor(Math.random()*(d.length-i));var t=d[i];d[i]=d[j];d[j]=t;}
+      var h=d.slice(0,K).sort(function(a,b){return a-b;}),key=h.join();if(!seen[key]){seen[key]=1;combos.push(h);}
+    }
+  }
+  var w=combos.map(function(){return 1;}),sig=[0,1.1,1,0.85,0.7];
+  for(var r=1;r<=4;r++){
+    var chip=o.chips&&o.chips[r];if(!chip)continue;
+    var vis=(o.board||[]).slice(0,SEEN[r-1]);if(vis.length<SEEN[r-1])continue;
+    var pct;
+    if(!vis.length&&K===2)pct=combos.map(function(h){return PRE[preKey(h)]/1000;});
+    else{      // Stärke = Anteil der möglichen Hände, die schwächer sind (Unentschieden halb)
+      var hs=combos.map(function(h,x){return {x:x,h:bestHand(h.concat(vis),h)};});
+      hs.sort(function(a,b){return cmpHand(a.h,b.h);});
+      pct=new Array(combos.length);
+      for(i=0;i<hs.length;){for(j=i;j+1<hs.length&&cmpHand(hs[j+1].h,hs[i].h)===0;j++);
+        for(k=i;k<=j;k++)pct[hs[k].x]=(i+j)/2/Math.max(1,hs.length-1);i=j+1;}
+    }
+    var s=sig[r]*Math.max(1,(n-1)/3);
+    for(i=0;i<combos.length;i++){var ex=1+pct[i]*(n-1),dd=(chip-ex)/s;w[i]*=Math.exp(-dd*dd/2);}
+  }
+  if(o.beats&&o.beats.length&&(o.board||[]).length===5){
+    var bh=o.beats.map(function(h){return bestHand(h.concat(o.board),h);});
+    for(i=0;i<combos.length;i++){
+      var mine=bestHand(combos[i].concat(o.board),combos[i]);
+      bh.forEach(function(b){var c=cmpHand(mine,b);if(c<0)w[i]*=0.03;else if(c===0)w[i]*=0.5;});
+    }
+  }
+  var sum=0,out=[];for(i=0;i<combos.length;i++)sum+=w[i];
+  for(i=0;i<combos.length;i++)if(w[i]>0)out.push({hole:combos[i],w:w[i]/(sum||1)});
+  return out.sort(function(a,b){return b.w-a.w;});
+}
+/* Wahrscheinlichkeit je Kartenwert (0…12), dass er mindestens einmal in der Hand ist */
+function rankOdds(list){
+  var p=[0,0,0,0,0,0,0,0,0,0,0,0,0];
+  list.forEach(function(x){var s={};x.hole.forEach(function(c){s[c%13]=1;});for(var r in s)p[r]+=x.w;});
+  return p;
+}
+/* Wahrscheinlichste Kombination von Werten (Farbe egal, wie beim Tipp): [{vals:[…], w}] absteigend */
+function valueOdds(list){
+  var m={};
+  list.forEach(function(x){var k=x.hole.map(function(c){return c%13;}).sort(function(a,b){return b-a;}).join();m[k]=(m[k]||0)+x.w;});
+  return Object.keys(m).map(function(k){return {vals:k.split(',').map(Number),w:m[k]};}).sort(function(a,b){return b.w-a.w;});
+}
+
+var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,preKey:preKey,
+  inferHole:inferHole,rankOdds:rankOdds,valueOdds:valueOdds};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else for(var k in api)root[k]=api[k];
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -8,7 +8,7 @@ const st0 = src.indexOf('<script>\n') + 9; src = src.slice(st0, src.indexOf('</s
 const HANDLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'hand.js'), 'utf8');
 const QRLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'qrcode.js'), 'utf8');
 const hook = `globalThis.__kr={sp:function(){return sp;},spStart:spStart,spTake:spTake,spReady:spReady,spNewHand:spNewHand,
- spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
+ spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,spBotGuess:spBotGuess,spCoachEst:spCoachEst,insightHtml:insightHtml,coachRounds:coachRounds,spToggleInsight:spToggleInsight,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
  setSpeed:function(v){spSpeed=v;},bestHand:bestHand,cmpHand:cmpHand,leave:leave,roomsHtml:roomsHtml,uid:function(){return uid;}};\n`;
 const i = src.lastIndexOf('})();'); src = src.slice(0, i) + hook + src.slice(i);
 
@@ -216,6 +216,30 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   ok(ls['kr.sp.bots'] === '2', 'Bot-Anzahl gemerkt');
   const spCalls = fetchUrls.slice(f0);
   ok(spCalls.length > 0 && spCalls.every((u) => /\?a=sphand$/.test(u)), 'Singleplayer fragt den Server nur für den Zähler an (' + spCalls.length + '× sphand, sonst nichts)');
+  // Schlauere Bots & Trainer (2026-09-27): Screenshot-Hand von Simon nachgestellt
+  X.spSetBots(3); X.spNewHand();
+  { const P = S().players, ids = P.map((p) => p.id), hole = { me: ['Js', 'Qc'], [ids[1]]: ['5h', '7d'], [ids[2]]: ['8d', '6d'], [ids[3]]: ['4d', '6h'] };
+    for (const k in hole) S().hole[k] = hole[k].map(cd);
+    S().board = ['2s', '7s', '3c', 'Qd', '9d'].map(cd);
+    const ch = [[4, 3, 2, 1], [3, 4, 1, 2], [4, 3, 1, 2], [4, 3, 2, 1]];
+    ch.forEach((c, r) => { S().hist[r + 1] = { me: c[0], [ids[1]]: c[1], [ids[2]]: c[2], [ids[3]]: c[3] }; });
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const g = X.spBotGuess(), fake = [g[0], g[1] + 13];
+      const beat = [1, 2, 3].every((j) => X.cmpHand(X.bestHand(fake.concat(S().board), fake), X.bestHand(S().hole[ids[j]].concat(S().board), S().hole[ids[j]])) >= 0);
+      if (beat) good++;
+    }
+    ok(good >= 8, 'Bot-Tipp passt zum höchsten Chip: ' + good + '/10 getippte Hände schlagen alle Bots (vorher z. B. 10+A)');
+    S().stage = 4; const e = X.spCoachEst(4);
+    ok(e.e >= 1 && e.e <= 4, 'Lernmodus: Platz bleibt zwischen 1 und 4 (' + e.e.toFixed(2) + ')');
+    S().phase = 'done'; S().res = { by: {} };
+    P.forEach((p) => { S().res.by[p.id] = { lo: 1, hi: 1, ok: true, swaps: [] }; });
+    S().res.by.me = { lo: 1, hi: 1, ok: false, swaps: [], chip: 4 };
+    const svg = X.insightHtml();
+    ok((svg.match(/<polyline/g) || []).length === 4 && /Echt/.test(svg), 'Insight: eine Linie je Spieler plus Spalte „Echt“');
+    const rt = X.coachRounds(S().res.by.me);
+    ok(/Runde 4:.*richtig wäre die <b>1<\/b>/.test(rt) && /Indikator:/.test(rt), 'Trainer: „Runde 4 … richtig wäre die 1“ mit Indikator');
+  }
   X.leave(); ok(!S() && /Singleplayer/.test(els.app.innerHTML), 'Verlassen → Startseite');
   ok(errors === 0, 'Keine Fehler in der Konsole');
   console.log('EINZELSPIELER-TEST BESTANDEN'); process.exit(0);
