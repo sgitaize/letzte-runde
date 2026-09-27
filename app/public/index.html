@@ -211,8 +211,9 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .waitroom{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--panel))}
 .gslots{display:flex;gap:10px;margin:6px 0}.gslot{padding:3px;border-radius:10px;border:2px solid transparent;background:none}
 .gslot.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 40%,transparent)}
-.gpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin:8px 0;max-width:520px}
-.gcard{padding:2px;border:2px solid transparent;border-radius:9px;background:none;display:flex;justify-content:center}.gcard.on{border-color:var(--accent)}
+.gpick{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:8px 0;width:100%;flex:1 1 100%;min-width:0;max-width:420px}
+.gcard{padding:2px;border:2px solid transparent;border-radius:9px;background:none;display:flex;justify-content:center;min-width:0}.gcard.on{border-color:var(--accent)}
+.gcard .card.sm{width:100%;max-width:44px;height:auto;aspect-ratio:38/54}
 .gcard .card,.gslot .card{margin:0}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
