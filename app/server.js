@@ -1013,6 +1013,8 @@ async function api(req, res, u) {
     }
     /* Geplanter Raum: Wartebereich (Beitritt, Chat, Voice) schon vorher, Spielbeginn erst zur Startzeit */
     if (p === 'state/main' && body.phase === 'deal' && notOpenYet(r)) return json(res, 403, { error: 'Los geht’s erst zur geplanten Startzeit' });
+    /* Hand abbrechen (laufende Hand → Lobby) darf nur der Host */
+    if (p === 'state/main' && body.phase === 'lobby' && !betweenHands(r) && memberId(r, keyHash(req)) !== roomHost(r)) return json(res, 403, { error: 'Nur der Host kann die Hand abbrechen' });
     const prevMain = p === 'state/main' ? (r.docs['state/main'] || {}) : null;
     const v = change(code, p, body);
     /* Neue Hand gestartet (Phase „geben“, Handnummer +1) → Zähler für die Startseite */

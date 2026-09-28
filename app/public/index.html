@@ -1424,7 +1424,7 @@ function toggleTheme(){
   de.setAttribute('data-theme',dark?'light':'dark');
   try{localStorage.setItem('kr.theme',dark?'light':'dark');}catch(e){}
 }
-function abortHand(){ busy={}; setMain({phase:'lobby',stage:0}).catch(showErr); }
+function abortHand(){ if(!isHost())return; busy={}; setMain({phase:'lobby',stage:0}).catch(showErr); }
 function showErr(e){uiErr=(e&&e.message)||String(e);console.error(e);render();}
 
 /* ---------- Kurzhinweise (Toast) ---------- */
@@ -2804,7 +2804,7 @@ function roomView(){
       '<p class="note">Mischen: '+esc(pname(roleId(0)))+' \u00b7 Verteilen: '+esc(pname(roleId(1)))+' + '+esc(pname(roleId(2)))+'</p>'+
       '<div class="hr"></div><div class="bar">'+
       ((S.aB&&S.aB.hand===h)?'<button class="small" data-a="force">Weiter</button>':'')+
-      '<button class="small ghost" data-a="abort">Hand abbrechen</button></div></div>';
+      (isHost()?'<button class="small ghost" data-a="abort">Hand abbrechen</button>':'')+'</div></div>';
     return cols();
   }
 
@@ -2846,7 +2846,7 @@ function roomView(){
       (ps.indexOf(uid)>=0?'<button class="'+(isReady(m[uid])?'':'primary')+'" data-a="ready"'+(chipOf(uid)?'':' disabled')+'>'+
         (isReady(m[uid])?'Bereit zurücknehmen':'\ud83d\udc4a Bereit')+'</button>':'')+
       waitingHtml(ps.filter(function(id){return !isReady(m[id]);}),'Alle bereit')+
-      '<button class="small ghost" data-a="abort">Hand abbrechen</button>'+
+      (isHost()?'<button class="small ghost" data-a="abort">Hand abbrechen</button>':'')+
       '</div></div>'+L.slice(beforeBoard);
   }
 
