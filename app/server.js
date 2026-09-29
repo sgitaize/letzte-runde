@@ -1,5 +1,5 @@
 /**
- * Kartenrunde – Server (Node, ohne Abhängigkeiten).
+ * Letzte Runde – Server (Node, ohne Abhängigkeiten).
  *
  *   GET  /                          -> public/index.html
  *   GET  /admin.html                -> Adminbereich
@@ -1215,5 +1215,5 @@ const PP = typeof PhusionPassenger !== 'undefined' ? PhusionPassenger : null;   
 if (PP) { try { PP.configure({ autoInstall: false }); } catch (e) { console.error('Passenger', e.message); } }
 tryLead((ok) => {
   if (!ok) console.log('Weitere Instanz (pid ' + process.pid + ') – reicht alles an die führende weiter');
-  server.listen(PP ? 'passenger' : PORT, () => console.log('Kartenrunde läuft ' + (PP ? 'unter Passenger' : 'auf Port ' + PORT) + ' (pid ' + process.pid + ')'));
+  server.listen(PP ? 'passenger' : PORT, () => console.log('Letzte Runde läuft ' + (PP ? 'unter Passenger' : 'auf Port ' + PORT) + ' (pid ' + process.pid + ')'));
 });

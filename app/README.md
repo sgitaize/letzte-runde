@@ -15,18 +15,18 @@ data/              wird automatisch angelegt: je Raum eine JSON-Datei,
 
 ## Installation über Plesk (netcup Webhosting)
 
-1. Ordner anlegen, z. B. `/httpdocs/kartenrunde/`, und `server.js`, `package.json` sowie `public/` hochladen.
+1. Ordner anlegen, z. B. `/httpdocs/letzte-runde/`, und `server.js`, `package.json` sowie `public/` hochladen.
 2. Plesk → **Node.js** → *Node.js aktivieren*:
-   - **Application Root:** `httpdocs/kartenrunde`
-   - **Document Root:** `httpdocs/kartenrunde/public`
+   - **Application Root:** `httpdocs/letzte-runde`
+   - **Document Root:** `httpdocs/letzte-runde/public`
    - **Application Startup File:** `server.js`
    - **Application Mode:** `production`
    - Node-Version: 18 oder neuer
 3. „NPM install" ist nicht nötig (keine Abhängigkeiten), schadet aber auch nicht.
-4. *Restart App*, dann `https://deine-domain.de/kartenrunde/` aufrufen.
+4. *Restart App*, dann `https://deine-domain.de/letzte-runde/` aufrufen.
 5. **HTTPS muss an sein** (Let's Encrypt in Plesk). Ohne `https://` gibt es keine Web-Crypto-API im Browser und das Spiel startet nicht. `http://localhost` geht zum Testen.
 
-Falls Plesk die Document Root nicht separat setzen lässt: einfach Application Root und Document Root gleich auf `httpdocs/kartenrunde` legen — `server.js` liefert `public/index.html` selbst aus.
+Falls Plesk die Document Root nicht separat setzen lässt: einfach Application Root und Document Root gleich auf `httpdocs/letzte-runde` legen — `server.js` liefert `public/index.html` selbst aus.
 
 ### Lokal testen
 
@@ -43,7 +43,7 @@ Alle 25 s geht ein Ping an offene Verbindungen, damit Proxys sie nicht wegräume
 
 ## Adminbereich
 
-`https://deine-domain.de/kartenrunde/admin.html`
+`https://deine-domain.de/letzte-runde/admin.html`
 
 Das Secret kommt aus der Umgebungsvariable `ADMIN_SECRET` (in Plesk unter Node.js → *Custom environment variables* setzen). Ist keine gesetzt, erzeugt der Server beim ersten Start eins, legt es in `data/admin-secret.txt` ab und schreibt es ins Log.
 
