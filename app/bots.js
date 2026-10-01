@@ -109,7 +109,7 @@ module.exports = function createBots(ctx) {
     const name = free.length ? free[Math.floor(Math.random() * free.length)] : 'Bot ' + (have.length + 1);
     const id = 'bot' + hx(rnd(5));
     r.bots = r.bots || {};
-    r.bots[id] = { name, priv, noise: 0.15 + Math.random() * 0.45, stub: Math.floor(Math.random() * 3), pace: 900 + Math.random() * 1400, gut: Math.random() < 0.65 };
+    r.bots[id] = { name, priv, noise: 0.05 + Math.random() * 0.2, stub: Math.floor(Math.random() * 3), pace: 900 + Math.random() * 1400, gut: Math.random() < 0.65 };
     r.docs['players/' + id] = { name, pub, joinedAt: Date.now(), ready: null, bot: true };
     commit(code, ['players/' + id]);
     log('Raum ' + code + ': Bot ' + name + ' hinzugefügt');
@@ -126,7 +126,7 @@ module.exports = function createBots(ctx) {
     const pub = await subtle.exportKey('jwk', kp.publicKey), priv = await subtle.exportKey('jwk', kp.privateKey);
     r.bots = r.bots || {};
     const m = r.docs['state/main'] || {};
-    r.bots[id] = { name: p.name, priv, noise: 0.15 + Math.random() * 0.45, stub: Math.floor(Math.random() * 3), pace: 900 + Math.random() * 1400, gut: Math.random() < 0.65,
+    r.bots[id] = { name: p.name, priv, noise: 0.05 + Math.random() * 0.2, stub: Math.floor(Math.random() * 3), pace: 900 + Math.random() * 1400, gut: Math.random() < 0.65,
       fromHand: (Number(m.hand) || 0) + 1 };      // Karten älterer Hände sind mit dem alten Schlüssel verschlüsselt – nicht anfassen
     privCache.delete(id);
     r.docs['players/' + id] = { name: p.name, pub, joinedAt: p.joinedAt || Date.now(), ready: null, bot: true, replaced: true };
@@ -226,13 +226,13 @@ module.exports = function createBots(ctx) {
     bots.forEach((id) => {
       const b = R.bots[id], pr = r.bots[id], last = st > 1 ? b.est : null;
       /* Gleiche Logik wie im Übungsraum (index.html, spStage): vor dem Flop Tabelle, River exakt, Fehleinschätzung einmal je Hand */
-      const raw = H.estimateRank(b.hole.cards, vis, n - 1, K, 150);
+      const raw = H.estimateRank(b.hole.cards, vis, n - 1, K, 300);
       b.q = (raw - 1) / (n - 1);                                   // Anteil der Hände, die ich schlage
       b.est = mid + (raw - mid) * (st === 4 ? 1.2 : 1.7);
       if (st === 1 || b.biasHand !== h) { b.bias0 = gauss() * pr.noise; b.biasHand = h; }
-      b.e = b.est + b.bias0 * [0, 1, 0.6, 0.35, 0.1][st];
+      b.e = b.est + b.bias0 * [0, 1, 0.6, 0.35, 0][st];
       const pc = prev[id] != null ? Number(prev[id]) : null;
-      if (pc) b.e += (pc - b.e) * [0, 0, 0.25, 0.2, 0][st];         // kleine Änderungen sind kein Grund, den Platz zu wechseln
+      if (pc) b.e += (pc - b.e) * [0, 0, 0.1, 0.1, 0][st];         // kleine Änderungen sind kein Grund, den Platz zu wechseln
       b.first = pr.gut; b.lost = null; b.yieldTo = {}; b.anchor = null; b.lastChip = null; b.stable = now; b.open = false; b.openShown = null; b.seen = {};
       if (last != null && pc && Math.abs(b.est - last) < 0.5) { b.anchor = pc; b.first = true; }
       b.next = now + (600 + Math.random() * pr.pace * 1.6) * TEMPO;

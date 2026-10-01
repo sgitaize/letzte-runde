@@ -1639,7 +1639,7 @@ function spLeave(){sp=null;statsOpen=false;render();fetchRooms();}
 function spMakePlayers(){
   var names=spShuffle(BOT_NAMES.slice()),ps=[{id:'me',name:myName||'Du',bot:false}];
   for(var i=0;i<spBots;i++)ps.push({id:'b'+i,name:names[i],bot:true,
-    noise:0.15+spRand()*0.45,          // wie treffsicher schätzt der Bot
+    noise:0.05+spRand()*0.2,           // wie treffsicher schätzt der Bot
     stub:Math.floor(spRand()*3),        // wie hartnäckig holt er sich einen Chip zurück
     pace:900+spRand()*1400,             // Bedenkzeit
     gut:spRand()<0.65});                // greift erst aus dem Bauch und korrigiert dann
@@ -1672,16 +1672,16 @@ function spStage(st){
   sp.players.forEach(function(p){
     if(!p.bot)return;
     var last=st>1?p.est:null,mid=(sp.players.length+1)/2;
-    p.est=spEstimate(p.id,200);  // erwarteter Rang am Ende (1 = schwächste Hand); vor dem Flop Tabelle, mit vollem Tisch exakt
+    p.est=spEstimate(p.id,300);  // erwarteter Rang am Ende (1 = schwächste Hand); vor dem Flop Tabelle, mit vollem Tisch exakt
     p.q=(p.est-1)/(sp.players.length-1);    // Anteil der Hände, die ich schlage (0…1)
     /* Vor dem River liegt der Mittelwert fast immer nahe der Mitte → spreizen, damit starke Karten klar nach oben zeigen */
     p.est=mid+(p.est-mid)*(st===4?1.2:1.7);   // nicht kappen: die Reihenfolge starker Hände bleibt erhalten
     /* Fehleinschätzung: einmal je Hand gewürfelt und mit jeder Tischkarte kleiner. Neu würfeln je Runde ließ die Bots
        ohne Grund zwischen den Runden springen; so ändern sie ihren Platz nur, wenn die Karte wirklich etwas ändert. */
     if(st===1||p.bias0==null)p.bias0=spGauss()*p.noise;
-    p.e=p.est+p.bias0*[0,1,0.6,0.35,0.1][st];
+    p.e=p.est+p.bias0*[0,1,0.6,0.35,0][st];
     /* Wie ein Mensch: kleine Änderungen sind kein Grund, den Platz zu wechseln → etwas an den Chip der Vorrunde gebunden */
-    if(prev[p.id])p.e+=(prev[p.id]-p.e)*[0,0,0.25,0.2,0][st];
+    if(prev[p.id])p.e+=(prev[p.id]-p.e)*[0,0,0.1,0.1,0][st];
     p.first=p.gut;p.lost=null;p.yieldTo={};p.anchor=null;p.open=false;p.seenMe=null;
     /* Hat die neue Tischkarte an meiner Einschätzung kaum etwas geändert, greife ich zuerst wieder zu meinem Chip der Vorrunde */
     if(last!=null&&prev[p.id]&&Math.abs(p.est-last)<0.5){p.anchor=prev[p.id];p.first=true;}

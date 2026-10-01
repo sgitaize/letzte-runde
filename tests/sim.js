@@ -420,11 +420,13 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   let og=await (await fetch(BASE+'r/'+pc)).text();
   ok(/og:title" content="„Spieleabend“ – Letzte Runde"/.test(og)&&/og:description" content="Lass uns eine letzte Runde spielen – am [^"]+ um \d\d:\d\d Uhr \([^)]+\)\."/.test(og),'Vorschau: Titel mit Name, Text „Lass uns eine letzte Runde spielen – am … um … Uhr (Zone)“');
   ok(og.includes('http-equiv="refresh" content="0;url=/#'+pc+'"')&&og.includes('og:image" content="http://localhost:3999/icon-512.png"'),'Vorschau: Bild + Weiterleitung auf /#'+pc);
-  await post('create','ZZTZ',{startsAt:Date.UTC(2026,8,30,18,0),name:'Test "&" Runde',tz:'Europe/Berlin'});
+  const tzT=new Date(Date.now()+86400000); tzT.setUTCHours(18,0,0,0);  // morgen 18:00 UTC (fester Termin veraltet)
+  const tzHm=tzT.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
+  await post('create','ZZTZ',{startsAt:tzT.getTime(),name:'Test "&" Runde',tz:'Europe/Berlin'});
   og=await (await fetch(BASE+'r/ZZTZ')).text();
-  ok(og.includes('um 20:00 Uhr (MESZ)')&&og.includes('Test &quot;&amp;&quot; Runde'),'Zeitzone des Planenden (Europe/Berlin → 20:00 Uhr MESZ), Sonderzeichen maskiert');
-  await post('create','ZZTZ2',{startsAt:Date.UTC(2026,8,30,18,0),tz:'Evil/"><script>'});
-  ok((await (await fetch(BASE+'r/ZZTZ2')).text()).includes('(MESZ)'),'Ungültige Zeitzone → Europe/Berlin');
+  ok(new RegExp('um '+tzHm+' Uhr \\(MES?Z\\)').test(og)&&og.includes('Test &quot;&amp;&quot; Runde'),'Zeitzone des Planenden (Europe/Berlin → Ortszeit MEZ/MESZ), Sonderzeichen maskiert');
+  await post('create','ZZTZ2',{startsAt:tzT.getTime(),tz:'Evil/"><script>'});
+  ok((await (await fetch(BASE+'r/ZZTZ2')).text()).match(/\(MES?Z\)/),'Ungültige Zeitzone → Europe/Berlin');
   og=await new Promise((res)=>require('http').get({host:'localhost',port:3999,path:'/r/'+pc,headers:{Host:'evil.example"><x'}},(r)=>{let d='';r.on('data',(c)=>d+=c);r.on('end',()=>res(d));}));
   ok(!og.includes('evil')&&og.includes('https://gang.aize.eu/r/'+pc),'Gefälschter Host-Header landet nicht in der Vorschau');
   og=await (await fetch(BASE+'r/NOPE9')).text();
