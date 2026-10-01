@@ -281,6 +281,7 @@ button.icon{font-size:16px;line-height:1;padding:6px 9px}
 /* Tisch als Filz */
 .felt{background:radial-gradient(ellipse at 50% 30%,var(--felt),var(--felt2));border-color:var(--felt2);color:#eef5f0}
 .felt h2{color:rgba(238,245,240,.7)}
+.flushwarn{margin:8px auto 0;width:fit-content;padding:4px 12px;border-radius:6px;background:#c0392b;color:#fff;font-weight:800;letter-spacing:.04em;text-align:center}
 .felt .card.empty{border-color:var(--felt-line);opacity:1}
 .board{justify-content:center;gap:8px;padding:6px 0 2px}
 .tag.new{background:var(--gold);border-color:var(--gold);color:#1b1407;font-weight:650;animation:pop .5s ease both}
@@ -1664,6 +1665,9 @@ function spNewHand(){
   sp.botGuess=null;sp.botGuessAt=0;sp.res=null;sp.gr=null;sp.bubble={};sp.reads={};
   spStage(1);
 }
+/* Flushgefahr (Simon 2026-10-01): ab 3 Karten einer Farbe auf dem Tisch immer rot unter den Karten, auch ohne Lernmodus */
+function flushSuit(vis){var n=[0,0,0,0];vis.forEach(function(c){n[Math.floor(c/13)]++;});var m=Math.max.apply(null,n);return m>=3?{s:n.indexOf(m),n:m}:null;}
+function flushWarn(vis){var f=flushSuit(vis);return f?'<div class="flushwarn">⚠ FLUSHGEFAHR · '+f.n+'× '+SUITS[f.s]+' auf dem Tisch'+(f.n>=4?' – eine '+SUITS[f.s]+' reicht':'')+'</div>':'';}
 function spVisible(st){return sp.board.slice(0,st>=4?5:st===3?4:st===2?3:0);}
 function spStage(st){
   sp.phase='play';sp.stage=st;sp.chips={};sp.ready={};sp.cd=null;sp.cdShown=null;sp.moves={};sp.contest={};sp.stable={};sp.insist={};sp.lostMe=null;sp.meFixed=null;
@@ -1767,20 +1771,33 @@ function spBotAct(p){
     /* Wie sicher bin ich? Starke/schwache Hand (weit außen) und Abstand zu deiner Ansage – beides zählt mit jeder Tischkarte mehr.
        Wer auf seinem Chip besteht, wirkt überzeugt; nach zwei, drei Versuchen gebe ich nach. */
     var above=e>t,sure=Math.max(0,Math.min(1,((above?p.q:1-p.q)-0.5)*2.2)),conf=[0,0.35,0.6,0.8,1][sp.stage];   // sicher über (bzw. unter) dir?
-    pSteal=0.05+0.08*p.stub+conf*0.75*sure+(lost===t?0.15:0)-0.25*cc-0.2*(sp.insist[t]||0);
+    /* Ab dem Turn mit klar starker Hand (Simon 2026-10-01): hält dagegen und argumentiert, gibt erst nach mehreren Runden nach */
+    var firm=sp.stage>=3&&sure>=0.7&&above;
+    pSteal=0.05+0.08*p.stub+conf*0.75*sure+(lost===t?0.15:0)-(firm?0.2:0.25)*cc-(firm?0.12:0.2)*(sp.insist[t]||0);
   }else pSteal=0.95-0.15*cc;                          // unter Bots gilt dieselbe Rangfolge → der andere rückt weiter
   pSteal=Math.max(0,Math.min(0.9,pSteal));
   sp.contest[key]=cc+1;
   if(Math.random()<pSteal){
     sp.moves[p.id]=mv+1;
-    if(h==='me')spSay(p.id,cc||lost===t?'Nee, die '+t+' brauch ich wirklich 😤':'Die '+t+' nehm ich lieber');
+    if(h==='me')spSay(p.id,firm?(cc||lost===t?'Nee, wirklich: ':'Die '+t+' nehm ich – ')+botArgue(p)+(cc?' 😤':''):cc||lost===t?'Nee, die '+t+' brauch ich wirklich 😤':'Die '+t+' nehm ich lieber');
     else if(Math.random()<0.5)spSay(p.id,'Ich glaub, die '+t+' ist meine');
     spTakeFor(p.id,t);p.open=false;later(1.3);return;
   }
   p.yieldTo[h]=t;                                     // akzeptieren und neu einordnen
   if(h==='me')sp.meFixed=t;                           // die anderen haben es gesehen
-  if(h==='me'||Math.random()<0.3)spSay(p.id,'Okay, die '+t+' gehört '+(h==='me'?'dir':spPl(h).name));
+  if(h==='me'&&firm)spSay(p.id,'Na gut, die '+t+' gehört dir – aber ich bin mir echt sicher, dass ich stärker bin 🤨');
+  else if(h==='me'||Math.random()<0.3)spSay(p.id,'Okay, die '+t+' gehört '+(h==='me'?'dir':spPl(h).name));
   later(0.6);
+}
+/* Argument eines Bots, der sich sicher ist: nur Hinweise auf den offenen Tisch, keine Karten verraten */
+function botArgue(p){
+  var vis=spVisible(sp.stage),h=bestHand(sp.hole[p.id].concat(vis),sp.hole[p.id]),fs=flushSuit(vis),bd=vis.length?bestHand(vis):null;
+  if(h.cat===5&&fs)return 'schau auf den Tisch: '+fs.n+'× '+SUITS[fs.s]+'. Ich lieg sicher vor dir.';
+  if(h.cat===4)return 'auf dem Tisch ist eine Straße drin – ich hab mehr als du denkst.';
+  if((h.cat===6||h.cat===7)&&bd&&bd.cat>=1)return 'der Tisch hat ein Paar – da geht mehr als ein Drilling.';
+  if(h.cat>=6)return 'meine Karten passen richtig gut zum Tisch.';
+  if(sp.stage===4)return 'mit allen fünf Tischkarten bin ich mir ziemlich sicher.';
+  return 'meine Hand ist stark, ich bleib dabei.';
 }
 function spAllReady(){return sp.players.every(function(p){return sp.chips[p.id]&&sp.ready[p.id];});}
 function spCdLeft(){return sp.cd?Math.max(0,Math.ceil((CD_MS*spSpeed-(Date.now()-sp.cd.start))/(1000*spSpeed))):0;}
@@ -1912,7 +1929,7 @@ function spView(){
   var vis=ph==='play'?spVisible(st):sp.board,fresh=ph==='play'?(st===2?[0,1,2]:st===3?[3]:st===4?[4]:[]):[],bh='';
   for(var i=0;i<5;i++)bh+=i<vis.length?cardHtml(vis[i],fresh.indexOf(i)>=0?'fresh':''):'<div class="card empty"></div>';
   out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
-    '<div class="cards board">'+bh+'</div></div>';
+    '<div class="cards board">'+bh+'</div>'+flushWarn(vis)+'</div>';
   var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: rechte Spalte)
   var afterBoard=out.length;                // Tipp/Auflösung kommen direkt unter den Tisch, über Lernmodus und eigene Hand
   if(ph!=='done'&&coach)out+=coach.l;
@@ -2306,6 +2323,9 @@ function coachPlay(){
   var bd=vis.length?bestHand(vis):null;
   if(bd&&bd.cat>0&&my.cat===0)out+=' Das '+esc(HAND_NAMES[bd.cat])+' auf dem Tisch haben alle – nach eurer Hausregel zählt es für dich nicht, nur deine höchste Karte.';
   out+='</p>';
+  var fs=flushSuit(vis);
+  if(fs&&fs.n<5&&my.cat<5){var need=5-fs.n,have=mine.filter(function(c){return Math.floor(c/13)===fs.s;}).length;
+    out+='<p class="coachwarn">⚠ <b>Flushgefahr:</b> '+fs.n+'× '+SUITS[fs.s]+' auf dem Tisch – wer '+(need===1?'eine':'zwei')+' '+SUITS[fs.s]+' auf der Hand hat, schlägt '+esc(handName(my))+(have&&st<4&&have+fs.n+(5-vis.length)>=5?'. Du hast selbst '+have+'× '+SUITS[fs.s]+' – noch offen.':'.')+' Chip lieber etwas vorsichtiger.</p>';}
   out+='<div class="coachbar" title="Stärke im Vergleich zu zufälligen Händen"><span style="width:'+Math.max(4,Math.min(100,pct))+'%"></span></div>';
   out+='<p class="note">'+(st===1?'Noch keine Tischkarten – nur deine '+sp.K+' Karten zählen. Ein Paar auf der Hand oder hohe Karten (A, K) sind stark; kleine, ungleiche Karten eher schwach.':
     st===4?'Alle 5 Tischkarten liegen – jetzt steht deine Hand fest. Wichtig ist nur noch, wie sie gegen die anderen abschneidet.':
@@ -2347,6 +2367,11 @@ function coachDone(){
   out+='<p>Deine Chips je Runde: '+hits.map(function(h,i){return 'R'+(i+1)+' '+h;}).join(' · ')+'. Früh danebenliegen ist normal – wichtig ist, dass du mit jeder Tischkarte nachziehst.</p>';
   var botBad=sp.players.filter(function(p){return p.bot&&!by[p.id].ok;});
   if(botBad.length)out+='<p class="note">Auch die Bots lagen daneben: '+botBad.map(function(p){return esc(p.name)+' (Chip '+by[p.id].chip+', richtig '+(by[p.id].lo===by[p.id].hi?by[p.id].lo:by[p.id].lo+'–'+by[p.id].hi)+')';}).join(', ')+'.</p>';
+  if(sp.gr&&sp.target==='me'){      // warum die Bots so getippt haben
+    var bestBot=null;sp.players.forEach(function(p){if(!p.bot)return;var h=bestHand(sp.hole[p.id].concat(sp.board),sp.hole[p.id]);if(!bestBot||cmpHand(h,bestBot.h)>0)bestBot={p:p,h:h};});
+    out+='<p class="note">Die Bots tippten '+sp.gr.cards.map(function(r){return RANK_NAME[r];}).join(' + ')+': Sie richten sich nach deinem Chip-Verlauf ('+[1,2,3,4].map(function(r){return spChipOfStage('me',r)||'–';}).join('→')+') und gehen davon aus, dass du mit dem höchsten Chip alle schlägst'+
+      (bestBot&&cmpHand(bestBot.h,myH)>0?' – auch '+esc(bestBot.p.name)+'s '+esc(handName(bestBot.h))+'. Dafür hättest du noch Stärkeres gebraucht; mit '+esc(handName(myH))+' passte die Annahme nicht, deshalb lag der Tipp daneben.':'.')+'</p>';
+  }
   if(sp.gr&&sp.gr.hits<sp.gr.of&&sp.target!=='me')out+='<p class="note">Beim Tipp auf '+esc(spPl(sp.target).name)+' hättest du '+sp.gr.real.map(function(c){return RANK_NAME[c%13];}).join(' und ')+' tippen müssen.</p>';
   return out;
 }
@@ -2822,7 +2847,7 @@ function roomView(){
   }
   var beforeBoard=L.length;                 // Chips zum Nehmen kommen über den Tisch (Simon 2026-09-27: näher dran)
   L+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
-    '<div class="cards board">'+bh+'</div></div>';
+    '<div class="cards board">'+bh+'</div>'+flushWarn(shown.filter(function(i){return bc[i]!=null;}).map(function(i){return bc[i];}))+'</div>';
   var afterBoard=L.length;                  // Aufdecken/Auflösung kommt direkt unter den Tisch, über die eigene Hand
 
   /* Eigene Karten */
