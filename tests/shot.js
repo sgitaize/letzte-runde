@@ -84,6 +84,20 @@ async function cdp() {
   await until('/Runde 1 von 4/.test(document.body.innerText)', 40000);
   await sleep(4000);
   await shoot('mp-runde1');
+  if (process.env.MPEND) {   // Hand im Raum zu Ende spielen (Chip, Bereit, Tipp, Aufdecken), Erklärung aufklappen
+    for (let i = 0; i < 600 && !(await js('!!document.querySelector(".mpcoach")')); i++) {
+      await js('(function(){var r=document.querySelector(\'[data-a="ready"]\');var mine=document.querySelector(".pl.me .chip:not(.ph)");' +
+        'if(!mine){var c=document.querySelector(".p-chips [data-chip]");if(c)c.click();}else if(r&&!r.disabled&&/Bereit$/.test(r.textContent))r.click();' +
+        'var gk=document.querySelectorAll("[data-grank]");if(gk.length&&document.querySelector(".gslot .card.empty")){gk[12].click();}' +
+        'var cf=document.querySelector(\'[data-a="confirm"]\');if(cf&&!cf.disabled&&/bestätigen/.test(cf.textContent))cf.click();var rv=document.querySelector(\'[data-a="reveal"]\');if(rv)rv.click();return 1;})()');
+      await sleep(300);
+    }
+    await sleep(1500);
+    await js('(function(){var d=document.querySelector(".mpcoach");if(d)d.open=true;return 1;})()');
+    await sleep(300);
+    console.log('mpcoach:', await js('!!document.querySelector(".mpcoach")'), 'insight:', await js('!!document.querySelector(".p-insight")'));
+    await shoot('mp-ende');
+  }
   console.log('fertig');
 })().catch((e) => { console.error(e); process.exitCode = 1; })
   .finally(() => {

@@ -2366,7 +2366,7 @@ function coachDone(){
   var hits=[1,2,3,4].map(function(r){var c=spChipOfStage('me',r);return c==null?'–':(c>=me.lo&&c<=me.hi?'<b class="ok">'+c+' ✓</b>':c);});
   out+='<p>Deine Chips je Runde: '+hits.map(function(h,i){return 'R'+(i+1)+' '+h;}).join(' · ')+'. Früh danebenliegen ist normal – wichtig ist, dass du mit jeder Tischkarte nachziehst.</p>';
   var botBad=sp.players.filter(function(p){return p.bot&&!by[p.id].ok;});
-  if(botBad.length)out+='<p class="note">Auch die Bots lagen daneben: '+botBad.map(function(p){return esc(p.name)+' (Chip '+by[p.id].chip+', richtig '+(by[p.id].lo===by[p.id].hi?by[p.id].lo:by[p.id].lo+'–'+by[p.id].hi)+')';}).join(', ')+'.</p>';
+  if(botBad.length)out+='<p class="note">'+(sp.mp?'Auch andere lagen daneben: ':'Auch die Bots lagen daneben: ')+botBad.map(function(p){return esc(p.name)+' (Chip '+by[p.id].chip+', richtig '+(by[p.id].lo===by[p.id].hi?by[p.id].lo:by[p.id].lo+'–'+by[p.id].hi)+')';}).join(', ')+'.</p>';
   if(sp.gr&&sp.target==='me'){      // warum die Bots so getippt haben
     var bestBot=null;sp.players.forEach(function(p){if(!p.bot)return;var h=bestHand(sp.hole[p.id].concat(sp.board),sp.hole[p.id]);if(!bestBot||cmpHand(h,bestBot.h)>0)bestBot={p:p,h:h};});
     out+='<p class="note">Die Bots tippten '+sp.gr.cards.map(function(r){return RANK_NAME[r];}).join(' + ')+': Sie richten sich nach deinem Chip-Verlauf ('+[1,2,3,4].map(function(r){return spChipOfStage('me',r)||'–';}).join('→')+') und gehen davon aus, dass du mit dem höchsten Chip alle schlägst'+
@@ -2401,6 +2401,36 @@ function coachRounds(me){
     li.push('<li><b>Runde '+r+':</b> Du hattest die '+c+', '+(r===4?'richtig':'besser')+' wäre die <b>'+should+'</b> gewesen – '+esc(why)+'. <span class="note">Indikator: '+ind+'.</span></li>');
   }
   return li.length?'<p><b>Runde für Runde</b></p><ul class="coachlist">'+li.join('')+'</ul>':'<p class="coachok">✓ In jeder Runde passte dein Chip zu dem, was man wissen konnte.</p>';
+}
+/* ---------- Raum: Insight + Erklärung zur fertigen Hand mit den Funktionen des Übungsraums ----------
+   Baut aus den Raumdaten ein sp-ähnliches Objekt (du = 'me', die anderen wie Bots) und ruft f damit auf. Kein Lernmodus
+   während der Hand im Raum – die Erklärung gibt es nur aufgeklappt nach der Auflösung. */
+var mpCoachCache={};
+function mpView(){
+  var ph=phase(),h=hand(),ps=parts(),me=ps.indexOf(uid)>=0,hist=main().chipHist||{},m=function(id){return id===uid?'me':id;};
+  if(!me||ph==='lobby'||ph==='deal')return null;
+  var v={mp:true,hand:code+'.'+h,K:HC(),hist:{},hole:{},chips:{},players:[],board:visibleBoard(),
+    phase:ph==='play'?'play':ph==='done'?'done':'guess',stage:ph==='play'?stage():4,target:null,gr:null};
+  for(var st=1;st<=4;st++){var run=hist[String(st)];if(!run)continue;v.hist[st]={};ps.forEach(function(id){if(run[id]!=null)v.hist[st][m(id)]=run[id];});}
+  if(ph==='play')ps.forEach(function(id){var c=chipOf(id);if(c)v.chips[m(id)]=c;});
+  var res=ph==='done'?resolveHand():null;
+  ps.forEach(function(id){
+    var cards=id===uid?(myHand&&myHand.hand===h?myHand.cards:null):revealedCards(id);
+    if(res&&!(res.by[id]&&res.by[id].hand&&cards))return;      // Auflösung: nur Spieler mit bekannten Karten
+    v.players.push({id:m(id),name:pname(id),bot:id!==uid});if(cards)v.hole[m(id)]=cards;
+  });
+  if(res){v.res={by:{}};ps.forEach(function(id){var x=res.by[id];if(x)v.res.by[m(id)]={chip:x.chip,lo:x.lo,hi:x.hi,ok:x.ok,swaps:(x.swaps||[]).map(m)};});}
+  v.coach=mpCoachCache[v.hand]=mpCoachCache[v.hand]||{};
+  return v;
+}
+function mpWith(f){
+  var v=mpView();if(!v)return null;
+  var saved=sp;sp=v;try{return f();}catch(e){console.error(e);return null;}finally{sp=saved;}
+}
+function mpCoachHtml(){
+  var body=mpWith(function(){var by=sp.res&&sp.res.by.me;return by&&by.lo&&sp.hole.me?coachDone():null;});
+  if(!body)return '';
+  return '<details class="panel coach mpcoach"><summary><b>🎓 Warum? Woran hätte man es erkennen können?</b></summary>'+body+'</details>';
 }
 function spCoach(){
   if(!spLearn||!sp)return null;
@@ -2794,7 +2824,7 @@ function roomView(){
       (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="Raum umbenennen">✎</button>':'')+'</h1>'+
     '<div class="note">'+esc(phaseLabel())+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
-      '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+
+      '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
       '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
@@ -2861,6 +2891,7 @@ function roomView(){
     rankingHtml(my?my.cat:-1)+'</div>';
 
   /* Spieler + Chips */
+  if(spInsight)Rt+=mpWith(insightHtml)||'';  // Insight auch im Raum (Simon 2026-10-01)
   Rt+='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+playerList(true)+'</div>';
 
   if(ph==='play'){
@@ -2877,7 +2908,7 @@ function roomView(){
   }
 
   if(ph==='guess')L=L.slice(0,afterBoard)+'<div class="p-guess">'+guessPanel()+'</div>'+L.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
-  if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+'</div>'+L.slice(afterBoard);
+  if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+(ph==='done'?mpCoachHtml():'')+'</div>'+L.slice(afterBoard);
   if(ph==='done')L+=endBar(resolveHand(),isHost()?'start':null,isHost()?'':'Warten auf '+pname(hostId())+' \u2026');
   return cols();
 }
