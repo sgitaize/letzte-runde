@@ -134,8 +134,10 @@ function saveConfig() {
 
 /* ------------------------------------------------ Admin-Secret ----------- */
 const SECRET_FILE = path.join(DATA, 'admin-secret.txt');
-let ADMIN_SECRET = (process.env.ADMIN_SECRET || '').trim();
+/* In Plesk eingetragene Anführungszeichen gehören nicht zum Secret */
+let ADMIN_SECRET = (process.env.ADMIN_SECRET || '').trim().replace(/^(["'])(.*)\1$/, '$2').trim(), SECRET_SRC = 'Umgebungsvariable ADMIN_SECRET';
 if (!ADMIN_SECRET) {
+  SECRET_SRC = 'data/admin-secret.txt';
   try { ADMIN_SECRET = fs.readFileSync(SECRET_FILE, 'utf8').trim(); } catch (e) { /* neu */ }
 }
 if (!ADMIN_SECRET) {
@@ -143,6 +145,8 @@ if (!ADMIN_SECRET) {
   try { fs.writeFileSync(SECRET_FILE, ADMIN_SECRET + '\n', { mode: 0o600 }); } catch (e) { /* egal */ }
   console.log('Neues Admin-Secret erzeugt: ' + ADMIN_SECRET + '  (steht in data/admin-secret.txt)');
 }
+/* Nur Länge + Fingerabdruck ins Log (nie das Secret), damit sich Anmeldeprobleme per FTP prüfen lassen */
+console.log('Admin-Secret aus ' + SECRET_SRC + ' (' + ADMIN_SECRET.length + ' Zeichen, sha256 ' + crypto.createHash('sha256').update(ADMIN_SECRET).digest('hex').slice(0, 8) + ')');
 function secretOk(given) {
   const a = Buffer.from(String(given || ''));
   const b = Buffer.from(ADMIN_SECRET);
@@ -240,7 +244,7 @@ function gc() {
   let files = [];
   try { files = fs.readdirSync(DATA); } catch (e) { console.error('gc', e.message); return; }
   for (const f of files) {
-    if (!f.endsWith('.json') || f === 'config.json') continue;
+    if (!f.endsWith('.json') || f === 'config.json' || f === path.basename(COUNT_FILE)) continue;
     try {
       const p = path.join(DATA, f);
       const c0 = f.replace(/\.json$/, '');
@@ -262,11 +266,45 @@ function commit(code, changed) {         // changed: [pfad, ...]
   const r = rooms.get(code);
   r.version++;
   dirty.add(code);
+  /* Geben und Spielstand sofort sichern: geht der Prozess verloren, darf kein schon verteiltes Deck verschwinden */
+  if (changed.some((p) => p === 'state/main' || p.indexOf('deal/') === 0)) { save(code); dirty.delete(code); }
   broadcast(code, {
     type: 'docs', version: r.version,
     changes: changed.map((p) => ({ path: p, doc: r.docs[p] === undefined ? null : r.docs[p] }))
   });
   return r.version;
+}
+/* Schutz gegen unterschiedliche Karten bei verschiedenen Spieler*innen:
+   - deal/deck, assignA, assignB: je Hand genau einmal (gleicher Inhalt nochmal = ok, anderer = 409)
+   - deal/boardA, boardB: nur Schlüssel ergänzen, vorhandene nie ändern
+   - alle deal/*-Dokumente nur für die laufende Hand
+   - state/main: Handnummer nie kleiner, innerhalb einer Hand keine Phase/Runde zurück (außer Abbruch → Lobby) */
+const PHASE_RANK = { lobby: 0, deal: 1, play: 2, guess: 3, reveal: 4, done: 5 };
+function sameJson(a, b) { try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; } }
+function dealGuard(r, p, body) {
+  const cur = r.docs['state/main'] || {}, ch = Number(cur.hand) || 0;
+  if (p === 'state/main') {
+    const bh = Number(body.hand) || 0;
+    if (bh < ch) return 'Veralteter Spielstand (Hand ' + bh + ' < ' + ch + ')';
+    if (bh > ch + 1) return 'Handnummer springt';
+    if (bh === ch + 1) return (body.phase === 'deal' || body.phase === 'lobby') ? null : 'Neue Hand muss mit dem Geben beginnen';
+    const rb = PHASE_RANK[body.phase], rc = PHASE_RANK[cur.phase || 'lobby'];
+    if (body.phase === 'lobby' || rb === undefined || rc === undefined) return null;
+    if (rc === 0 && rb > 0 && ch > 0) return 'Neue Hand braucht eine neue Handnummer';
+    if (rb < rc) return 'Veralteter Spielstand (Phase)';
+    if (rb === rc && body.phase === 'play' && (Number(body.stage) || 0) < (Number(cur.stage) || 0)) return 'Veralteter Spielstand (Runde)';
+    return null;
+  }
+  if (p.indexOf('deal/') !== 0) return null;
+  if ((Number(body.hand) || 0) !== ch || ch < 1) return 'Geben gehört nicht zur laufenden Hand';
+  const prev = r.docs[p];
+  if (!prev || Number(prev.hand) !== ch) return null;
+  if (p === 'deal/boardA' || p === 'deal/boardB') {
+    const pk = prev.keys || {}, bk = (body.keys && typeof body.keys === 'object') ? body.keys : {};
+    for (const k of Object.keys(pk)) if (!sameJson(pk[k], bk[k])) return 'Tischkarten dieser Hand stehen schon fest';
+    return Object.keys(bk).length === Object.keys(pk).length ? 'same' : null;
+  }
+  return sameJson(prev, body) ? 'same' : 'Karten dieser Hand sind schon gegeben';
 }
 function change(code, p, doc) {
   const r = rooms.get(code); if (!r) return null;
@@ -496,7 +534,7 @@ function rateOk(ip, cost) {
   return true;
 }
 function roomCount() {
-  try { return (fs.readdirSync(DATA) || []).filter((f) => f.endsWith('.json') && f !== 'config.json').length; } catch (e) { return 0; }
+  try { return (fs.readdirSync(DATA) || []).filter((f) => f.endsWith('.json') && f !== 'config.json' && f !== 'counters.json').length; } catch (e) { return 0; }
 }
 /* Erlaubte Dokumentpfade für allgemeines set/del; alles andere wird abgelehnt */
 const DOC_RE = /^(state\/(main|guess)|deal\/(deck|assignA|assignB|boardA|boardB)|chips\/[0-9]{1,2}|reveal\/[A-Za-z0-9_.~:@+-]{1,40}|players\/[A-Za-z0-9_.~:@+-]{1,40})$/;
@@ -530,7 +568,7 @@ function voiceRoom(code) {
 function voiceList(code) {
   const V = voiceRooms.get(code); if (!V) return [];
   const now = Date.now(), out = [];
-  for (const [id, m] of V.members) { if (now - m.ts > 20000) { V.members.delete(id); V.box.delete(id); } else out.push({ id: id, muted: m.muted }); }
+  for (const [id, m] of V.members) { if (now - m.ts > 20000) { V.members.delete(id); V.box.delete(id); } else out.push({ id: id, muted: m.muted, at: m.at || 0 }); }
   if (!V.members.size) voiceRooms.delete(code);
   return out;
 }
@@ -674,7 +712,7 @@ function roomList(maxAge) {
   let files = [];
   try { files = fs.readdirSync(DATA); } catch (e) { return list; }
   for (const f of files) {
-    if (!f.endsWith('.json') || f === 'config.json') continue;
+    if (!f.endsWith('.json') || f === 'config.json' || f === path.basename(COUNT_FILE)) continue;
     const codeName = f.replace(/\.json$/, '');
     if (!CODE_RE.test(codeName)) continue;
     if (maxAge) {                         // alte Räume gar nicht erst lesen
@@ -767,7 +805,8 @@ async function api(req, res, u) {
   }
   if (a === 'state') {
     const pu = (u.searchParams.get('u') || '').replace(ID_RE, '').slice(0, 40);
-    markSeen(code, pu, r);
+    /* Spielerplätze zählen nur mit passendem Geräteschlüssel als anwesend (ein übernommenes altes Gerät nicht mehr) */
+    if (!(r.docs['players/' + pu] && r.keys && r.keys[pu] && !keyOk(r, pu, keyHash(req), false))) markSeen(code, pu, r);
     maybeMoveHost(code, r);
     const since = parseInt(u.searchParams.get('since') || '-1', 10);
     const online = onlineList(code), idle = idleList(code, r), away = awayMap(code, r);
@@ -867,7 +906,7 @@ async function api(req, res, u) {
     if (!authPlayer(r, who, req)) return json(res, 403, { error: 'Nur Spieler' });
     const V = voiceRoom(code);
     if (a === 'voice') {
-      if (body.on) V.members.set(who, { muted: !!body.muted, ts: Date.now() });
+      if (body.on) V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: (V.members.get(who) || {}).at || Date.now() });
       else { V.members.delete(who); V.box.delete(who); }
       return json(res, 200, { ok: true, voice: voiceList(code) });
     }
@@ -883,8 +922,11 @@ async function api(req, res, u) {
       return json(res, 200, { ok: true });
     }
     /* signals: eigene Nachrichten abholen (und Lebenszeichen) */
+    markSeen(code, who, r);              // Voice-Lebenszeichen zählt als anwesend (Voice an = da)
     const m = V.members.get(who);
     if (m) { m.ts = Date.now(); if (body.muted !== undefined) m.muted = !!body.muted; }
+    /* Nach Funkloch, Hintergrund (Handy) oder Server-Neustart wieder aufnehmen – sonst zeigt der Client „An“, aber niemand verbindet */
+    else if (body.on) V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: Date.now() });
     const msgs = (V.box.get(who) || []).filter((x) => Date.now() - x.ts < 60000);
     V.box.delete(who);
     return json(res, 200, { ok: true, msgs: msgs, voice: voiceList(code) });
@@ -999,6 +1041,8 @@ async function api(req, res, u) {
     if (!free && r.keys[pid] !== kh && !takeover) return json(res, 403, { error: 'Fremder Spielerplatz' });
     r.keys = r.keys || {};
     r.keys[pid] = kh;                    // neu, bestätigt oder übernommen (Spieler war offline)
+    /* Übernommen: das alte Gerät fliegt aus dem Voice-Chat (sonst hängt es per direkter Audio-Verbindung „halb“ drin) */
+    if (takeover) { const V = voiceRooms.get(code); if (V) { V.members.delete(pid); V.box.delete(pid); } }
   }
   if (a === 'set') {
     if (!PATH_RE.test(p)) return json(res, 400, { error: 'Pfad ungueltig' });
@@ -1009,12 +1053,16 @@ async function api(req, res, u) {
       body = { name: cleanName(body.name), pub: (body.pub && typeof body.pub === 'object') ? body.pub : null,
         // Beitrittszeit bestimmt der Server (sonst könnte man sich per altem Datum nach vorn schieben)
         joinedAt: (r.docs[p] && Number(r.docs[p].joinedAt)) || Date.now(),
-        ready: (body.ready && typeof body.ready === 'object') ? { hand: Number(body.ready.hand) || 0, stage: Number(body.ready.stage) || 0 } : null };
+        ready: (body.ready && typeof body.ready === 'object') ? { hand: Number(body.ready.hand) || 0, stage: Number(body.ready.stage) || 0, fp: String(body.ready.fp || '').replace(/[^a-z0-9]/g, '').slice(0, 16) } : null };
     }
     /* Geplanter Raum: Wartebereich (Beitritt, Chat, Voice) schon vorher, Spielbeginn erst zur Startzeit */
     if (p === 'state/main' && body.phase === 'deal' && notOpenYet(r)) return json(res, 403, { error: 'Los geht’s erst zur geplanten Startzeit' });
     /* Hand abbrechen (laufende Hand → Lobby) darf nur der Host */
     if (p === 'state/main' && body.phase === 'lobby' && !betweenHands(r) && memberId(r, keyHash(req)) !== roomHost(r)) return json(res, 403, { error: 'Nur der Host kann die Hand abbrechen' });
+    /* Geben ist pro Hand unveränderlich, der Spielstand springt nie zurück (veraltete Clients, doppelte Anfragen) */
+    const bad = dealGuard(r, p, body);
+    if (bad === 'same') return json(res, 200, { ok: true, version: r.version });
+    if (bad) return json(res, 409, { error: bad, stale: true });
     const prevMain = p === 'state/main' ? (r.docs['state/main'] || {}) : null;
     const v = change(code, p, body);
     /* Neue Hand gestartet (Phase „geben“, Handnummer +1) → Zähler für die Startseite */
@@ -1036,10 +1084,12 @@ async function api(req, res, u) {
 
 /* ------------------------------------------------ Admin ------------------ */
 async function adminApi(req, res, u) {
-  const given = req.headers['x-admin-secret'] || '';
-  if (!secretOk(given)) {
+  let given = req.headers['x-admin-secret'] || '';
+  /* Admin-Seite schickt das Secret URL-kodiert (Umlaute/Sonderzeichen sind in Headern sonst nicht erlaubt) */
+  if (req.headers['x-admin-secret-enc']) { try { given = decodeURIComponent(String(req.headers['x-admin-secret-enc'])); } catch (e) { given = ''; } }
+  if (!secretOk(String(given).trim())) {
     await new Promise((r) => setTimeout(r, 400));   // bremst Rateversuche
-    return json(res, 401, { error: 'Falsches Secret' });
+    return json(res, 401, { error: 'Falsches Secret – der Server liest es aus: ' + SECRET_SRC });
   }
   const a = u.searchParams.get('a') || '';
 

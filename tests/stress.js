@@ -72,7 +72,7 @@ const closed = (s, ms) => new Promise((r) => { if (s.destroyed) return r(true); 
   for (let i = 0; i < 8 && last === 200; i++) last = (await req('set', '&room=' + ROOM + '&path=reveal/host1', { d: 'y'.repeat(100 * 1024), i })).status;
   ok(last === 200, 'Ersetzen eines Dokuments hält Raumgröße konstant');
   const sizes = [];
-  for (const p of ['state/main', 'state/guess', 'deal/deck', 'deal/assignA', 'deal/assignB', 'deal/boardA'])
+  for (const p of ['state/main', 'state/guess', 'chips/1', 'chips/2', 'chips/3', 'chips/4'])
     sizes.push((await req('set', '&room=' + ROOM + '&path=' + p, { d: 'z'.repeat(100 * 1024) })).status);
   ok(sizes.includes(413), 'Raum über 512 KB → 413 (' + sizes.join(',') + ')');
 
@@ -131,7 +131,29 @@ const closed = (s, ms) => new Promise((r) => { if (s.destroyed) return r(true); 
 
   ok(await alive(), 'Server lebt nach allen Angriffen');
 
-  // 7) Stopp sichert ungespeicherte Änderungen
+  // 7) Geben ist je Hand unveränderlich, Spielstand springt nicht zurück (sonst unterschiedliche Karten je Gerät)
+  const R2 = 'STRS2', st = async (p, b) => (await req('set', '&room=' + R2 + '&path=' + p, b)).status;
+  await req('create', '&room=' + R2, { hostId: 'host1', name: 'Geben' });
+  await st('players/host1', { name: 'Host' });
+  ok(await st('state/main', { phase: 'deal', hand: 1 }) === 200, 'Hand 1 startet');
+  ok(await st('deal/deck', { hand: 1, cts: ['a'] }) === 200, 'Deck einmal schreiben');
+  ok(await st('deal/deck', { hand: 1, cts: ['a'] }) === 200, 'gleiches Deck nochmal (doppelte Anfrage) → ok');
+  ok(await st('deal/deck', { hand: 1, cts: ['b'] }) === 409, 'anderes Deck in derselben Hand → 409');
+  ok(await st('deal/assignA', { hand: 2, x: 1 }) === 409, 'Geben für fremde Hand → 409');
+  ok(await st('state/main', { phase: 'play', hand: 1, stage: 1 }) === 200, 'Hand 1 → Spiel');
+  ok(await st('deal/boardA', { hand: 1, keys: { 0: { s: 1, k: 'x' } } }) === 200, 'Tischkarte 1 freigeben');
+  ok(await st('deal/boardA', { hand: 1, keys: { 0: { s: 1, k: 'x' }, 3: { s: 2, k: 'y' } } }) === 200, 'weitere Tischkarte ergänzen');
+  ok(await st('deal/boardA', { hand: 1, keys: { 0: { s: 9, k: 'z' }, 3: { s: 2, k: 'y' } } }) === 409, 'vorhandene Tischkarte ändern → 409');
+  ok(await st('state/main', { phase: 'play', hand: 1, stage: 2 }) === 200, 'Runde 2');
+  ok(await st('state/main', { phase: 'play', hand: 1, stage: 1 }) === 409, 'veraltet: Runde zurück → 409');
+  ok(await st('state/main', { phase: 'deal', hand: 1 }) === 409, 'veraltet: Phase zurück → 409');
+  ok(await st('state/main', { phase: 'lobby', hand: 0 }) === 409, 'veraltet: Hand zurück → 409');
+  ok(await st('state/main', { phase: 'lobby', hand: 1 }) === 200, 'Host bricht ab');
+  ok(await st('state/main', { phase: 'deal', hand: 1 }) === 409, 'gleiche Handnummer nach Abbruch neu geben → 409');
+  ok(await st('state/main', { phase: 'deal', hand: 2 }) === 200, 'nächste Hand');
+  ok(await alive(), 'Server lebt nach Geben-Schutz');
+
+  // 8) Stopp sichert ungespeicherte Änderungen
   await req('set', '&room=' + ROOM + '&path=state/main', { phase: 'lobby', marker: 'vor-stopp' });
   srv.kill('SIGTERM'); await sleep(500);
   const saved = JSON.parse(fs.readFileSync(path.join(TMP, 'data', ROOM + '.json'), 'utf8'));

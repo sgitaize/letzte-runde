@@ -585,7 +585,7 @@ function api(a,params,body,ms){
     if(tm)clearTimeout(tm);
     return r.text().then(function(t){
       var j=null;try{j=JSON.parse(t);}catch(e){}
-      if(!r.ok)throw new Error((j&&j.error)||('Server '+r.status));
+      if(!r.ok){var er=new Error((j&&j.error)||('Server '+r.status));er.status=r.status;throw er;}
       return j||{};
     });
   });
@@ -613,6 +613,7 @@ function applyDocs(){
   S.bA=docs['deal/boardA']||null;
   S.bB=docs['deal/boardB']||null;
   S.guess=docs['state/guess']||null;
+  S.fp=dealFp();
   var pl=[],ch={},rv={},m;
   for(var k in docs){
     if((m=/^players\/(.+)$/.exec(k))){var o=docs[k]||{};o=JSON.parse(JSON.stringify(o));o.id=m[1];pl.push(o);}
@@ -799,6 +800,35 @@ function myPlayerDoc(patch){
   for(var k in patch)o[k]=patch[k];
   return doc('players/'+uid).set(o);
 }
+/* Fingerabdruck des Gebens (Deck + Verteilung) dieser Hand. Entschlüsselte Karten gelten nur für genau diesen Stand;
+   ändert er sich, wird neu entschlüsselt. Jede*r meldet ihn mit „Bereit“, Abweichungen werden angezeigt. */
+function hash53(str){var h1=0xdeadbeef,h2=0x41c6ce57;for(var i=0;i<str.length;i++){var c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);}
+function dealFp(){
+  var h=num(S.main&&S.main.hand)||0;
+  if(!h||!S.deck||S.deck.hand!==h||!S.aA||S.aA.hand!==h||!S.aB||S.aB.hand!==h)return '';
+  try{return hash53(JSON.stringify([S.deck,S.aA,S.aB]));}catch(e){return '';}
+}
+function bkey(){return hand()+'|'+(S.fp||'');}
+function dealMismatch(){
+  if(!S.fp||phase()==='lobby'||phase()==='deal')return [];
+  var h=hand(),m=pmap();
+  return parts().filter(function(id){var p=m[id];return id!==uid&&p&&!p.bot&&p.ready&&p.ready.hand===h&&p.ready.fp&&p.ready.fp!==S.fp;});
+}
+/* Alles frisch vom Server holen und neu entschlüsseln – ohne die Seite neu zu laden */
+function resync(note){
+  if(!code)return Promise.resolve();
+  var c=code;
+  return api('state',{room:c,since:-1,u:uid}).then(function(r){
+    if(code!==c)return;
+    ver=r.version;docs=r.docs||{};setPresence(r);
+    myHand=null;decryptFailed=null;decrypting=false;boardCache={};revealCache={};verifying={};
+    applyDocs();
+    if(!wsOk){if(ws){try{ws.close();}catch(e){}}else if(!wsRetry)wsConnect();}
+    if(note){uiNote=note;}uiErr='';render();
+  }).catch(showErr);
+}
 function RETRY(){var e=new Error('retry');e.retry=true;return e;}
 function once(key,fn){
   if(busy[key])return Promise.resolve();
@@ -806,6 +836,7 @@ function once(key,fn){
   return Promise.resolve().then(fn).catch(function(e){
     busy[key]=false;
     if(e&&e.retry)return;
+    if(e&&e.status===409){resync();return;}   // jemand war schneller / eigener Stand veraltet → übernehmen, kein Fehler
     console.error(key,e);uiErr='Fehler bei "'+key+'": '+(e&&e.message||e);render();
   });
 }
@@ -998,47 +1029,49 @@ function ensureBoardB(){
 
 function decryptMine(){
   var h=hand();
-  if(myHand&&myHand.hand===h)return;
-  if(decrypting||decryptFailed===h)return;
+  if(myHand&&myHand.hand===h&&myHand.fp===S.fp)return;
+  if(myHand&&myHand.hand===h&&S.fp){myHand=null;showToast('Kartenstand hat sich geändert \u2013 neu entschlüsselt');}
+  if(decrypting)return;
+  if(decryptFailed&&decryptFailed.k===bkey()&&(decryptFailed.n>=4||Date.now()-decryptFailed.at<3000))return;
   if(!S.deck||S.deck.hand!==h)return;
   if(!S.aA||S.aA.hand!==h||!(S.aA.forPlayers||{})[uid])return;
   if(!S.aB||S.aB.hand!==h||!(S.aB.forPlayers||{})[uid])return;
-  decrypting=true;
+  decrypting=true;var fp=S.fp,fk=bkey();
   Promise.all([openSealed(S.aA.forPlayers[uid]),openSealed(S.aB.forPlayers[uid])]).then(function(r){
     var a=r[0],b=r[1],jobs=[];
     for(var i=0;i<a.slots.length;i++)jobs.push(decCard(a.k1[i],b.k2[i],S.deck.cts[a.slots[i]]));
     return Promise.all(jobs).then(function(c){
-      myHand={hand:h,cards:c,slots:a.slots,k1:a.k1,k2:b.k2};
-      decrypting=false;render();
+      myHand={hand:h,fp:fp,cards:c,slots:a.slots,k1:a.k1,k2:b.k2};
+      decrypting=false;decryptFailed=null;render();
     });
-  }).catch(function(e){decrypting=false;decryptFailed=h;console.warn('Handkarten nicht lesbar (Platz übernommen?)',e&&e.message);});
+  }).catch(function(e){decrypting=false;var n=(decryptFailed&&decryptFailed.k===fk)?decryptFailed.n+1:1;decryptFailed={k:fk,n:n,at:Date.now()};render();console.warn('Handkarten nicht lesbar (Platz übernommen?)',e&&e.message);});
 }
 
 var revealCache={},verifying={};
 function verifyReveals(){
   var h=hand();
   if(!S.deck||S.deck.hand!==h)return;
-  var rc=revealCache[h]||(revealCache[h]={});
+  var rk=bkey(),rc=revealCache[rk]||(revealCache[rk]={});
   Object.keys(S.reveal).forEach(function(id){
     var r=S.reveal[id];
-    if(!r||r.hand!==h||rc[id]||verifying[h+'|'+id])return;
+    if(!r||r.hand!==h||rc[id]||verifying[rk+'|'+id])return;
     if(!r.slots||!r.k1||!r.k2)return;
-    verifying[h+'|'+id]=true;
+    verifying[rk+'|'+id]=true;
     var jobs=[];
     for(var i=0;i<r.slots.length;i++)jobs.push(decCard(r.k1[i],r.k2[i],S.deck.cts[r.slots[i]]));
     Promise.all(jobs).then(function(c){
       rc[id]=c;render();
-    }).catch(function(e){verifying[h+'|'+id]=false;console.error('verify',e);});
+    }).catch(function(e){verifying[rk+'|'+id]=false;console.error('verify',e);});
   });
 }
-function revealedCards(id){var rc=revealCache[hand()]||{};return rc[id]||null;}
+function revealedCards(id){var rc=revealCache[bkey()]||{};return rc[id]||null;}
 function cardsHtml(arr,cls){return arr.map(function(c){return cardHtml(c,cls);}).join('');}
 
 function decryptBoard(){
   var h=hand();
   if(!S.deck||S.deck.hand!==h)return;
   if(!S.bA||S.bA.hand!==h||!S.bB||S.bB.hand!==h)return;
-  var have=boardCache[h]||[null,null,null,null,null];
+  var bk=bkey(),have=boardCache[bk]||[null,null,null,null,null];
   var jobs=[],idx=[];
   for(var i=0;i<5;i++){
     var a=(S.bA.keys||{})[String(i)],b=(S.bB.keys||{})[String(i)];
@@ -1047,7 +1080,7 @@ function decryptBoard(){
   if(!jobs.length)return;
   Promise.all(jobs).then(function(cs){
     idx.forEach(function(i,n){have[i]=cs[n];});
-    boardCache[h]=have;render();
+    boardCache[bk]=have;render();
   }).catch(function(e){console.error('board',e);});
 }
 
@@ -1076,7 +1109,7 @@ function handName(h){
   }
 }
 function visibleBoard(){
-  var bc=boardCache[hand()]||[],sl=phase()==='play'?boardSlotsFor(stage()):[0,1,2,3,4];
+  var bc=boardCache[bkey()]||[],sl=phase()==='play'?boardSlotsFor(stage()):[0,1,2,3,4];
   return sl.map(function(i){return bc[i];}).filter(function(c){return c!=null;});
 }
 /* Beispielkarten je Hand: Wert+Farbe (s,h,d,c); Kleinbuchstabe vorne = Beikarte (blass) */
@@ -1176,7 +1209,7 @@ function toggleReady(){
   if(sp)return spReady();
   var cur=pmap()[uid];
   var on=isReady(cur);
-  myPlayerDoc({ready:on?null:{hand:hand(),stage:stage()}}).catch(showErr);
+  myPlayerDoc({ready:on?null:{hand:hand(),stage:stage(),fp:S.fp||''}}).catch(showErr);
 }
 function setGuessCard(i,val){
   if(sp)return spGuessSet(i,val);
@@ -1426,7 +1459,7 @@ function toggleTheme(){
   try{localStorage.setItem('kr.theme',dark?'light':'dark');}catch(e){}
 }
 function abortHand(){ if(!isHost())return; busy={}; setMain({phase:'lobby',stage:0}).catch(showErr); }
-function showErr(e){uiErr=(e&&e.message)||String(e);console.error(e);render();}
+function showErr(e){if(e&&e.status===409){resync('Spielstand war veraltet \u2013 neu geladen.');return;}uiErr=(e&&e.message)||String(e);console.error(e);render();}
 
 /* ---------- Kurzhinweise (Toast) ---------- */
 var toastTimer=null;
@@ -2084,7 +2117,10 @@ function newPeer(id){
     p.audio.srcObject=ev.streams[0];
     try{var pr=p.audio.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}
   };
-  pc.onconnectionstatechange=function(){if(pc.connectionState==='failed'||pc.connectionState==='closed')closePeer(id);render();};
+  pc.onconnectionstatechange=function(){
+    var st=pc.connectionState;
+    if(st==='connected'){p.ok=true;p.bad=null;}else if(!p.bad)p.bad=Date.now();
+    if(st==='failed'||st==='closed')closePeer(id);render();};
   voice.peers[id]=p;return p;
 }
 /* Kandidaten erst sammeln, dann das komplette Angebot schicken (ein Hin und Zurück über den Server) */
@@ -2121,7 +2157,8 @@ function voiceTick(){
   if(!voice.on)return;
   if(!voiceAvailable()){voiceLeave();return;}
   if(voice.busy)return;voice.busy=true;
-  api('signals',{room:code},{uid:uid,muted:voice.muted}).then(function(r){
+  voiceCheckMic();
+  api('signals',{room:code},{uid:uid,on:true,muted:voice.muted}).then(function(r){
     voice.busy=false;
     if(!voice.on)return;                    // inzwischen verlassen: späte Antwort nicht mehr verarbeiten
     voice.list=r.voice||[];
@@ -2129,12 +2166,43 @@ function voiceTick(){
     var ids=voice.list.map(function(v){return v.id;});
     for(var id in voice.peers)if(ids.indexOf(id)<0)closePeer(id);
     ids.forEach(function(id){if(id!==uid&&!voice.peers[id]&&uid<id)callPeer(id);});   // der mit der kleineren ID ruft an
-    for(var id2 in voice.peers){var p=voice.peers[id2];
-      if(p.pc.connectionState!=='connected'&&Date.now()-p.at>15000&&uid<id2)closePeer(id2);}   // hängt → neu anrufen
+    var now=Date.now(),vat={};voice.list.forEach(function(v){vat[v.id]=v.at||0;});
+    /* Gleiche ID, aber neu im Voice (Platz übernommen / nach Abbruch neu beigetreten) → alte Direktverbindung schließen */
+    for(var id3 in voice.peers){var q=voice.peers[id3];if(q.vat==null)q.vat=vat[id3];else if(vat[id3]!=null&&vat[id3]!==q.vat)closePeer(id3);}
+    for(var id2 in voice.peers){var p=voice.peers[id2],st=p.pc.connectionState;
+      if(st==='connected'){p.bad=null;if(p.audio&&p.audio.paused){try{var pr=p.audio.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}}continue;}
+      if(!p.bad)p.bad=now;
+      /* hängt beim Aufbau (15 s) oder war verbunden und ist seit 6 s weg → neu anrufen; die Gegenseite räumt nach 20 s selbst auf */
+      if(uid<id2?((!p.ok&&now-p.at>15000)||(p.ok&&now-p.bad>6000)):(now-p.bad>20000&&now-p.at>20000))closePeer(id2);}
+    /* Niemand erreichbar, obwohl andere im Voice sind: einmal pro Minute komplett neu verbinden (frisches Mikrofon, neue Verbindungen) */
+    var others=ids.filter(function(x){return x!==uid;}).length;
+    if(others&&voiceConnected()===0){if(!voice.lonely)voice.lonely=now;else if(now-voice.lonely>25000&&now-(voice.restartAt||0)>60000){voice.lonely=null;voiceRestart();}}
+    else voice.lonely=null;
   }).catch(function(e){
     voice.busy=false;
     if(e&&/ausgeschaltet|Nur Spieler/.test(e.message)){voiceStop();render();}
   });
+}
+/* Mikrofon beendet (Handy-Anruf, Bluetooth gewechselt, App im Hintergrund)? → neu holen und in alle Verbindungen einsetzen */
+function voiceCheckMic(){
+  if(!voice.on||!voice.stream||voice.micBusy)return;
+  var t=voice.stream.getAudioTracks()[0];
+  if(t&&t.readyState!=='ended')return;
+  voice.micBusy=true;
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false}).then(function(st){
+    voice.micBusy=false;
+    if(!voice.on){st.getTracks().forEach(function(x){x.stop();});return;}
+    var nt=st.getAudioTracks()[0];nt.enabled=!voice.muted;
+    voice.stream=st;voice.s0=voice.sd0=null;
+    for(var id in voice.peers)voice.peers[id].pc.getSenders().forEach(function(s){if(s.track==null||s.track.kind==='audio')s.replaceTrack(nt).catch(function(){});});
+  }).catch(function(e){voice.micBusy=false;console.warn('voice mic',e&&e.message);});
+}
+/* Voice komplett neu aufbauen – ohne Seite neu zu laden und ohne die Zustimmung zurückzunehmen */
+function voiceRestart(){
+  if(!voice.on)return;
+  voice.restartAt=Date.now();
+  var c=code;voiceStop();
+  if(c)api('voice',{room:c},{uid:uid,on:false}).catch(function(){}).then(function(){if(code===c)voiceJoin();});
 }
 /* Wer spricht gerade? Tonenergie aus den WebRTC-Statistiken je Verbindung (eingehend = Gegenüber,
    media-source = eigenes Mikrofon). Funktioniert in Chrome, Safari und Firefox, ohne Web Audio. */
@@ -2170,6 +2238,7 @@ function voiceBtns(){
   var others=(voice.list||[]).filter(function(v){return v.id!==uid;}).length;
   return '<button class="small '+(voice.muted?'ghost':'primary')+'" data-a="vmute" title="Mikrofon an/aus">'+(voice.muted?'🔇 Stumm':'🎤 An')+'</button>'+
     '<span class="vstat note" data-n="'+voiceConnected()+'">'+voiceConnected()+'/'+others+' verbunden</span>'+
+    (voiceConnected()<others?'<button class="small ghost" data-a="vrestart" title="Voice neu verbinden">🔄</button>':'')+
     '<button class="small ghost" data-a="vleave">Voice aus</button>'+info;
 }
 function voiceTag(id){
@@ -2865,7 +2934,7 @@ function roomView(){
   }
 
   /* Board */
-  var bc=boardCache[h]||[null,null,null,null,null];
+  var bc=boardCache[bkey()]||[null,null,null,null,null];
   var shown=boardSlotsFor(stage());
   if(ph!=='play')shown=[0,1,2,3,4];
   var bh='';
@@ -2885,9 +2954,15 @@ function roomView(){
   if(myHand&&myHand.hand===h)mine=cardsHtml(myHand.cards);
   else if(ps.indexOf(uid)<0)mine='<span class="note">'+(watching?'Du schaust zu.':'Du bist in dieser Hand nicht dabei.')+'</span>';
   else {mine='';for(z=0;z<K;z++)mine+=backHtml();}
+  var syncNote='',mm=dealMismatch();
+  if(mm.length)syncNote='<p class="err">\u26a0 Kartenstand weicht ab bei: '+mm.map(function(id){return esc(pname(id));}).join(', ')+
+    '. Alle bitte \u201eNeu synchronisieren\u201c, sonst Hand abbrechen. <button class="small" data-a="resync">\ud83d\udd04 Neu synchronisieren</button></p>';
+  else if(ps.indexOf(uid)>=0&&!(myHand&&myHand.hand===h)&&decryptFailed&&decryptFailed.k===bkey())
+    syncNote='<p class="info">Deine Karten lassen sich gerade nicht entschlüsseln'+(decryptFailed.n>=4?'':' \u2013 neuer Versuch läuft')+'. '+
+    '<button class="small" data-a="resync">\ud83d\udd04 Neu synchronisieren</button></p>';
   var my=(myHand&&myHand.hand===h)?bestHand(myHand.cards.concat(visibleBoard()),myHand.cards):null;
   L+='<div class="panel p-mine"><h2>Deine Karten</h2><div class="mine-row"><div class="cards">'+mine+'</div>'+myChipsHtml()+'</div>'+
-    (my?'<div class="handname">Du hast: <b>'+esc(handName(my))+'</b></div>':'')+
+    (my?'<div class="handname">Du hast: <b>'+esc(handName(my))+'</b></div>':'')+syncNote+
     rankingHtml(my?my.cat:-1)+'</div>';
 
   /* Spieler + Chips */
@@ -3082,6 +3157,15 @@ setInterval(function(){
   for(var i=0;i<els.length;i++){var t=num(els[i].getAttribute('data-left'))||0;if(t<=now)again=true;else els[i].textContent=fmtLeft(t-now);}
   if(again)render();
 },1000);
+/* Selbstheilung: Rollen/Entschlüsseln regelmäßig erneut anstoßen (auch ohne neue Server-Daten) */
+setInterval(function(){if(code&&S.main&&!sp){try{tick();}catch(e){console.error(e);}}},2000);
+/* Zurück aus dem Hintergrund (Handy, anderer Tab): sofort Stand holen, WebSocket und Voice prüfen */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible'||!code||sp)return;
+  pollOnce(true);
+  if(!wsOk&&!wsRetry){if(ws){try{ws.close();}catch(e){}}else wsConnect();}
+  if(voice.on){voiceCheckMic();voiceTick();}
+});
 /* Countdown braucht regelmäßiges Neuzeichnen */
 var cdShown=null;
 setInterval(function(){
@@ -3140,6 +3224,7 @@ document.addEventListener('click',function(ev){
   else if(a==='vjoin')voiceJoin();
   else if(a==='vmute')voiceMute();
   else if(a==='vleave')voiceLeave();
+  else if(a==='vrestart')voiceRestart();
   else if(a==='vconsent')voiceConsent();
   else if(a==='vcancel'){voiceDlg=null;render();}
   else if(a==='vinfo'){voiceDlg='info';render();}
@@ -3154,6 +3239,7 @@ document.addEventListener('click',function(ev){
   else if(a==='leave')leave();
   else if(a==='start')startHand();
   else if(a==='abort')abortHand();
+  else if(a==='resync')resync('Neu synchronisiert.');
   else if(a==='ready')toggleReady();
   else if(a==='force')advance();
   else if(a==='confirm')confirmGuess();

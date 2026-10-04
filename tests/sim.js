@@ -374,14 +374,16 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   await until(()=>B.__kr.S().players.length===2,'Ben sieht Kick'); ok(true,'Neuer Host kann Spieler entfernen');
   // ---- Schadcode im Spielzustand darf nirgends ausgeführt werden ----
   const evil='"><img src=x onerror=alert(1)>';
-  r=await post('set',code+'&path=state/main',{phase:'done',hand:evil,stage:evil,participants:[aid,B.__kr.uid()],
+  r=await post('set',code+'&path=state/main',{phase:'done',hand:evil,stage:evil},A.ls['kr.sk']);
+  ok(r.status===409,'Spielstand mit kaputter Handnummer abgelehnt (Hand springt nie zurück)');
+  r=await post('set',code+'&path=state/main',{phase:'done',hand:(B.__kr.S().main||{}).hand,stage:evil,handEvil:evil,participants:[aid,B.__kr.uid()],
     chipHist:{'1':{[aid]:evil}},opt:{holeCards:evil}},A.ls['kr.sk']);
   ok(r.status===200,'(Mitspielerin schreibt manipulierten Spielzustand)');
-  await until(()=>B.__kr.main().hand===evil,'Zustand angekommen'); await sleep(300);
+  await until(()=>B.__kr.main().handEvil===evil,'Zustand angekommen'); await sleep(300);
   ok(!/<img src=x/.test(B.els.app.innerHTML),'Manipulierter Zustand erzeugt kein HTML beim Mitspieler');
   await sleep(3100);   // Raumliste ist 3 s zwischengespeichert
   const rl0=await (await fetch(BASE+'api?a=rooms')).json(), me0=rl0.rooms.find(x=>x.code===code);
-  ok(me0&&me0.hand===0&&!/img/.test(JSON.stringify(me0)),'Öffentliche Raumliste liefert nur saubere Werte');
+  ok(me0&&typeof me0.hand==='number'&&!/img/.test(JSON.stringify(me0)),'Öffentliche Raumliste liefert nur saubere Werte');
   const V=client('Vera'); await until(()=>V.els.roomlist.innerHTML.includes(code),'Startseite');
   ok(!/<img src=x/.test(V.els.roomlist.innerHTML),'Startseite bleibt sauber');
   // ---- Einladungslink öffnen ----

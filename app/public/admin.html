@@ -52,7 +52,7 @@ var secret='',cfg=null,defs=null,msg='',err='';
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function call(a,body){
-  var o={method:body?'POST':'GET',headers:{'x-admin-secret':secret},cache:'no-store'};
+  var o={method:body?'POST':'GET',headers:{'x-admin-secret-enc':encodeURIComponent(secret)},cache:'no-store'};
   if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body);}
   return fetch(API+'?a='+a,o).then(function(r){
     return r.text().then(function(t){
