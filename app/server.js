@@ -48,8 +48,40 @@ for (const level of ['log', 'warn', 'error']) {
    weil alle Handler und Timer über guard() laufen. */
 process.on('uncaughtException', (e) => { console.error('uncaughtException', e); try { flushAll(); } catch (x) { /* egal */ } process.exit(1); });
 process.on('unhandledRejection', (e) => { console.error('unhandledRejection', e); });
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { flushAll(); } catch (x) { /* egal */ } process.exit(0); });
+/* Wer beendet uns? Bisher endete der Prozess still (Passenger/Plesk) – jetzt steht Grund, Laufzeit und Speicher im Log.
+   Endet ein Lauf ohne diese Zeile (SIGKILL, Speicherlimit), meldet der nächste Start das über tmp/running.json. */
+const T0 = Date.now(), RUN_DIR = path.join(__dirname, 'tmp'), RUN_FILE = path.join(RUN_DIR, 'running-' + process.pid + '.json');
+function runInfo() {
+  let ws = 0; try { for (const set of subs.values()) ws += set.size; } catch (e) { /* vor Init */ }
+  let nr = 0; try { nr = rooms.size; } catch (e) { /* vor Init */ }
+  return 'Laufzeit ' + Math.round((Date.now() - T0) / 60000) + ' min, RSS ' + Math.round(process.memoryUsage().rss / 1048576) + ' MB, Räume ' + nr + ', WebSockets ' + ws;
+}
+function shutdown(sig) {
+  console.log('Beendet durch ' + sig + ' (' + runInfo() + ')');
+  try { flushAll(); } catch (x) { /* egal */ }
+  try { fs.unlinkSync(RUN_FILE); } catch (x) { /* egal */ }
+  process.exit(0);
+}
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => shutdown(sig));
+/* SIGHUP beendet Node standardmäßig sofort und ohne Speichern (z. B. beim Neuladen des Webservers) → nur protokollieren */
+process.on('SIGHUP', () => console.warn('SIGHUP erhalten – ignoriert, läuft weiter (' + runInfo() + ')'));
 console.log('Start: Node ' + process.version + ', PORT=' + (process.env.PORT || '(leer)') + ', cwd=' + process.cwd());
+try {
+  for (const f of fs.readdirSync(RUN_DIR)) {
+    if (!/^running-\d+\.json$/.test(f)) continue;
+    const prev = JSON.parse(fs.readFileSync(path.join(RUN_DIR, f), 'utf8'));
+    let alive = false; try { process.kill(prev.pid, 0); alive = true; } catch (e) { /* weg */ }
+    if (!alive) { console.warn('Vorheriger Lauf (pid ' + prev.pid + ', seit ' + new Date(prev.t).toISOString() + ') endete ohne Abmeldung – hart beendet (SIGKILL/Speicherlimit?)'); fs.unlinkSync(path.join(RUN_DIR, f)); }
+  }
+} catch (e) { /* kein vorheriger Lauf */ }
+/* Grenzen, die das Hosting dem Prozess setzt (CPU-Zeit, Speicher) – erklären sonst rätselhafte stille Abbrüche */
+try {
+  const lim = fs.readFileSync('/proc/self/limits', 'utf8').split('\n').filter((l) => /cpu time|address space|resident|processes|open files/i.test(l))
+    .map((l) => l.replace(/\s{2,}/g, ' ').trim()).join(' | ');
+  let cg = ''; for (const f of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes', '/sys/fs/cgroup/cpu.max', '/sys/fs/cgroup/pids.max']) { try { cg += ' ' + path.basename(f) + '=' + fs.readFileSync(f, 'utf8').trim(); } catch (e) { /* nicht vorhanden */ } }
+  console.log('Grenzen: ' + lim + (cg ? ' | cgroup:' + cg : '') + ' | heap max ' + Math.round(require('v8').getHeapStatistics().heap_size_limit / 1048576) + ' MB');
+} catch (e) { /* kein Linux-/proc */ }
+try { fs.mkdirSync(RUN_DIR, { recursive: true }); fs.writeFileSync(RUN_FILE, JSON.stringify({ pid: process.pid, t: T0 })); } catch (e) { /* egal */ }
 /* Callback, der nie den Prozess beenden kann (für Timer und Socket-Ereignisse) */
 function guard(fn, what) {
   return function () {
@@ -562,14 +594,15 @@ function notOpenYet(r) { const t = r.docs.room && Number(r.docs.room.startsAt); 
 /* Voice-Chat je Raum (nur im Speicher): Mitglieder mit Lebenszeichen, Postfächer für den Verbindungsaufbau */
 const voiceRooms = new Map();              // code -> { members: Map(uid -> {muted, ts}), box: Map(uid -> [msg]) }
 function voiceRoom(code) {
-  if (!voiceRooms.has(code)) voiceRooms.set(code, { members: new Map(), box: new Map() });
+  if (!voiceRooms.has(code)) voiceRooms.set(code, { members: new Map(), box: new Map(), left: new Set() });
   return voiceRooms.get(code);
 }
 function voiceList(code) {
   const V = voiceRooms.get(code); if (!V) return [];
   const now = Date.now(), out = [];
   for (const [id, m] of V.members) { if (now - m.ts > 20000) { V.members.delete(id); V.box.delete(id); } else out.push({ id: id, muted: m.muted, at: m.at || 0 }); }
-  if (!V.members.size) voiceRooms.delete(code);
+  if (!V.members.size && !V.left.size) voiceRooms.delete(code);
+  if (V.left.size > 200) V.left.clear();
   return out;
 }
 function removeRoom(c) {
@@ -655,6 +688,14 @@ setInterval(guard(() => {                 // Keepalive gegen Proxy-Timeouts; stu
 /* ------------------------------------------------ Bots ------------------- */
 const bots = require('./bots')({ rooms, commit, chipMove });
 setInterval(guard(bots.tick, 'Bots'), 300).unref();
+/* Hängt die Ereignisschleife (lange Rechnung, z. B. Bots), merken es alle Spieler*innen sofort → protokollieren */
+let lagAt = Date.now(), lagWarnAt = 0;
+setInterval(guard(() => {
+  const now = Date.now(), lag = now - lagAt - 1000; lagAt = now;
+  if (lag > 2000 && now - lagWarnAt > 60000) { lagWarnAt = now; console.warn('Server hing ' + Math.round(lag / 1000) + ' s (' + runInfo() + ')'); }
+}, 'Lag'), 1000).unref();
+/* Verlauf für die Fehlersuche bei stillen Abbrüchen: Speicher und Last alle 15 min, nur wenn gespielt wird */
+setInterval(guard(() => { if (rooms.size) console.log('Status: ' + runInfo() + ', Heap ' + Math.round(process.memoryUsage().heapUsed / 1048576) + ' MB'); }, 'Status'), 15 * 60 * 1000).unref();
 
 /* ------------------------------------------------ HTTP ------------------- */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -906,8 +947,8 @@ async function api(req, res, u) {
     if (!authPlayer(r, who, req)) return json(res, 403, { error: 'Nur Spieler' });
     const V = voiceRoom(code);
     if (a === 'voice') {
-      if (body.on) V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: (V.members.get(who) || {}).at || Date.now() });
-      else { V.members.delete(who); V.box.delete(who); }
+      if (body.on) { V.left.delete(who); V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: (V.members.get(who) || {}).at || Date.now() }); }
+      else { V.members.delete(who); V.box.delete(who); V.left.add(who); }   // bewusst verlassen: späte Lebenszeichen nehmen nicht wieder auf
       return json(res, 200, { ok: true, voice: voiceList(code) });
     }
     if (a === 'signal') {
@@ -926,7 +967,7 @@ async function api(req, res, u) {
     const m = V.members.get(who);
     if (m) { m.ts = Date.now(); if (body.muted !== undefined) m.muted = !!body.muted; }
     /* Nach Funkloch, Hintergrund (Handy) oder Server-Neustart wieder aufnehmen – sonst zeigt der Client „An“, aber niemand verbindet */
-    else if (body.on) V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: Date.now() });
+    else if (body.on && !V.left.has(who)) V.members.set(who, { muted: !!body.muted, ts: Date.now(), at: Date.now() });
     const msgs = (V.box.get(who) || []).filter((x) => Date.now() - x.ts < 60000);
     V.box.delete(who);
     return json(res, 200, { ok: true, msgs: msgs, voice: voiceList(code) });
@@ -1042,7 +1083,7 @@ async function api(req, res, u) {
     r.keys = r.keys || {};
     r.keys[pid] = kh;                    // neu, bestätigt oder übernommen (Spieler war offline)
     /* Übernommen: das alte Gerät fliegt aus dem Voice-Chat (sonst hängt es per direkter Audio-Verbindung „halb“ drin) */
-    if (takeover) { const V = voiceRooms.get(code); if (V) { V.members.delete(pid); V.box.delete(pid); } }
+    if (takeover) { const V = voiceRooms.get(code); if (V) { V.members.delete(pid); V.box.delete(pid); V.left.add(pid); } }
   }
   if (a === 'set') {
     if (!PATH_RE.test(p)) return json(res, 400, { error: 'Pfad ungueltig' });

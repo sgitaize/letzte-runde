@@ -155,11 +155,14 @@ const closed = (s, ms) => new Promise((r) => { if (s.destroyed) return r(true); 
 
   // 8) Stopp sichert ungespeicherte Änderungen
   await req('set', '&room=' + ROOM + '&path=state/main', { phase: 'lobby', marker: 'vor-stopp' });
+  srv.kill('SIGHUP'); await sleep(300);
+  ok(await alive(), 'SIGHUP (Webserver lädt neu) beendet den Server nicht');
   srv.kill('SIGTERM'); await sleep(500);
   const saved = JSON.parse(fs.readFileSync(path.join(TMP, 'data', ROOM + '.json'), 'utf8'));
   ok(saved.docs['state/main'] && saved.docs['state/main'].marker === 'vor-stopp', 'SIGTERM → letzte Änderung auf Platte');
   const log = fs.readFileSync(path.join(TMP, 'logs', 'app.log'), 'utf8');
   ok(!/uncaughtException/.test(log), 'kein uncaughtException im Log');
+  ok(/Beendet durch SIGTERM \(Laufzeit/.test(log), 'Ende mit Grund im Log');
   console.log('STRESS-TEST BESTANDEN');
 })().catch((e) => { console.error(e.message || e); process.exitCode = 1; })
   .finally(() => { try { srv.kill('SIGKILL'); } catch (e) { /* egal */ } fs.rmSync(TMP, { recursive: true, force: true }); });

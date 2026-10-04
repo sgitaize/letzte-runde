@@ -43,7 +43,12 @@ code{font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div class="wrap" id="app"><div class="panel"><h1>Letzte Runde – Admin</h1><p class="note">Lade …</p>
+<noscript><p class="err">JavaScript ist ausgeschaltet – der Adminbereich braucht JavaScript.</p></noscript></div></div>
+<script>
+/* Nie eine leere Seite: jeder Skriptfehler wird sichtbar angezeigt */
+window.onerror=function(m,src,line){var el=document.getElementById('app');if(el)el.insertAdjacentHTML('afterbegin','<div class="panel"><p class="err">Fehler auf der Seite: '+String(m).replace(/[<>&]/g,'')+' (Zeile '+line+') – bitte neu laden.</p></div>');};
+</script>
 <script>
 (function(){
 "use strict";
@@ -149,7 +154,10 @@ function render(){
   });
 }
 var saved='';try{saved=sessionStorage.getItem('kr.admin')||'';}catch(e){}
-if(saved)login(saved).catch(function(){cfg=null;render();}); else render();
+/* Gespeichertes Secret (dieser Tab): Anmeldung versuchen; scheitert sie oder hängt sie > 10 s, Formular zeigen */
+var shown=false,fallback=setTimeout(function(){if(!cfg&&!shown){shown=true;err='Server antwortet nicht – bitte erneut anmelden.';render();}},10000);
+if(saved)login(saved).then(function(){clearTimeout(fallback);}).catch(function(e){clearTimeout(fallback);try{sessionStorage.removeItem('kr.admin');}catch(x){}err=e.message;cfg=null;render();});
+else{clearTimeout(fallback);render();}
 })();
 </script>
 </body>

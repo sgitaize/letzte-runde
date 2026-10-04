@@ -391,7 +391,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(I.__kr.inviteCode()===code&&I.els.app.innerHTML.includes('eingeladen')&&I.els.app.innerHTML.includes('value="'+code+'"'),'Link …/#'+code+' → Hinweis „eingeladen“ + Code vorausgefüllt');
   // ---- Raum-Flut von einer IP ----
   let codes=[]; for(let i=0;i<25;i++){ const rr=await fetch(BASE+'api?a=create&room=FL'+i,{method:'POST',headers:{'Content-Type':'application/json','x-forwarded-for':'203.0.113.9'},body:'{"hostId":"x"}'}); codes.push(rr.status); }
-  ok(codes.filter(s=>s===200).length===20&&codes.slice(20).every(s=>s===429),'Raum-Flut: nach 20 neuen Räumen je IP → 429');
+  ok(codes.filter(s=>s===200).length===20&&codes.slice(20).every(s=>s===429),'Raum-Flut: nach 20 neuen Räumen je IP → 429 ('+codes.join(',')+')');
   const E=client('Emil'); await sleep(500); E.__kr.watchRoom(code); await until(()=>E.__kr.S().players.length===2,'Emil schaut zu');
   B.__kr.closeRoom();
   await until(()=>!A2.__kr.code()&&!D.__kr.code()&&!E.__kr.code(),'alle raus nach Schließen');
