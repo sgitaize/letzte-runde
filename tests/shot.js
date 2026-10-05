@@ -104,6 +104,7 @@ async function connect(url) {
       await send('Page.bringToFront');
     };
     await sleep(2500);
+    if (process.env.INSIGHT) { await tv('Runtime.evaluate', { expression: 'document.querySelector(\'[data-a="tvinsight"]\').click()' }); await sleep(500); }
     await tvShot('tv-runde1');
     await click('[data-a="notable"]'); await sleep(300);
     await shoot('mp-notable');

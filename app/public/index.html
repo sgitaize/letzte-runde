@@ -230,6 +230,10 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .tag.gold{border-color:var(--gold);color:var(--gold)}
 /* viele Plätze: kleiner */
 .tv-room.n7,.tv-room.n8{--u:.85vmin}.tv-room.n9,.tv-room.n10,.tv-room.n11,.tv-room.n12{--u:.72vmin}
+.tv-body{flex:1 1 auto;min-height:0;display:flex;gap:1.5vmin}.tv-body>.tv-room{flex:1 1 auto}
+.tv-ins{flex:0 0 30vw;align-self:center;margin:0;padding:calc(var(--u)*1.4) calc(var(--u)*1.8);max-height:100%;overflow:auto;box-sizing:border-box}
+.tv-ins h2{font-size:calc(var(--u)*2.4)}.tv-ins .insight{max-width:none}.tv-ins .ilegend{font-size:calc(var(--u)*1.8)}.tv-ins .note{font-size:calc(var(--u)*1.5)}
+.tv-col{display:inline-block;width:calc(var(--u)*3);height:calc(var(--u)*.6);border-radius:calc(var(--u)*.3);vertical-align:middle;margin-left:calc(var(--u)*.8)}
 .tv-lobby{flex:1 1 auto;margin:3vmin 0;border-radius:calc(var(--u)*3);display:flex;align-items:center;justify-content:center;gap:5vmin;padding:4vmin;color:#eef5f0}
 .tv-lobby .qr{width:34vmin}
 .tv-lobby h2{font-size:calc(var(--u)*4.4);color:#eef5f0;margin:0 0 1vmin}
@@ -243,6 +247,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   .tv-felt{position:relative;inset:auto;width:100%;min-height:28vh;padding:3vmin 0;border-radius:calc(var(--u)*6)}
   .tv-seat{position:relative;left:auto!important;top:auto!important;transform:none!important}
   .tv-lobby{flex-direction:column}
+  .tv-body{flex:0 0 auto;flex-direction:column}.tv-body>.tv-room{flex:0 0 auto}.tv-ins{flex:0 0 auto;align-self:stretch;max-height:none}.tv-ins .insight{max-width:90vmin;margin:0 auto}
 }
 /* Lernmodus: bewusst anders eingefärbt, damit man ihn sofort vom Spiel unterscheidet */
 .coach-r{display:none}
@@ -2378,18 +2383,20 @@ function offlineBanner(){
 }
 
 /* ---------- Insight: Positionswechsel aller Spieler über die Runden als Verlauf (Chip je Runde, oben = höchster) ---------- */
+var tvInsight=false;try{tvInsight=localStorage.getItem('kr.tv.insight')==='1';}catch(e){}
+function tvToggleInsight(){tvInsight=!tvInsight;try{localStorage.setItem('kr.tv.insight',tvInsight?'1':'0');}catch(e){}render();}
 var spInsight=false;try{spInsight=localStorage.getItem('kr.sp.insight')==='1';}catch(e){}
 function spToggleInsight(){spInsight=!spInsight;try{localStorage.setItem('kr.sp.insight',spInsight?'1':'0');}catch(e){}render();}
 function spInsightBtn(){return '<button class="small '+(spInsight?'primary':'ghost')+'" data-a="spinsight" title="Insight: Positionswechsel als Grafik">📈 Insight'+(spInsight?' an':'')+'</button>';}
 var SERIES=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300'];   // feste Reihenfolge je Sitzplatz (Farbe folgt dem Spieler, nicht dem Rang)
-function insightHtml(){
+function insightHtml(act){
   var ps=sp.players,n=ps.length,ph=sp.phase,last=ph==='play'?sp.stage:4,done=ph==='done'&&sp.res,cols=done?5:4;
   var W=360,top=14,rowH=24,H=top+(n-1)*rowH+30,x0=24,xw=W-x0-86,xs=function(r){return x0+(r-1)*xw/(cols-1);},ys=function(c){return top+(n-c)*rowH;};
   var g='',lines='',dots='',labels='',legend='',lab=[];
   for(var c=1;c<=n;c++)g+='<line x1="'+x0+'" x2="'+xs(cols)+'" y1="'+ys(c)+'" y2="'+ys(c)+'" class="ig"/><text x="'+(x0-10)+'" y="'+(ys(c)+4)+'" class="it" text-anchor="end">'+c+'</text>';
   for(var r=1;r<=cols;r++)g+='<text x="'+xs(r)+'" y="'+(H-6)+'" class="it" text-anchor="middle">'+(r===5?'Echt':'R'+r)+'</text>';
   ps.forEach(function(p,i){
-    var col=SERIES[i%SERIES.length],pts=[],lastPt=null;
+    var col=p.col||SERIES[i%SERIES.length],pts=[],lastPt=null;
     for(var r=1;r<=last;r++){var v=ph==='play'&&r===sp.stage?(sp.chips[p.id]||null):spChipOfStage(p.id,r);pts.push(v?[xs(r),ys(v),r,v]:null);}
     var seg=[];
     pts.concat([null]).forEach(function(q){if(q){seg.push(q[0]+','+q[1]);lastPt=q;}else{if(seg.length>1)lines+='<polyline points="'+seg.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(p.id==='me'?3:2)+'" stroke-linejoin="round"/>';seg=[];}});
@@ -2402,9 +2409,9 @@ function insightHtml(){
   });
   lab.sort(function(a,b){return a.y-b.y;}).forEach(function(l,i){if(i&&l.y<lab[i-1].y+13)l.y=lab[i-1].y+13;   // Gleichstand: untereinander
     labels+='<text x="'+(xs(cols)+10)+'" y="'+(l.y+4)+'" class="il'+(l.me?' me':'')+'">'+esc(l.t)+'</text>';});
-  return '<div class="panel p-insight"><div class="spread"><h2>📈 Insight: Positionen je Runde</h2><button class="small ghost" data-a="spinsight">aus</button></div>'+
+  return '<div class="panel p-insight"><div class="spread"><h2>📈 Insight: Positionen je Runde</h2><button class="small ghost" data-a="'+(act||'spinsight')+'">aus</button></div>'+
     '<svg class="insight" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Chip je Spieler und Runde">'+g+lines+dots+labels+'</svg>'+
-    '<div class="ilegend">'+legend+'</div><p class="note">Oben = höchster Chip. Jede Linie ist ein Spieler; Knick = Positionswechsel.'+(done?' Gestrichelt: wo er/sie richtig gestanden hätte (Echt).':'')+'</p></div>';
+    '<div class="ilegend">'+legend+'</div><p class="note">Oben = höchster Chip. Jede Linie ist ein Spieler; Knick = Positionswechsel.'+(done?' Gestrichelt: wo die Person richtig gestanden hätte (Echt).':'')+'</p></div>';
 }
 
 /* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
@@ -2546,25 +2553,25 @@ function coachRounds(me){
    Baut aus den Raumdaten ein sp-ähnliches Objekt (du = 'me', die anderen wie Bots) und ruft f damit auf. Kein Lernmodus
    während der Hand im Raum – die Erklärung gibt es nur aufgeklappt nach der Auflösung. */
 var mpCoachCache={};
-function mpView(){
-  var ph=phase(),h=hand(),ps=parts(),me=ps.indexOf(uid)>=0,hist=main().chipHist||{},m=function(id){return id===uid?'me':id;};
-  if(!me||ph==='lobby'||ph==='deal')return null;
+function mpView(tv){   // tv: Tisch-Ansicht – alle wie Mitspieler*innen, eigene Karten des Geräts bleiben verdeckt
+  var ph=phase(),h=hand(),ps=parts(),me=!tv&&ps.indexOf(uid)>=0,hist=main().chipHist||{},m=function(id){return id===uid&&!tv?'me':id;};
+  if(!(me||tv)||ph==='lobby'||ph==='deal')return null;
   var v={mp:true,hand:code+'.'+h,K:HC(),hist:{},hole:{},chips:{},players:[],board:visibleBoard(),
     phase:ph==='play'?'play':ph==='done'?'done':'guess',stage:ph==='play'?stage():4,target:null,gr:null};
   for(var st=1;st<=4;st++){var run=hist[String(st)];if(!run)continue;v.hist[st]={};ps.forEach(function(id){if(run[id]!=null)v.hist[st][m(id)]=run[id];});}
   if(ph==='play')ps.forEach(function(id){var c=chipOf(id);if(c)v.chips[m(id)]=c;});
   var res=ph==='done'?resolveHand():null;
   ps.forEach(function(id){
-    var cards=id===uid?(myHand&&myHand.hand===h?myHand.cards:null):revealedCards(id);
+    var cards=id===uid&&!tv?(myHand&&myHand.hand===h?myHand.cards:null):revealedCards(id);
     if(res&&!(res.by[id]&&res.by[id].hand&&cards))return;      // Auflösung: nur Spieler mit bekannten Karten
-    v.players.push({id:m(id),name:pname(id),bot:id!==uid});if(cards)v.hole[m(id)]=cards;
+    v.players.push({id:m(id),name:pname(id),bot:m(id)!=='me',col:SERIES[ps.indexOf(id)%SERIES.length]});if(cards)v.hole[m(id)]=cards;
   });
   if(res){v.res={by:{}};ps.forEach(function(id){var x=res.by[id];if(x)v.res.by[m(id)]={chip:x.chip,lo:x.lo,hi:x.hi,ok:x.ok,swaps:(x.swaps||[]).map(m)};});}
   v.coach=mpCoachCache[v.hand]=mpCoachCache[v.hand]||{};
   return v;
 }
-function mpWith(f){
-  var v=mpView();if(!v)return null;
+function mpWith(f,tv){
+  var v=mpView(tv);if(!v)return null;
   var saved=sp;sp=v;try{return f();}catch(e){console.error(e);return null;}finally{sp=saved;}
 }
 function mpCoachHtml(){
@@ -3323,7 +3330,8 @@ function tvSeat(id,i,n){
   /* Rand-Anker: oben/links bündig am Rand, unten/rechts ebenso – so ragt kein Platz aus dem Bild, egal wie hoch er wird */
   var a=Math.PI/2+2*Math.PI*i/n,x=(50+50*Math.cos(a)).toFixed(1),y=(50+50*Math.sin(a)).toFixed(1);
   return '<div class="tv-seat'+(cur===id?' cur':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+(m[id]&&!isOnline(id)?' off':'')+'" style="left:'+x+'%;top:'+y+'%;transform:translate(-'+x+'%,-'+y+'%)">'+
-    '<div class="tv-head">'+chip+'<div class="tv-nm">'+esc(p.name||'Spieler')+(p.bot?' 🤖':'')+reactHtml(id)+'</div></div>'+
+    '<div class="tv-head">'+chip+'<div class="tv-nm">'+esc(p.name||'Spieler')+(p.bot?' 🤖':'')+reactHtml(id)+
+    (tvInsight?'<i class="tv-col" style="background:'+SERIES[i%SERIES.length]+'"></i>':'')+'</div></div>'+
     '<div class="cards">'+cards+'</div>'+
     (rv&&board&&(ph==='reveal'||ph==='done')?'<div class="tv-hand">'+esc(handName(bestHand(rv.concat(board),rv)))+'</div>':'')+
     '<div class="tv-st">'+histHtml(id)+status+verdict+(m[id]&&!isOnline(id)?'<span class="tag off">offline</span>':'')+'</div>'+sayHtml(id)+
@@ -3333,7 +3341,7 @@ function tvView(){
   var ph=phase(),ps=parts(),h=hand();
   var top='<div class="tv-top"><div class="brand sm"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
     '<div class="tv-title">'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span><span class="note"> · '+esc(phaseLabel())+'</span></div>'+
-    '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="tvfs" title="Vollbild" aria-label="Vollbild">⤢</button>'+
+    '<div class="row"><button class="small '+(tvInsight?'primary':'ghost')+'" data-a="tvinsight" title="Insight: Positionswechsel als Grafik">📈 Insight'+(tvInsight?' an':'')+'</button>'+fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="tvfs" title="Vollbild" aria-label="Vollbild">⤢</button>'+
     '<button class="small ghost" data-a="leave">Verlassen</button></div></div>';
   var out=top+(uiErr?'<p class="err">'+esc(uiErr)+'</p>':'')+(cd.key?countdownHtml():'');
   if(ph==='lobby'||ph==='deal'){
@@ -3365,8 +3373,10 @@ function tvView(){
       (gr?'<div class="row"><span>Tipp auf '+esc(pname(gr.target))+': '+gr.hits+'/'+gr.of+'</span><div class="cards">'+gr.cards.map(function(r,j){return rankHtml(r,'sm '+(gr.marks[j]?'hit':'miss'));}).join('')+'</div></div>':'')+'</div>';
   }
   var seats=ps.map(function(id,j){return tvSeat(id,j,ps.length);}).join('');
-  return out+'<div class="tv-room n'+Math.min(ps.length,12)+'"><div class="tv-felt felt"><div class="cards board">'+bh+'</div>'+
-    flushWarn(shown.filter(function(i){return bc[i]!=null;}).map(function(i){return bc[i];}))+mid+'</div>'+seats+'</div>';
+  var ins=tvInsight?mpWith(function(){return insightHtml('tvinsight');},true):'';
+  return out+'<div class="tv-body"><div class="tv-room n'+Math.min(ps.length,12)+'"><div class="tv-felt felt"><div class="cards board">'+bh+'</div>'+
+    flushWarn(shown.filter(function(i){return bc[i]!=null;}).map(function(i){return bc[i];}))+mid+'</div>'+seats+'</div>'+
+    (ins?ins.replace('panel p-insight','panel p-insight tv-ins'):'')+'</div>';
 }
 
 /* 3-2-1 legt sich über alles; Zurücknehmen bleibt direkt im Overlay möglich */
@@ -3605,6 +3615,7 @@ document.addEventListener('click',function(ev){
   else if(a==='botcancel'){botifyDlg=null;render();}
   else if(a==='splearn')spToggleLearn();
   else if(a==='spinsight')spToggleInsight();
+  else if(a==='tvinsight')tvToggleInsight();
   else if(a==='vjoin')voiceJoin();
   else if(a==='vmute')voiceMute();
   else if(a==='vleave')voiceLeave();
