@@ -7,10 +7,12 @@ Keine Abhängigkeiten, kein Build, keine Datenbank. Updates kommen per WebSocket
 ```
 server.js          Server: statische Auslieferung + /api + /ws (nur Node-Standardmodule)
 package.json       Startbefehl, keine dependencies
+accounts.js        Benutzerkonten (Name + Passwort, keine E-Mail)
 public/index.html  das Spiel
 public/admin.html  Adminbereich
 data/              wird automatisch angelegt: je Raum eine JSON-Datei,
-                   config.json (Einstellungen), admin-secret.txt
+                   config.json (Einstellungen), admin-secret.txt,
+                   accounts/ (je Konto <id>.json = Anmeldedaten, <id>.stats.json = Statistik)
 ```
 
 ## Installation über Plesk (netcup Webhosting)
@@ -58,6 +60,8 @@ Einstellbar (gilt ab der nächsten Hand, laufende Hände behalten ihre Werte):
 | Höchster Chip deckt zuerst auf | an (sonst ab Chip 1 aufwärts) |
 | Räume löschen nach … Stunden | 48 |
 
+Unter „Konten“: Name, gespeicherte Hände, angemeldete Geräte, zuletzt aktiv. **Passwort zurücksetzen** erzeugt ein Einmal-Passwort (wird nur einmal angezeigt), meldet alle Geräte ab und hebt eine Sperre nach Fehlversuchen auf; die Person setzt danach im Spiel ein eigenes Passwort. Konten lassen sich samt Statistik löschen.
+
 Dazu die Raumliste: Spielerzahl, wie viele gerade online sind, Phase, Hand, letzte Änderung — einzeln oder alle löschbar. Gelöschte Räume werfen offene Clients sofort mit einer Meldung raus.
 
 Unter 3 Spielern geht das verteilte Geben nicht auf (dann kennt der Geber die Karten), deshalb lässt sich „Mindestspieler" zwar auf 2 stellen, der Hinweis bleibt aber bestehen.
@@ -82,6 +86,8 @@ Stellschrauben oben in `server.js` (Abschnitt „Grenzen“): `MAX_BODY` (128 KB
 ## Sicherheit
 
 Die Karten liegen **verschlüsselt** auf dem Server. Das Geben ist auf drei Spieler verteilt: einer mischt und verschlüsselt jede Kartenposition mit zwei Schlüsselhälften, zwei andere verteilen je eine Hälfte an die Spieler. Weder der Server noch ein einzelner Mitspieler kann fremde Handkarten lesen; erst beide Hälften zusammen ergeben eine Karte. Beim Aufdecken werden die Karten gegen das verschlüsselte Deck nachgerechnet, niemand kann beim Zeigen also lügen. Deshalb braucht ihr mindestens 3 Spieler.
+
+**Konten:** Passwörter werden nie gespeichert, nur als scrypt-Hash (N=2^16, r=8, p=2, eigenes Salz) über HMAC-SHA256 mit einem geheimen Server-Pepper – eine gestohlene Kontodatei allein reicht nicht einmal zum Raten. Zusätzlich liegt jede Kontodatei mit AES-256-GCM verschlüsselt in `data/accounts/` (Ordner 700, Dateien 600). Pepper und Dateischlüssel werden per HKDF aus `KR_ACCT_SECRET` abgeleitet (sonst `data/account-secret.txt`); **dieses Geheimnis sichern – ohne es sind alle Konten unlesbar.** Sitzung nur als HttpOnly-Cookie `kr_acct` (Secure, SameSite=Strict), Skripte kommen nicht heran; POSTs nur als JSON und vom eigenen Origin (CSRF); Content-Security-Policy auf der Seite. Wiederherstellungscode (80 Bit) und Sitzungen (256 Bit) nur als SHA-256. Unbekannte Namen rechnen einen Schein-Hash (gleiche Antwortzeit, keine Namensabfrage über die Anmeldung). Allerweltspasswörter und Passwörter mit dem eigenen Namen werden abgelehnt. Bremsen: 5 neue Konten je IP und Stunde (60 insgesamt), nach 10 Fehlversuchen je Name oder 30 je IP 15 Minuten Pause. Passwort ändern meldet andere Geräte ab, Wiederherstellung und Admin-Reset alle. Raum-Hände übernimmt der Server selbst aus der Raumstatistik (nur mit dem Geräteschlüssel eines Mitspielers), Übungsraum-Hände werden geprüft und doppelte verworfen.
 
 Host-Rechte sind abgesichert: Jeder Browser hat einen zufälligen Geräteschlüssel (`kr.sk`), der Server kennt nur dessen Hash. Spieler entfernen und Raum schließen darf nur der Host mit seinem Schlüssel; fremde Spielerplätze lassen sich nur übernehmen, wenn der Spieler mindestens 60 s weg ist – der Host-Platz nie. Zuschauer sehen keine Karten außer den aufgedeckten Tischkarten und lesen den Chat nur mit.
 

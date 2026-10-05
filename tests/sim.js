@@ -272,16 +272,17 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(A.els.app.innerHTML.includes('1 von 2 Karten richtig'),'Tipp: 1 von 2 Karten richtig erkannt');
   ok((A.els.app.innerHTML.match(/card sm hit/g)||[]).length===1&&(A.els.app.innerHTML.match(/card sm miss/g)||[]).length===1,'Getippte Karten einzeln grün/rot');
   let ex=expectWin(A.__kr,A.__kr.parts()), res=A.__kr.resolveHand();
-  ok(ex.win&&res.orderOk&&!res.guessOk&&!res.win&&A.els.app.innerHTML.includes('Tipp daneben')&&!A.els.app.innerHTML.includes('Alles richtig'),
-    'Hand 1: Reihenfolge stimmt, Tipp nur 1 von 2 → „Tipp daneben“, nicht „Alles richtig“');
-  ok(/class="endbar"><span class="res bad">✗ Tipp daneben/.test(A.els.app.innerHTML),'Leiste zeigt „Tipp daneben“');
+  ok(ex.win&&res.orderOk&&!res.guessOk&&!res.win&&res.part&&A.els.app.innerHTML.includes('Fast richtig')&&!A.els.app.innerHTML.includes('Alles richtig'),
+    'Hand 1: Reihenfolge stimmt, Tipp 1 von 2 → „Fast richtig“, nicht „Alles richtig“');
+  ok(/class="endbar"><span class="res part">◐ Fast richtig/.test(A.els.app.innerHTML),'Leiste zeigt „Fast richtig“');
+  ok(/statsline">[^<]*fast/.test(A.els.app.innerHTML)||!A.els.app.innerHTML.includes('statsline'),'Statistik-Zeile zählt „fast“');
   { const h=A.els.app.innerHTML,a=h.indexOf('p-board'),b=h.indexOf('p-reveal'),c=h.indexOf('p-mine');
     ok(a>=0&&a<b&&b<c,'Raum: Auflösung unter dem Tisch und über der eigenen Hand'); }
   ok(/class="endbar".*data-a="start"/.test(A.els.app.innerHTML)&&/class="endbar".*Warten auf/.test(B.els.app.innerHTML)&&!/class="endbar".*data-a="start"/.test(B.els.app.innerHTML),
     'Leiste nach der Hand: Host hat „Neue Hand ▶“, Mitspieler „Warten auf …“');
   await until(()=>A.__kr.S().stats.length===1,'Statistik nach Hand 1');
   ok(A.__kr.S().stats[0].players.every(x=>Array.isArray(x.rounds)&&x.rounds.length===4&&x.rounds[3]===true),'Statistik: Treffer je Runde gespeichert (Runde 4 bei allen richtig)');
-  ok(A.__kr.S().stats[0].win===false&&A.__kr.S().stats[0].players.length===3&&A.__kr.S().stats[0].players.every(x=>x.ok),'Statistik: Hand 1 nicht gewonnen (Tipp daneben), alle richtig platziert');
+  ok(A.__kr.S().stats[0].win===false&&A.__kr.S().stats[0].players.length===3&&A.__kr.S().stats[0].players.every(x=>x.ok),'Statistik: Hand 1 nicht gewonnen (fast richtig), alle richtig platziert');
   ok(/0 von 1 Händen richtig/.test(A.els.app.innerHTML),'Statistik-Zeile nach der Hand');
   { const h1=A.__kr.hand();
     let rr=await post('record',code,{uid:'x',hand:h1,win:false,players:[{id:A.__kr.uid(),ok:false}]});

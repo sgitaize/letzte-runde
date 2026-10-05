@@ -2,7 +2,7 @@
    Online immer frisch vom Server – aber höchstens 1,5 s warten; hängt das Netz (Flugzeug-WLAN ohne Internet) oder
    meldet das Gerät „offline“, sofort aus dem Speicher und für die nächsten 15 s gar nicht erst aufs Netz warten.
    API, Admin, Einladungen und WebSocket gehen nie in den Speicher. Bei neuen Dateien VERSION erhöhen. */
-const VERSION = 'lr-7';
+const VERSION = 'lr-8';
 const ASSETS = ['./', 'index.html', 'hand.js', 'qrcode.js', 'logo.svg', 'favicon.svg', 'favicon-32.png', 'icon-192.png',
   'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'manifest.json', 'impressum.html'];
 const WAIT_MS = 1500, SLOW_MS = 15000;

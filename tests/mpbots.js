@@ -99,7 +99,7 @@ async function playHand(humans, label, onPlay, top, noClick) {
   for (const id of ps) { const rv = H0.K.revealedCards(id); ok(rv && rv.length === 2, label + ': ' + (H0.K.isBotP(id) ? 'Bot ' : 'Mensch ') + H0.K.pmap()[id].name + ' aufgedeckt (überprüft): ' + (rv ? rv.join(',') : 'NICHT aufgedeckt')); all.push(...rv); }
   all.push(...H0.K.visibleBoard());
   ok(new Set(all).size === all.length && all.every((c) => c >= 0 && c < 52), label + ': alle ' + all.length + ' Karten verschieden und gültig');
-  ok(/Alles richtig|Tipp daneben|Nicht ganz/.test(H0.els.app.innerHTML), label + ': Ergebnis angezeigt');
+  ok(/Alles richtig|Fast richtig|Tipp daneben|Nicht ganz/.test(H0.els.app.innerHTML), label + ': Ergebnis angezeigt');
 }
 
 let srv;

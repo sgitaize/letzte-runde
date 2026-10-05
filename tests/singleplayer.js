@@ -178,7 +178,7 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
     for (const a of ps) for (const b of ps) if (a.chip < b.chip && X.cmpHand(a.h, b.h) > 0) win = false;
     ok(S().res.orderOk === win && S().res.win === (win && (!S().gr || S().gr.hits === S().gr.of)) && new Set(Object.values(h4)).size === ps.length, 'Hand ' + S().hand + ': Auswertung stimmt (' + (win ? 'Alles richtig' : S().res.bad + ' falsch') + ')');
     ok(/Auflösung/.test(els.app.innerHTML) && /Neue Hand/.test(els.app.innerHTML) && /Händen richtig/.test(els.app.innerHTML), 'Auflösung mit allen Karten, Neue Hand, Statistik-Zeile');
-    ok(/<div class="endbar">.*(Alles richtig|Tipp daneben|Nicht ganz).*data-a="spnext"/.test(els.app.innerHTML) && els.app.innerHTML.lastIndexOf('class="endbar"') > els.app.innerHTML.lastIndexOf('Auflösung'),
+    ok(/<div class="endbar">.*(Alles richtig|Fast richtig|Tipp daneben|Nicht ganz).*data-a="spnext"/.test(els.app.innerHTML) && els.app.innerHTML.lastIndexOf('class="endbar"') > els.app.innerHTML.lastIndexOf('Auflösung'),
       'Leiste „Neue Hand ▶“ mit Ergebnis am Seitenende (klebt unten)');
     { const h = els.app.innerHTML, a = h.indexOf('p-board'), b = h.indexOf('p-reveal'), c = h.indexOf('p-mine');
       ok(a >= 0 && a < b && b < c, 'Auflösung unter dem Tisch und über deiner Hand'); }

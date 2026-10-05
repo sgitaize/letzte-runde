@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Letzte Runde">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{
@@ -113,10 +114,11 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .endbar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:12px;
   justify-content:space-between;padding:10px 12px;margin:0 0 12px;border-radius:14px;background:var(--panel);
   border:2px solid var(--accent);box-shadow:0 8px 28px rgba(0,0,0,.35)}
-.endbar .res{font-weight:700;font-size:17px}.endbar .res.bad{color:#c0392b}.endbar .res.ok{color:var(--accent)}
+.endbar .res{font-weight:700;font-size:17px}.endbar .res.bad{color:#c0392b}.endbar .res.ok{color:var(--accent)}.endbar .res.part{color:var(--gold)}
 .endbar button.primary{font-size:18px;padding:12px 22px;border-radius:12px}
 .result .big{font-family:Georgia,serif;font-size:26px;font-weight:700}
 .result.win{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--fg);border:2px solid var(--accent)}
+.result.part{background:color-mix(in srgb,var(--gold) 18%,transparent);border:2px solid var(--gold)}
 .result.lose{background:color-mix(in srgb,var(--red) 12%,transparent);border:2px solid var(--red)}
 .card.hit{box-shadow:0 0 0 3px var(--accent)}
 .card.miss{box-shadow:0 0 0 3px var(--red);opacity:.8}
@@ -235,7 +237,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .ring .rv small{font-size:12px;opacity:.7}.rl{font-size:12px;color:var(--muted);line-height:1.3}
 .streak{text-align:center;min-width:96px}.fire{font-size:26px}.fire b{font-size:28px;margin-left:4px}
 .sthead{font-size:13px;font-weight:650;margin:12px 0 5px}.sthead small{font-weight:400;color:var(--muted)}
-.strip{display:flex;gap:3px}.strip span{flex:1;max-width:22px;height:18px;border-radius:4px}.strip .ok{background:#2e9d57}.strip .bad{background:#c0392b;opacity:.75}
+.strip{display:flex;gap:3px}.strip span{flex:1;max-width:22px;height:18px;border-radius:4px}.strip .ok{background:#2e9d57}.strip .bad{background:#c0392b;opacity:.75}.strip .part{background:var(--gold)}
 .trend{width:100%;height:56px;display:block}.trend .tline{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .trend .tarea{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:none}.trend .tmid{stroke:var(--line);stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
 .accbars{display:flex;gap:10px;align-items:flex-end}.acc{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -332,6 +334,10 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
   background:rgba(8,10,9,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .cd-box{background:var(--panel);border:2px solid var(--gold);border-radius:20px;padding:20px 30px 22px;text-align:center;
   box-shadow:0 12px 40px rgba(0,0,0,.4);min-width:220px}
+.acctbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.acctbar .small{font-size:13px}
+.acctbox{max-width:620px;width:100%;max-height:calc(100vh - 32px);overflow:auto}.acctbox .field{margin:8px 0}.acctbox input{width:100%;box-sizing:border-box}
+.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px}.acctmgr{margin-top:14px}
+.reccode{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(14px,4.4vw,22px);white-space:nowrap;letter-spacing:.04em;text-align:center;padding:12px 6px;border:2px dashed var(--gold);border-radius:12px;user-select:all;word-break:break-all}
 .cd-lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .cd-num{font-family:Georgia,serif;font-size:110px;font-weight:700;line-height:1;color:var(--gold);margin:6px 0 14px;animation:pop .3s ease both}
 /* Chat */
@@ -1162,12 +1168,14 @@ function resolveHand(){
   var missing=list.length-known.length;
   var by={};list.forEach(function(x){by[x.id]=x;});
   var gr=guessResult(),orderOk=!bad&&!missing,guessOk=!gr||gr.hits===gr.of;
-  return {by:by,bad:bad,missing:missing,orderOk:orderOk,guessOk:guessOk,gr:gr,win:orderOk&&guessOk};
+  return {by:by,bad:bad,missing:missing,orderOk:orderOk,guessOk:guessOk,gr:gr,win:orderOk&&guessOk,part:orderOk&&!guessOk&&!!gr&&gr.hits>0};
 }
 /* Ergebnis-Kasten: gewonnen nur mit richtiger Reihenfolge UND komplett richtigem Tipp */
 function resultBox(res,gr){
   var g=gr?'Tipp '+gr.hits+' von '+gr.of:'';
   if(res.win)return '<div class="result win"><div class="big">\u2713 Alles richtig!</div><div>Reihenfolge getroffen'+(gr?' und Tipp komplett richtig':'')+'.</div></div>';
+  /* Reihenfolge richtig und mindestens eine Karte getroffen: zählt als „fast richtig“ (gut bewertet, aber ohne Feier) */
+  if(res.part)return '<div class="result part"><div class="big">\u25d0 Fast richtig!</div><div>Reihenfolge getroffen und '+gr.hits+' von '+gr.of+' Karten richtig getippt.</div></div>';
   if(res.orderOk)return '<div class="result lose"><div class="big">\u2717 Tipp daneben</div><div>Die Reihenfolge stimmt, aber der Tipp nicht ('+g+').</div></div>';
   return '<div class="result lose"><div class="big">\u2717 Nicht ganz</div><div>'+
     (res.bad?res.bad+' Spieler '+(res.bad===1?'liegt':'liegen')+' falsch':'')+
@@ -1503,6 +1511,7 @@ function fx(kind){
   else if(kind==='tap'){vib(8);}
   else if(kind==='card'){beep(587,0.08,0,0.12);vib([25,40,25]);}
   else if(kind==='win'){beep(523,0.1);beep(659,0.1,0.1);beep(784,0.1,0.2);beep(1047,0.3,0.3);vib([60,40,60,40,220]);}
+  else if(kind==='part'){beep(523,0.12);beep(659,0.22,0.12);vib([60,40,120]);}
   else if(kind==='lose'){beep(392,0.18);beep(311,0.35,0.18);vib(220);}
   else if(kind==='chat'){beep(1047,0.07,0,0.14);beep(1319,0.11,0.08,0.14);vib(40);}
 }
@@ -1913,7 +1922,7 @@ function spFinish(){
     sp.gr={hits:hits,of:g.length,marks:marks,cards:g,real:sp.hole[sp.target],target:sp.target};
   }
   var guessOk=!sp.gr||sp.gr.hits===sp.gr.of;
-  sp.res={by:by,bad:bad,missing:0,orderOk:!bad,guessOk:guessOk,win:!bad&&guessOk};
+  sp.res={by:by,bad:bad,missing:0,orderOk:!bad,guessOk:guessOk,win:!bad&&guessOk,part:!bad&&!guessOk&&sp.gr.hits>0};
   sp.phase='done';
   var sid=function(id){return id==='me'?uid:'bot:'+spPl(id).name;};
   sp.stats.push({hand:sp.hand,ts:Date.now(),win:sp.res.win,
@@ -1922,10 +1931,11 @@ function spFinish(){
     guess:sp.gr?{target:sid(sp.gr.target),hits:sp.gr.hits,of:sp.gr.of}:null});
   sp.stats=sp.stats.slice(-150);
   try{localStorage.setItem('kr.sp.stats',JSON.stringify(sp.stats));}catch(e){}
+  acctPushSp(sp.stats[sp.stats.length-1]);
   var u=spUsage();usageAdd(u,sp.stats[sp.stats.length-1],uid);var ks=Object.keys(u.d).sort();ks.slice(0,-400).forEach(function(k){delete u.d[k];});
   try{localStorage.setItem('kr.sp.usage',JSON.stringify(u));}catch(e){}
-  sp.players.forEach(function(p){if(p.bot&&Math.random()<0.5)botReact(p.id,sp.res.win?(Math.random()<0.5?0:4):[1,2,3][Math.floor(Math.random()*3)]);});
-  fx(sp.res.win?'win':'lose');
+  sp.players.forEach(function(p){if(p.bot&&Math.random()<0.5)botReact(p.id,sp.res.win?(Math.random()<0.5?0:4):sp.res.part?(Math.random()<0.5?0:3):[1,2,3][Math.floor(Math.random()*3)]);});
+  fx(sp.res.win?'win':sp.res.part?'part':'lose');
   render();
   if(sp.res.win)setTimeout(celebrate,350);
 }
@@ -1933,7 +1943,7 @@ function spFinish(){
 /* Darstellung – gleiche Bausteine wie im Mehrspieler-Raum */
 /* Ergebnis + großer „Neue Hand“-Knopf, klebt unten am Bildschirm */
 function endBar(res,action,wait){
-  var r=!res?'<span class="res">Hand fertig</span>':res.win?'<span class="res ok">\u2713 Alles richtig!</span>':
+  var r=!res?'<span class="res">Hand fertig</span>':res.win?'<span class="res ok">\u2713 Alles richtig!</span>':res.part?'<span class="res part">\u25d0 Fast richtig!</span>':
     res.orderOk?'<span class="res bad">\u2717 Tipp daneben</span>':'<span class="res bad">\u2717 Nicht ganz</span>';
   return '<div class="endbar">'+r+(action?'<button class="primary" data-a="'+action+'">Neue Hand \u25b6</button>':'<span class="note">'+esc(wait)+'</span>')+'</div>';
 }
@@ -2639,9 +2649,139 @@ function leave(){
   try{localStorage.removeItem('kr.room');}catch(e){}
   render();fetchRooms();
 }
-function upd(){ try{tick();}catch(e){console.error(e);} try{maybeRecord();}catch(e){console.error(e);} render(); }
+function upd(){ try{tick();}catch(e){console.error(e);} try{maybeRecord();}catch(e){console.error(e);} try{acctMaybeMp();}catch(e){console.error(e);} render(); }
 
 /* ---------- Statistik ---------- */
+/* ---------- Benutzerkonto (Name + Passwort, keine E-Mail): Statistik geräteübergreifend ---------- */
+var ACC=null,acctDlg=null,acctErr='',acctRec=null,acctStats=null,acctTab='sp',acctBusy=false,acctMpDone={};
+/* Im Browser liegt nur Name/ID fürs Anzeigen; die Anmeldung selbst steckt in einem HttpOnly-Cookie, an das kein Skript herankommt */
+try{ACC=JSON.parse(localStorage.getItem('kr.acct')||'null');if(!ACC||!ACC.id||ACC.token)ACC=null;}catch(e){ACC=null;}
+function acctSave(){try{if(ACC)localStorage.setItem('kr.acct',JSON.stringify(ACC));else localStorage.removeItem('kr.acct');}catch(e){}}
+function acctVal(id){var x=$(id);return x?x.value:'';}
+/* Eigene ID im Konto heißt „me“, im Browser uid */
+function toAcct(e){var c=JSON.parse(JSON.stringify(e));(c.players||[]).forEach(function(p){if(p.id===uid)p.id='me';});
+  if(c.guess&&c.guess.target===uid)c.guess.target='me';c.day=dayKey(c.ts);c.hr=new Date(c.ts).getHours();return c;}
+function fromAcct(e){var c=JSON.parse(JSON.stringify(e));(c.players||[]).forEach(function(p){if(p.id==='me')p.id=uid;});
+  if(c.guess&&c.guess.target==='me')c.guess.target=uid;return c;}
+function acctFail(e){
+  if(e&&e.status===401&&acctDlg!=='login'&&acctDlg!=='register'&&acctDlg!=='recover'&&!/falsch/.test(e.message||'')){
+    ACC=null;acctStats=null;acctSave();uiNote='Du wurdest abgemeldet (Passwort geändert oder vom Admin zurückgesetzt). Bitte neu anmelden.';
+  } else acctErr=(e&&e.message)||String(e);
+  acctBusy=false;render();
+}
+function acctAuth(kind){
+  if(acctBusy)return;
+  var name=acctVal('acc_name').trim(),pw=acctVal('acc_pw');acctErr='';
+  if(kind!=='login'&&pw!==acctVal('acc_pw2')){acctErr='Die Passwörter stimmen nicht überein.';render();return;}
+  var body={name:name,pw:pw};if(kind==='recover')body.recovery=acctVal('acc_rec');
+  acctBusy=true;render();
+  api('acct.'+kind,{},body,15000).then(function(r){
+    acctBusy=false;ACC={id:r.account.id,name:r.account.name,reset:r.account.reset};acctSave();
+    if(r.recovery){acctRec=r.recovery;acctDlg='rec';}else acctDlg='me';
+    if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
+    render();acctSync();
+  }).catch(acctFail);
+}
+/* Abgleich: Konto-Hände in den Browser holen, fehlende Browser-Hände ins Konto schicken */
+function acctSync(){
+  if(!ACC)return Promise.resolve();
+  return api('acct.me',{}).then(function(r){
+    ACC.name=r.account.name;ACC.reset=r.account.reset;acctSave();acctStats=r.stats;
+    var loc=[];try{loc=JSON.parse(localStorage.getItem('kr.sp.stats')||'[]');if(!Array.isArray(loc))loc=[];}catch(e){loc=[];}
+    var k=function(e){return num(e.ts)+'.'+num(e.hand);},have={},srv={};
+    loc.forEach(function(e){have[k(e)]=1;});(r.stats.sp||[]).forEach(function(e){srv[k(e)]=1;});
+    var up=loc.filter(function(e){return !srv[k(e)];}).map(toAcct),first=!(r.stats.sp||[]).length;
+    var merged=loc.concat((r.stats.sp||[]).filter(function(e){return !have[k(e)];}).map(fromAcct)).sort(function(a,b){return num(a.ts)-num(b.ts);}).slice(-150);
+    try{localStorage.setItem('kr.sp.stats',JSON.stringify(merged));}catch(e){}
+    if(sp)sp.stats=merged;
+    /* Nutzung: je Tag/Stunde das Maximum aus Browser und Konto */
+    var u=spUsage(),su=(r.stats.usage||{}).sp;
+    if(su&&su.d){for(var d in su.d){var a=u.d[d]||(u.d[d]=[0,0,0]);for(var i=0;i<3;i++)a[i]=Math.max(a[i],num(su.d[d][i])||0);}
+      for(var h=0;h<24;h++)u.h[h]=Math.max(u.h[h],num((su.h||[])[h])||0);try{localStorage.setItem('kr.sp.usage',JSON.stringify(u));}catch(e){}}
+    render();
+    if(!up.length)return;
+    var body={hands:up};if(first)body.usage=u;
+    return api('acct.sphands',{},body,15000).then(function(){(acctStats.sp=acctStats.sp||[]).push.apply(acctStats.sp,up);render();});
+  }).catch(function(e){if(e&&e.status===401)acctFail(e);});
+}
+function acctPushSp(e){
+  if(!ACC)return;var c=toAcct(e);
+  api('acct.sphands',{},{hands:[c]}).then(function(){if(acctStats)acctStats.sp.push(c);}).catch(function(){});   // offline: nächster Abgleich holt es nach
+}
+function acctMaybeMp(){
+  if(!ACC||!code||!joined||watching||phase()!=='done')return;
+  var h=hand(),k=code+'.'+h;
+  if(acctMpDone[k]||!(S.stats||[]).some(function(e){return num(e.hand)===h;}))return;
+  acctMpDone[k]=true;var now=Date.now();
+  api('acct.mphand',{},{room:code,hand:h,day:dayKey(now),hr:new Date(now).getHours()}).then(function(){acctStats=null;})
+    .catch(function(e){if(!e||e.status!==403)acctMpDone[k]=false;});
+}
+function acctOpen(){acctErr='';acctDlg=ACC?'me':'login';render();if(ACC)acctSync();}
+function acctLogout(){if(!ACC)return;api('acct.logout',{},{}).catch(function(){});ACC=null;acctStats=null;acctDlg=null;acctSave();render();}
+function acctPassword(){
+  if(acctBusy)return;var nw=acctVal('acc_new');
+  if(nw!==acctVal('acc_new2')){acctErr='Die neuen Passwörter stimmen nicht überein.';render();return;}
+  acctBusy=true;acctErr='';
+  api('acct.password',{},{old:acctVal('acc_old'),pw:nw},15000).then(function(r){acctBusy=false;ACC.reset=r.account.reset;acctSave();
+    acctErr='';showToast('Passwort geändert – andere Geräte sind abgemeldet');render();}).catch(acctFail);
+}
+function acctNewRec(){
+  if(acctBusy)return;acctBusy=true;acctErr='';
+  api('acct.newrecovery',{},{pw:acctVal('acc_pwc')},15000).then(function(r){acctBusy=false;acctRec=r.recovery;acctDlg='rec';render();}).catch(acctFail);
+}
+function acctDelete(){
+  if(acctBusy)return;
+  if(!confirm('Konto „'+ACC.name+'“ und seine Statistik endgültig löschen? Die Statistik im Browser bleibt.'))return;
+  acctBusy=true;acctErr='';
+  api('acct.delete',{},{pw:acctVal('acc_pwc')},15000).then(function(){acctBusy=false;ACC=null;acctStats=null;acctDlg=null;acctSave();showToast('Konto gelöscht');render();}).catch(acctFail);
+}
+function acctBar(){
+  return '<div class="acctbar">'+(ACC?'<span>👤 <b>'+esc(ACC.name)+'</b></span><button class="small ghost" data-a="acct">Konto &amp; Statistik</button>':
+    '<button class="small ghost" data-a="acct">👤 Anmelden / Konto erstellen</button><span class="muted small">Statistik auf allen Geräten</span>')+'</div>';
+}
+function acctField(id,lbl,type,val,ac){
+  return '<div class="field"><label class="lbl" for="'+id+'">'+lbl+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(val||'')+'"'+
+    (ac?' autocomplete="'+ac+'"':'')+(id==='acc_name'?' maxlength="18" autocapitalize="off" spellcheck="false"':'')+(id==='acc_rec'?' autocapitalize="characters" spellcheck="false"':'')+'></div>';
+}
+function acctDialog(){
+  if(!acctDlg)return '';
+  var m=acctDlg,b='',busy=acctBusy?' disabled':'';
+  var close='<button class="small ghost" data-a="acctclose" aria-label="Schließen">✕</button>';
+  var head=function(t){return '<div class="spread"><h2 id="accth">'+t+'</h2>'+close+'</div>';};
+  var err=acctErr?'<p class="err">'+esc(acctErr)+'</p>':'';
+  if(m==='login')b=head('👤 Anmelden')+'<form class="accf" data-f="login" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_pw','Passwort','password','','current-password')+err+
+    '<div class="bar"><button class="primary" data-a="acctlogin"'+busy+'>'+(acctBusy?'…':'Anmelden')+'</button></div></form>'+
+    '<p class="note"><a href="#" data-a="acctmode" data-m="register">Neues Konto erstellen</a> · <a href="#" data-a="acctmode" data-m="recover">Passwort vergessen?</a></p>';
+  else if(m==='register')b=head('👤 Konto erstellen')+'<p class="note">Ohne E-Mail: nur Name und Passwort. Deine Statistik aus Übungsraum und Räumen liegt dann im Konto und ist auf jedem Gerät da, auf dem du dich anmeldest. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.</p>'+
+    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name (2–18 Zeichen, sieht niemand außer dir und dem Admin)','text',myName,'username')+acctField('acc_pw','Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Passwort wiederholen','password','','new-password')+err+
+    '<div class="bar"><button class="primary" data-a="acctreg"'+busy+'>'+(acctBusy?'…':'Konto erstellen')+'</button></div></form>'+
+    '<p class="note"><a href="#" data-a="acctmode" data-m="login">Ich habe schon ein Konto</a></p>';
+  else if(m==='recover')b=head('🔑 Passwort vergessen')+'<p class="note">Mit dem Wiederherstellungscode, den du beim Erstellen bekommen hast, setzt du ein neues Passwort. Ohne Code: Admin fragen, der kann das Passwort zurücksetzen.</p>'+
+    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_rec','Wiederherstellungscode','text','','off')+acctField('acc_pw','Neues Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Neues Passwort wiederholen','password','','new-password')+err+
+    '<div class="bar"><button class="primary" data-a="acctrecover"'+busy+'>'+(acctBusy?'…':'Neues Passwort setzen')+'</button></div></form>'+
+    '<p class="note"><a href="#" data-a="acctmode" data-m="login">Zurück zum Anmelden</a></p>';
+  else if(m==='rec')b='<h2 id="accth">🔑 Dein Wiederherstellungscode</h2><p>Schreib ihn dir auf oder speichere ihn im Passwort-Manager. Er wird <b>nur jetzt</b> angezeigt und gilt einmal; danach bekommst du einen neuen.</p>'+
+    '<p class="reccode">'+esc(acctRec||'')+'</p><div class="bar"><button data-a="acctcopy">Kopieren</button><button class="primary" data-a="acctrecok">Notiert ✓</button></div>';
+  else if(m==='me'){
+    var st=acctStats,list=st?(acctTab==='sp'?st.sp:st.mp).map(fromAcct):null,us=st&&st.usage?st.usage[acctTab]:null;
+    b=head('👤 '+esc(ACC?ACC.name:''))+
+      (ACC&&ACC.reset?'<p class="info">Dein Passwort wurde vom Admin zurückgesetzt – bitte unten ein eigenes setzen.</p>':'')+
+      '<div class="row acctabs"><button class="small'+(acctTab==='sp'?' primary':' ghost')+'" data-a="accttab" data-t="sp">Übungsraum</button>'+
+      '<button class="small'+(acctTab==='mp'?' primary':' ghost')+'" data-a="accttab" data-t="mp">Räume</button></div>'+
+      (!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Übungsraum':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':
+        statsPanel(list,us&&us.d?{d:us.d,h:us.h}:null,true))+
+      '<details class="acctmgr"><summary>⚙️ Konto verwalten</summary>'+err+
+      '<form class="accf" onsubmit="return false"><h3>Passwort ändern</h3>'+(ACC&&ACC.reset?'':acctField('acc_old','Altes Passwort','password','','current-password'))+
+        (ACC&&ACC.reset?acctField('acc_old','Einmal-Passwort vom Admin','password','','current-password'):'')+
+        acctField('acc_new','Neues Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_new2','Neues Passwort wiederholen','password','','new-password')+
+        '<div class="bar"><button data-a="acctpw"'+busy+'>Passwort ändern</button></div></form>'+
+      '<form class="accf" onsubmit="return false"><h3>Wiederherstellungscode / Konto löschen</h3>'+acctField('acc_pwc','Passwort zur Bestätigung','password','','current-password')+
+        '<div class="bar"><button data-a="acctnewrec"'+busy+'>Neuen Code erzeugen</button><button class="ghost danger" data-a="acctdel"'+busy+'>Konto löschen</button></div></form>'+
+      '</details><div class="bar"><button class="ghost" data-a="acctlogout">Abmelden</button></div>';
+  }
+  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="accth"><div class="cd-box vbox acctbox">'+b+'</div></div>';
+}
+
 var statsOpen=false,recorded={};
 /* Fertige Hand an den Server melden (jeder Spieler; der Server nimmt nur die erste Meldung je Hand) */
 function maybeRecord(){
@@ -2661,12 +2801,14 @@ function roundHits(lo,hi,chipIn){
   var out=[];for(var r=1;r<=4;r++){var c=chipIn(r);out.push(c==null||lo==null?null:(c>=lo&&c<=hi));}
   return out;
 }
+function isPart(e){return !e.win&&e.players.every(function(p){return p.ok;})&&!!e.guess&&num(e.guess.hits)>0;}
 function calcStats(list){
-  var o={hands:0,wins:0,streak:0,best:0,hits:0,of:0,perfect:0,guesses:0,pl:{}},run=0;
+  var o={hands:0,wins:0,part:0,streak:0,best:0,hits:0,of:0,perfect:0,guesses:0,pl:{}},run=0;
   (list||[]).forEach(function(e){
     if(!e||!Array.isArray(e.players))return;
     o.hands++;
-    if(e.win){o.wins++;run++;if(run>o.best)o.best=run;}else run=0;
+    /* „Fast richtig“ (Reihenfolge ok, Tipp teilweise) zählt halb und unterbricht die Serie nicht */
+    if(e.win){o.wins++;run++;if(run>o.best)o.best=run;}else if(isPart(e))o.part++;else run=0;
     if(e.guess&&num(e.guess.of)){o.guesses++;o.hits+=num(e.guess.hits)||0;o.of+=num(e.guess.of);if(num(e.guess.hits)===num(e.guess.of))o.perfect++;}
     e.players.forEach(function(p){
       var id=String(p.id||'');if(!id)return;
@@ -2682,7 +2824,7 @@ function calcStats(list){
 function pct(a,b){return b?Math.round(a*100/b)+' %':'\u2013';}
 function statsLine(list){
   var st=calcStats(list||S.stats);if(!st.hands)return '';
-  return '<p class="note statsline">📊 '+st.wins+' von '+st.hands+' Händen richtig ('+pct(st.wins,st.hands)+')'+
+  return '<p class="note statsline">📊 '+st.wins+' von '+st.hands+' Händen richtig ('+pct(st.wins,st.hands)+')'+(st.part?', '+st.part+' fast':'')+
     (st.streak>1?' \u00b7 Serie: '+st.streak+' \u2713':'')+' \u00b7 <a href="#" data-a="stats">Statistik</a></p>';
 }
 /* Grafik-Bausteine der Statistik: Ring (Anteil), Balken, Verlauf – Zahlen gibt es ausklappbar darunter */
@@ -2697,24 +2839,24 @@ function hbar(f,col){return '<span class="hbar"><i style="width:'+Math.round((f|
 function trendSvg(list){
   if(list.length<6)return '';
   var pts=[],w=5;
-  for(var i=w-1;i<list.length;i++){var k=0;for(var j=i-w+1;j<=i;j++)if(list[j].win)k++;pts.push(k/w);}
+  for(var i=w-1;i<list.length;i++){var k=0;for(var j=i-w+1;j<=i;j++)k+=list[j].win?1:isPart(list[j])?0.5:0;pts.push(k/w);}
   var n=pts.length,xy=pts.map(function(v,i){return (n>1?i*100/(n-1):50).toFixed(1)+','+(28-v*26).toFixed(1);}).join(' ');
-  return '<div class="sthead">Formkurve <small>(Anteil richtig, je 5 Hände)</small></div>'+
+  return '<div class="sthead">Formkurve <small>(je 5 Hände; fast richtig zählt halb)</small></div>'+
     '<svg class="trend" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="15" x2="100" y2="15" class="tmid"/>'+
     '<polyline points="0,30 '+xy+' 100,30" class="tarea"/><polyline points="'+xy+'" class="tline"/></svg>';
 }
-function statsPanel(list,usage){
+function statsPanel(list,usage,bare){
   list=list||S.stats;
   var st=calcStats(list);
-  var out='<div class="panel stats"><div class="spread"><h2>📊 Statistik</h2><button class="small ghost" data-a="stats">Schließen</button></div>';
+  var out=bare?'<div class="stats">':'<div class="panel stats"><div class="spread"><h2>📊 Statistik</h2><button class="small ghost" data-a="stats">Schließen</button></div>';
   if(!st.hands)return out+'<p class="note">Noch keine fertige Hand in diesem Raum.</p></div>';
-  out+='<div class="rings">'+ringSvg(st.wins,st.hands,st.wins+' von '+st.hands+' richtig')+
+  out+='<div class="rings">'+ringSvg(st.wins,st.hands,st.wins+' von '+st.hands+' richtig'+(st.part?'<br>+ '+st.part+' fast richtig':''))+
     (st.guesses?ringSvg(st.hits,st.of,'Tipp-Treffer','var(--gold)'):'')+
     '<div class="streak"><div class="fire">'+(st.streak>1?'🔥':'✨')+'<b>'+st.streak+'</b></div><div class="rl">in Folge richtig</div>'+
       '<div class="rl">Rekord: <b>'+st.best+'</b></div></div></div>';
   var last=list.slice(-20);
   out+='<div class="sthead">Letzte Hände <small>(neueste rechts)</small></div><div class="strip">'+
-    last.map(function(e){return '<span class="'+(e.win?'ok':'bad')+'" title="Hand '+num(e.hand)+': '+(e.win?'richtig':'daneben')+'"></span>';}).join('')+'</div>';
+    last.map(function(e){var pt=isPart(e);return '<span class="'+(e.win?'ok':pt?'part':'bad')+'" title="Hand '+num(e.hand)+': '+(e.win?'richtig':pt?'fast richtig (Tipp '+num(e.guess.hits)+'/'+num(e.guess.of)+')':'daneben')+'"></span>';}).join('')+'</div>';
   out+=trendSvg(list);
   var rows=Object.keys(st.pl).map(function(k){return st.pl[k];}).sort(function(a,b){return (b.ok/b.n)-(a.ok/a.n)||b.n-a.n;});
   var me=st.pl[uid];
@@ -2724,7 +2866,7 @@ function statsPanel(list,usage){
   out+='<div class="sthead">Richtig platziert</div><div class="plbars">'+rows.map(function(x){
     return '<div class="plb'+(x.id===uid?' mine':'')+'"><span class="nm">'+esc(x.name)+'</span>'+hbar(x.ok/x.n)+'<span class="pv">'+pct(x.ok,x.n)+'</span></div>';}).join('')+'</div>';
   var tile=function(v,l){return '<div class="tile"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';};
-  out+='<details class="stmath"><summary>🔢 Zahlen &amp; Tabelle</summary><div class="tiles">'+tile(st.hands,'Hände')+tile(st.wins,'richtig')+tile(pct(st.wins,st.hands),'Quote')+
+  out+='<details class="stmath"><summary>🔢 Zahlen &amp; Tabelle</summary><div class="tiles">'+tile(st.hands,'Hände')+tile(st.wins,'richtig')+tile(pct(st.wins,st.hands),'Quote')+(st.part?tile(st.part,'fast richtig'):'')+
     tile(st.streak,'aktuelle Serie')+tile(st.best,'beste Serie')+
     (st.guesses?tile(pct(st.hits,st.of),'Tipp-Treffer')+tile(st.perfect+'/'+st.guesses,'Tipps komplett'):'')+'</div>'+
     '<div class="stwrap"><table class="stbl"><thead><tr><th>Spieler</th><th>Hände</th><th>richtig platziert</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+(st.guesses?'<th>getippt (komplett)</th>':'')+'</tr></thead><tbody>'+
@@ -2827,14 +2969,14 @@ function render(){
   el.className='wrap'+(code||sp?' inroom':'')+(code&&watching?' watching':'');
   try{document.title=(sp?'Singleplayer – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
-  ['name','code','rname','sname','stime'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
+  ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
   /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
   var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
   ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
-  el.innerHTML = sp?spView():code?roomView():startView();
+  el.innerHTML = sp?spView():code?roomView():startView()+acctDialog();
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
@@ -2849,7 +2991,7 @@ function startView(){
     offlineBanner()+(inviteCode?inviteHint():'')+
     '<div class="hr"></div>'+
     '<div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
-      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+
+      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+acctBar()+
     '<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Raumname (optional)</label>'+
       '<input id="rname" maxlength="30" placeholder="z.B. Freitagsrunde"></div>'+
       '<button class="primary" data-a="create">Raum erstellen</button></div>'+
@@ -3102,7 +3244,7 @@ function revealPanel(){
     var res=resolveHand(),gr=guessResult();
     if(res){
       out+=resultBox(res,gr);
-      if(endArm===code+'.'+hand()){endArm=null;fx(res.win?'win':'lose');if(res.win)setTimeout(celebrate,350);}
+      if(endArm===code+'.'+hand()){endArm=null;fx(res.win?'win':res.part?'part':'lose');if(res.win)setTimeout(celebrate,350);}
     }else out+='<p class="note">Auswertung läuft \u2026</p>';
     if(gr){
       out+='<p style="margin-top:10px">Tipp auf '+esc(pname(gr.target))+': <b>'+gr.hits+' von '+gr.of+' Karten richtig</b>'+
@@ -3230,6 +3372,19 @@ document.addEventListener('click',function(ev){
   else if(a==='vinfo'){voiceDlg='info';render();}
   else if(a==='vrevoke')voiceRevoke();
   else if(a==='reload'){try{location.reload();}catch(e){}}
+  else if(a==='acct')acctOpen();
+  else if(a==='acctclose'){acctDlg=null;acctErr='';render();}
+  else if(a==='acctmode'){ev.preventDefault&&ev.preventDefault();acctErr='';acctDlg=el.getAttribute('data-m');render();}
+  else if(a==='acctlogin')acctAuth('login');
+  else if(a==='acctreg')acctAuth('register');
+  else if(a==='acctrecover')acctAuth('recover');
+  else if(a==='acctrecok'){acctRec=null;acctDlg='me';render();}
+  else if(a==='acctcopy'){try{navigator.clipboard.writeText(acctRec||'').then(function(){showToast('Kopiert');});}catch(e){}}
+  else if(a==='accttab'){acctTab=el.getAttribute('data-t')==='mp'?'mp':'sp';render();}
+  else if(a==='acctpw')acctPassword();
+  else if(a==='acctnewrec')acctNewRec();
+  else if(a==='acctdel')acctDelete();
+  else if(a==='acctlogout')acctLogout();
   else if(a==='sp')spStart();
   else if(a==='spnext')spNewHand();
   else if(a==='spbots')spSetBots(el.getAttribute('data-n'));
@@ -3252,6 +3407,9 @@ document.addEventListener('keydown',function(ev){
   else if(ev.target.id==='code'&&!code){ev.preventDefault();joinRoom();}
   else if(ev.target.getAttribute&&ev.target.getAttribute('data-a')==='reload'){ev.preventDefault();try{location.reload();}catch(e){}}
   else if(ev.target.id==='rname'&&!code){ev.preventDefault();createRoom();}
+  else if(/^acc_/.test(ev.target.id)&&acctDlg){ev.preventDefault();var mm={login:'acctlogin',register:'acctreg',recover:'acctrecover'}[acctDlg];
+    if(mm)acctAuth({acctlogin:'login',acctreg:'register',acctrecover:'recover'}[mm]);
+    else if(/^acc_(old|new|new2)$/.test(ev.target.id))acctPassword();}
 });
 document.addEventListener('change',function(ev){
   var el=ev.target;
@@ -3297,6 +3455,7 @@ if(window.addEventListener){
     loadKeys().then(function(){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
+      acctSync();
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else rejoin();
       if(inviteCode&&myName){var ci=$('code');if(ci)ci.value=inviteCode;}

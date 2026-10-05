@@ -6,7 +6,8 @@
  *   GET  /api?a=state|get|config|info
  *   GET  /r/CODE                    -> Einladung mit Vorschau (WhatsApp & Co.), leitet auf /#CODE weiter
  *   POST /api?a=create|set|del|chip|rename|record|addbot|replacebot|sphand|voice|signal|signals|react|botify
- *   POST /admin-api?a=login|config|rooms|delroom   (Header x-admin-secret)
+ *   POST /api?a=acct.*                 -> Benutzerkonten (accounts.js)
+ *   POST /admin-api?a=login|config|rooms|delroom|accounts|acctreset|acctdel   (Header x-admin-secret)
  *   WS   /ws?room=CODE              -> Push bei jeder Änderung
  *
  * Räume liegen als JSON-Datei in ./data/. Kein Build, keine Datenbank.
@@ -687,6 +688,7 @@ setInterval(guard(() => {                 // Keepalive gegen Proxy-Timeouts; stu
 
 /* ------------------------------------------------ Bots ------------------- */
 const bots = require('./bots')({ rooms, commit, chipMove });
+const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
 setInterval(guard(bots.tick, 'Bots'), 300).unref();
 /* Hängt die Ereignisschleife (lange Rechnung, z. B. Bots), merken es alle Spieler*innen sofort → protokollieren */
 let lagAt = Date.now(), lagWarnAt = 0;
@@ -803,6 +805,7 @@ async function api(req, res, u) {
     countSpHand(clientIp(req), Math.min(20, Math.max(1, parseInt(body.n, 10) || 1)));
     return json(res, 200, { ok: true });
   }
+  if (a.indexOf('acct.') === 0) { if (!(await accounts.handle(a, req, res, u))) json(res, 400, { error: 'Unbekannte Aktion' }); return; }
 
   const code = (u.searchParams.get('room') || '').toUpperCase();
   const p = u.searchParams.get('path') || '';
@@ -1161,6 +1164,7 @@ async function adminApi(req, res, u) {
     }
     return json(res, 200, { ok: true, deleted: n });
   }
+  if (await accounts.admin(a, req, res)) return;
   return json(res, 400, { error: 'Unbekannte Aktion' });
 }
 
@@ -1231,7 +1235,7 @@ function handleReq(req, res) {
     if (isAdmin || isApi) {
       noteIpSource(req);
       const a = u.searchParams.get('a') || '';
-      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : 1;
+      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : /^acct\.(login|register|recover|password|newrecovery|delete)$/.test(a) ? 5 : 1;
       if (!rateOk(clientIp(req), cost)) {
         res.setHeader('Retry-After', '5');
         return json(res, 429, { error: 'Zu viele Anfragen – bitte kurz warten' });

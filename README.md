@@ -16,7 +16,8 @@ Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Ha
 - **Hausregeln** – eine Kombination zählt nur, wenn die eigenen Karten sie verbessern (ein Paar nur auf dem Tisch zählt nicht); Flush und Straße nach der eigenen höchsten Karte benannt
 - **Bots** – Singleplayer allein gegen 2–5 Bots (läuft komplett im Browser, auch **offline**) und Bots zum Auffüllen echter Räume. Bots schätzen ihre Hand per Monte-Carlo-Simulation, verhandeln um Chips und merken sich Absprachen über die Runden
 - **Lernmodus** im Singleplayer – zeigt, was die eigene Hand wert ist, welcher Chip passt und nach der Hand, warum etwas anders gehört
-- **Statistik** – Quote, Serien, Tipp-Treffer, Treffsicherheit je Runde; ausklappbar „Nutzung & Erfolgsrate“: Spieltage, Hände nach Wochentag und Tageszeit, Anteil richtiger Reihenfolge und richtiger eigener Hand je Tag
+- **Statistik** – Quote, Serien, „fast richtig“ (Reihenfolge stimmt, Tipp teilweise getroffen – zählt halb, ohne Feier-Animation), Tipp-Treffer, Treffsicherheit je Runde; ausklappbar „Nutzung & Erfolgsrate“: Spieltage, Hände nach Wochentag und Tageszeit, Anteil richtiger Reihenfolge und richtiger eigener Hand je Tag
+- **Konten (freiwillig)** – nur Name + Passwort, keine E-Mail; Statistik aus Übungsraum und Räumen liegt im Konto und ist auf jedem Gerät da. Passwort vergessen: einmaliger Wiederherstellungscode (bei der Registrierung angezeigt) oder Zurücksetzen durch Admins
 - **Extras** – Chat mit Ton, schnelle Reaktionen (👍 😂 😬 🤔 🔥), optionaler Voice-Chat (WebRTC, direkt zwischen den Geräten, mit Einwilligung), Hell/Dunkel, Querformat-Layout für Tablets
 
 ## Fair und sicher
@@ -39,6 +40,7 @@ node server.js            # http://localhost:3000
 |---|---|
 | `PORT` | Port (Standard 3000) |
 | `ADMIN_SECRET` | Passwort für `/admin.html`; ohne Angabe wird eines erzeugt und in `app/data/admin-secret.txt` abgelegt |
+| `KR_ACCT_SECRET` | Geheimnis (mind. 32 Zeichen) für Passwort-Pepper und Verschlüsselung der Konten; ohne Angabe wird eines in `app/data/account-secret.txt` erzeugt. **Sichern** – ohne dieses Geheimnis sind alle Konten unlesbar |
 | `KR_MEM_MB` | Speichergrenze in MB, ab der keine neuen Räume angenommen werden (Standard 350) |
 
 Einstellungen wie Spielerzahl, Handkarten, Tipp und Voice-Chat stehen im Admin-Bereich (`/admin.html`).
@@ -51,6 +53,7 @@ Einstellungen wie Spielerzahl, Handkarten, Tipp und Voice-Chat stehen im Admin-B
 app/
   server.js        HTTP + WebSocket, Räume als JSON-Dateien, Rechteprüfung, Grenzen
   bots.js          Bots im Mehrspieler-Raum (serverseitig)
+  accounts.js      Benutzerkonten (scrypt-Passwörter, Wiederherstellungscode, Statistik je Konto)
   public/
     index.html     das komplette Spiel (UI, Protokoll, Singleplayer, Lernmodus)
     hand.js        Handbewertung + Monte-Carlo – gemeinsam für Browser und Server

@@ -72,11 +72,12 @@ function login(s){
   return call('login').then(function(r){
     cfg=r.config;defs=r.defaults;
     try{sessionStorage.setItem('kr.admin',s);}catch(e){}
-    err='';return rooms();
+    err='';return rooms().then(accounts);
   });
 }
-var roomList=[];
+var roomList=[],acctList=[],acctPw=null;
 function rooms(){return call('rooms').then(function(r){roomList=r.rooms||[];render();});}
+function accounts(){return call('accounts').then(function(r){acctList=r.accounts||[];render();});}
 
 function render(){
   var el=$('app');
@@ -126,7 +127,17 @@ function render(){
       (rows?'<table><thead><tr><th>Code / Name</th><th>Spieler</th><th>online</th><th>Phase</th><th>Hand</th><th>zuletzt</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
            :'<p class="note">Keine Räume.</p>')+
       '<div class="bar"><button class="small" id="refresh">Aktualisieren</button>'+
-      '<button class="small danger" id="delall">Alle Räume löschen</button></div></div>';
+      '<button class="small danger" id="delall">Alle Räume löschen</button></div></div>'+
+    '<div class="panel"><h2>Konten ('+acctList.length+')</h2>'+
+      '<p class="note">Name + Passwort, keine E-Mail. „Passwort zurücksetzen“ erzeugt ein Einmal-Passwort, das du der Person gibst; sie wird überall abgemeldet und soll danach ein eigenes setzen.</p>'+
+      (acctPw?'<p class="ok">Einmal-Passwort für <b>'+esc(acctPw.name)+'</b>: <code>'+esc(acctPw.pw)+'</code> (wird nur jetzt angezeigt)</p>':'')+
+      (acctList.length?'<table><thead><tr><th>Name</th><th>Hände Übung / Räume</th><th>Geräte</th><th>erstellt</th><th>zuletzt</th><th></th></tr></thead><tbody>'+
+        acctList.map(function(a){var d=function(t){return t?new Date(t).toLocaleDateString('de-DE'):'';};
+          return '<tr><td>'+esc(a.name)+(a.reset?'<br><span class="note">zurückgesetzt</span>':'')+'</td><td>'+esc(a.hands.sp)+' / '+esc(a.hands.mp)+'</td><td>'+esc(a.sessions)+'</td>'+
+            '<td class="note">'+d(a.created)+'</td><td class="note">'+d(a.seen)+'</td>'+
+            '<td><button class="small" data-areset="'+esc(a.id)+'" data-n="'+esc(a.name)+'">Passwort zurücksetzen</button> '+
+            '<button class="small danger" data-adel="'+esc(a.id)+'" data-n="'+esc(a.name)+'">löschen</button></td></tr>';}).join('')+'</tbody></table>'
+        :'<p class="note">Noch keine Konten.</p>')+'</div>';
 
   $('save').onclick=function(){
     var body={};
@@ -140,11 +151,24 @@ function render(){
     if(!defs)return;
     call('config',defs).then(function(r){cfg=r.config;msg='Auf Standard zurückgesetzt.';err='';render();}).catch(function(e){err=e.message;render();});
   };
-  $('refresh').onclick=function(){rooms().catch(function(e){err=e.message;render();});};
+  $('refresh').onclick=function(){rooms().then(accounts).catch(function(e){err=e.message;render();});};
   $('delall').onclick=function(){
     if(!confirm('Wirklich alle Räume löschen? Laufende Spiele werden beendet.'))return;
     call('delroom',{all:true}).then(rooms).catch(function(e){err=e.message;render();});
   };
+  Array.prototype.forEach.call(el.querySelectorAll('[data-areset]'),function(b){
+    b.onclick=function(){
+      var n=b.getAttribute('data-n');
+      if(!confirm('Passwort von „'+n+'“ zurücksetzen? Alle Geräte werden abgemeldet.'))return;
+      call('acctreset',{id:b.getAttribute('data-areset')}).then(function(r){acctPw={name:n,pw:r.password};return accounts();}).catch(function(e){err=e.message;render();});
+    };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-adel]'),function(b){
+    b.onclick=function(){
+      if(!confirm('Konto „'+b.getAttribute('data-n')+'“ samt Statistik endgültig löschen?'))return;
+      call('acctdel',{id:b.getAttribute('data-adel')}).then(accounts).catch(function(e){err=e.message;render();});
+    };
+  });
   Array.prototype.forEach.call(el.querySelectorAll('[data-del]'),function(b){
     b.onclick=function(){
       var c=b.getAttribute('data-del');
