@@ -335,8 +335,12 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
 .cd-box{background:var(--panel);border:2px solid var(--gold);border-radius:20px;padding:20px 30px 22px;text-align:center;
   box-shadow:0 12px 40px rgba(0,0,0,.4);min-width:220px}
 .acctbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.acctbar .small{font-size:13px}
-.acctbox{max-width:620px;width:100%;max-height:calc(100vh - 32px);overflow:auto}.acctbox .field{margin:8px 0}.acctbox input{width:100%;box-sizing:border-box}
-.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px}.acctmgr{margin-top:14px}
+.acctbox{max-width:620px;width:100%;box-sizing:border-box;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 18px 18px}
+.cd-overlay:has(.acctbox){padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.acctbox .field{margin:8px 0}.acctbox input{width:100%;box-sizing:border-box}
+.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}.lbctl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0}
+.stbl.lb td,.stbl.lb th{padding:4px 5px;white-space:nowrap}@media (max-width:420px){.stbl.lb .lbs{display:none}.stbl.lb td,.stbl.lb th{padding:4px 3px;font-size:13px}}.frrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;flex-wrap:wrap}
+.frcode{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;text-align:left}.reccode.sm{font-size:18px;padding:6px 10px;display:inline-block}.acctbox{text-align:left}.acctbox .rings,.acctbox .sthead{text-align:center}.acctmgr{margin-top:14px}
 .reccode{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(14px,4.4vw,22px);white-space:nowrap;letter-spacing:.04em;text-align:center;padding:12px 6px;border:2px dashed var(--gold);border-radius:12px;user-select:all;word-break:break-all}
 .cd-lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .cd-num{font-family:Georgia,serif;font-size:110px;font-weight:700;line-height:1;color:var(--gold);margin:6px 0 14px;animation:pop .3s ease both}
@@ -2678,6 +2682,7 @@ function acctAuth(kind){
   api('acct.'+kind,{},body,15000).then(function(r){
     acctBusy=false;ACC={id:r.account.id,name:r.account.name,reset:r.account.reset};acctSave();
     if(r.recovery){acctRec=r.recovery;acctDlg='rec';}else acctDlg='me';
+    if(frCode){acctTab='fr';frLoad();}
     if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
     render();acctSync();
   }).catch(acctFail);
@@ -2687,6 +2692,7 @@ function acctSync(){
   if(!ACC)return Promise.resolve();
   return api('acct.me',{}).then(function(r){
     ACC.name=r.account.name;ACC.reset=r.account.reset;acctSave();acctStats=r.stats;
+    if(!acctFr)api('acct.friends',{}).then(function(f){acctFr=f;render();}).catch(function(){});
     var loc=[];try{loc=JSON.parse(localStorage.getItem('kr.sp.stats')||'[]');if(!Array.isArray(loc))loc=[];}catch(e){loc=[];}
     var k=function(e){return num(e.ts)+'.'+num(e.hand);},have={},srv={};
     loc.forEach(function(e){have[k(e)]=1;});(r.stats.sp||[]).forEach(function(e){srv[k(e)]=1;});
@@ -2736,7 +2742,7 @@ function acctDelete(){
   api('acct.delete',{},{pw:acctVal('acc_pwc')},15000).then(function(){acctBusy=false;ACC=null;acctStats=null;acctDlg=null;acctSave();showToast('Konto gelöscht');render();}).catch(acctFail);
 }
 function acctBar(){
-  return '<div class="acctbar">'+(ACC?'<span>👤 <b>'+esc(ACC.name)+'</b></span><button class="small ghost" data-a="acct">Konto &amp; Statistik</button>':
+  return '<div class="acctbar">'+(ACC?'<span>👤 <b>'+esc(ACC.name)+'</b></span><button class="small ghost" data-a="acct">Konto &amp; Statistik</button>'+(acctFr&&acctFr.incoming.length?'<button class="small primary" data-a="acctfr">📨 '+acctFr.incoming.length+' Freundschaftsanfrage'+(acctFr.incoming.length>1?'n':'')+'</button>':''):
     '<button class="small ghost" data-a="acct">👤 Anmelden / Konto erstellen</button><span class="muted small">Statistik auf allen Geräten</span>')+'</div>';
 }
 function acctField(id,lbl,type,val,ac){
@@ -2753,7 +2759,7 @@ function acctDialog(){
     '<div class="bar"><button class="primary" data-a="acctlogin"'+busy+'>'+(acctBusy?'…':'Anmelden')+'</button></div></form>'+
     '<p class="note"><a href="#" data-a="acctmode" data-m="register">Neues Konto erstellen</a> · <a href="#" data-a="acctmode" data-m="recover">Passwort vergessen?</a></p>';
   else if(m==='register')b=head('👤 Konto erstellen')+'<p class="note">Ohne E-Mail: nur Name und Passwort. Deine Statistik aus Übungsraum und Räumen liegt dann im Konto und ist auf jedem Gerät da, auf dem du dich anmeldest. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.</p>'+
-    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name (2–18 Zeichen, sieht niemand außer dir und dem Admin)','text',myName,'username')+acctField('acc_pw','Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Passwort wiederholen','password','','new-password')+err+
+    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name (2–18 Zeichen; sehen nur du, deine Freunde und der Admin)','text',myName,'username')+acctField('acc_pw','Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Passwort wiederholen','password','','new-password')+err+
     '<div class="bar"><button class="primary" data-a="acctreg"'+busy+'>'+(acctBusy?'…':'Konto erstellen')+'</button></div></form>'+
     '<p class="note"><a href="#" data-a="acctmode" data-m="login">Ich habe schon ein Konto</a></p>';
   else if(m==='recover')b=head('🔑 Passwort vergessen')+'<p class="note">Mit dem Wiederherstellungscode, den du beim Erstellen bekommen hast, setzt du ein neues Passwort. Ohne Code: Admin fragen, der kann das Passwort zurücksetzen.</p>'+
@@ -2763,12 +2769,13 @@ function acctDialog(){
   else if(m==='rec')b='<h2 id="accth">🔑 Dein Wiederherstellungscode</h2><p>Schreib ihn dir auf oder speichere ihn im Passwort-Manager. Er wird <b>nur jetzt</b> angezeigt und gilt einmal; danach bekommst du einen neuen.</p>'+
     '<p class="reccode">'+esc(acctRec||'')+'</p><div class="bar"><button data-a="acctcopy">Kopieren</button><button class="primary" data-a="acctrecok">Notiert ✓</button></div>';
   else if(m==='me'){
-    var st=acctStats,list=st?(acctTab==='sp'?st.sp:st.mp).map(fromAcct):null,us=st&&st.usage?st.usage[acctTab]:null;
+    var st=acctStats,list=st&&acctTab!=='fr'?(acctTab==='sp'?st.sp:st.mp).map(fromAcct):null,us=st&&st.usage&&acctTab!=='fr'?st.usage[acctTab]:null;
     b=head('👤 '+esc(ACC?ACC.name:''))+
       (ACC&&ACC.reset?'<p class="info">Dein Passwort wurde vom Admin zurückgesetzt – bitte unten ein eigenes setzen.</p>':'')+
       '<div class="row acctabs"><button class="small'+(acctTab==='sp'?' primary':' ghost')+'" data-a="accttab" data-t="sp">Übungsraum</button>'+
-      '<button class="small'+(acctTab==='mp'?' primary':' ghost')+'" data-a="accttab" data-t="mp">Räume</button></div>'+
-      (!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Übungsraum':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':
+      '<button class="small'+(acctTab==='mp'?' primary':' ghost')+'" data-a="accttab" data-t="mp">Räume</button>'+
+      '<button class="small'+(acctTab==='fr'?' primary':' ghost')+'" data-a="accttab" data-t="fr">🏆 Freunde'+(acctFr&&acctFr.incoming.length?' <span class="badge">'+acctFr.incoming.length+'</span>':'')+'</button></div>'+
+      (acctTab==='fr'?friendsHtml():!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Übungsraum':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':
         statsPanel(list,us&&us.d?{d:us.d,h:us.h}:null,true))+
       '<details class="acctmgr"><summary>⚙️ Konto verwalten</summary>'+err+
       '<form class="accf" onsubmit="return false"><h3>Passwort ändern</h3>'+(ACC&&ACC.reset?'':acctField('acc_old','Altes Passwort','password','','current-password'))+
@@ -2780,6 +2787,62 @@ function acctDialog(){
       '</details><div class="bar"><button class="ghost" data-a="acctlogout">Abmelden</button></div>';
   }
   return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="accth"><div class="cd-box vbox acctbox">'+b+'</div></div>';
+}
+
+/* ---------- Freunde + Bestenliste ---------- */
+var acctFr=null,acctLb=null,lbMode='both',lbRange='all',frCode='';
+try{var _fm=/[?&]freund=([A-Za-z0-9-]{8,9})/.exec(location.search||'');if(_fm)frCode=_fm[1].toUpperCase();}catch(e){}
+function frLoad(){
+  if(!ACC)return;
+  api('acct.friends',{}).then(function(r){acctFr=r;render();}).catch(acctFail);
+  api('acct.leaderboard',{}).then(function(r){acctLb=r.rows;render();}).catch(acctFail);
+}
+function frDo(a,body,msg){
+  if(acctBusy)return;acctBusy=true;acctErr='';render();
+  api('acct.'+a,{},body||{},15000).then(function(r){acctBusy=false;acctFr=r;
+    if(a==='friendadd'){frCode='';showToast(r.friends_now?'Ihr seid jetzt befreundet':r.already?'Ihr seid schon befreundet':'Anfrage an '+r.name+' geschickt');}
+    else if(msg)showToast(msg);
+    api('acct.leaderboard',{}).then(function(x){acctLb=x.rows;render();}).catch(function(){});render();}).catch(acctFail);
+}
+function frLink(){var c=acctFr&&acctFr.code;return c?location.origin+location.pathname+'?freund='+c:'';}
+function frShare(){
+  var l=frLink(),t='Werde mein Freund bei „Letzte Runde“ – mein Freundescode: '+(acctFr&&acctFr.code);
+  if(navigator.share)navigator.share({title:'Letzte Runde',text:t,url:l}).catch(function(){});
+  else try{navigator.clipboard.writeText(t+' '+l).then(function(){showToast('Link kopiert');});}catch(e){}
+}
+function seg(attr,cur,opts){
+  return '<div class="seg">'+opts.map(function(o){return '<button class="small'+(cur===o[0]?' primary':' ghost')+'" data-a="'+attr+'" data-v="'+o[0]+'">'+o[1]+'</button>';}).join('')+'</div>';
+}
+function boardHtml(){
+  if(!acctLb)return '<p class="muted">Lädt …</p>';
+  var MIN=5,rows=acctLb.map(function(r){var x=r[lbRange][lbMode];return {id:r.id,name:r.name,x:x,me:ACC&&r.id===ACC.id};});
+  rows.sort(function(a,b){var ea=a.x.hands>=MIN,eb=b.x.hands>=MIN;return (eb-ea)||(b.x.score-a.x.score)||(b.x.hands-a.x.hands);});
+  var medal=['🥇','🥈','🥉'],rk=0;
+  var out='<div class="lbctl">'+seg('lbmode',lbMode,[['both','Alle'],['sp','Übung'],['mp','Räume']])+seg('lbrange',lbRange,[['week','7 Tage'],['all','Insgesamt']])+'</div>'+
+    '<div class="stwrap"><table class="stbl lb"><thead><tr><th></th><th>Name</th><th>Punkte</th><th>Hände</th><th>✓ / ◐</th><th>Tipp</th><th class="lbs">Serie</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var x=r.x,ok=x.hands>=MIN;if(ok)rk++;
+    out+='<tr'+(r.me?' class="me"':'')+(ok?'':' style="opacity:.55"')+'><td>'+(ok?(medal[rk-1]||rk+'.'):'–')+'</td><td>'+esc(r.name)+'</td>'+
+      '<td class="rc"><b>'+(x.hands?Math.round(x.score*100)+' %':'–')+'</b></td><td>'+x.hands+'</td><td>'+x.wins+' / '+x.part+'</td>'+
+      '<td class="rc">'+pct(x.hits,x.of)+'</td><td class="lbs">'+x.best+'</td></tr>';
+  });
+  return out+'</tbody></table></div><p class="note">Punkte: Anteil „alles richtig“, „fast richtig“ zählt halb. Ab '+MIN+' Händen in der Wertung. Tipp: getroffene Karten beim Tippen.</p>';
+}
+function friendsHtml(){
+  var f=acctFr,busy=acctBusy?' disabled':'';
+  var out='<h3>🏆 Bestenliste</h3>'+((acctLb&&acctLb.length<2)?'<p class="note">Noch keine Freunde – teil deinen Code, dann wird es spannend.</p>':'')+boardHtml();
+  out+='<h3>👥 Freunde</h3>';
+  if(!f)return out+'<p class="muted">Lädt …</p>';
+  if(f.incoming.length)out+='<div class="frreq">'+f.incoming.map(function(x){return '<div class="frrow"><span>📨 <b>'+esc(x.name)+'</b> möchte befreundet sein</span>'+
+    '<span><button class="small primary" data-a="fracc" data-id="'+esc(x.id)+'"'+busy+'>Annehmen</button> <button class="small ghost" data-a="frdec" data-id="'+esc(x.id)+'"'+busy+'>Ablehnen</button></span></div>';}).join('')+'</div>';
+  out+=f.friends.length?f.friends.map(function(x){return '<div class="frrow"><span>'+esc(x.name)+'</span><button class="small ghost" data-a="frrem" data-id="'+esc(x.id)+'" data-n="'+esc(x.name)+'" aria-label="Entfernen"'+busy+'>Entfernen</button></div>';}).join(''):'<p class="note">Noch niemand.</p>';
+  if(f.outgoing.length)out+=f.outgoing.map(function(x){return '<div class="frrow muted"><span>⏳ '+esc(x.name)+' (wartet auf Bestätigung)</span><button class="small ghost" data-a="frdec" data-id="'+esc(x.id)+'"'+busy+'>Zurückziehen</button></div>';}).join('');
+  out+='<div class="frcode"><div><span class="lbl" style="display:block">Dein Freundescode</span><div class="reccode sm">'+esc(f.code)+'</div></div>'+
+    '<div class="bar"><button class="small" data-a="frshare">Teilen</button><button class="small ghost" data-a="frnewcode"'+busy+' title="Alter Code gilt dann nicht mehr">Neuer Code</button></div></div>'+
+    '<form class="accf" onsubmit="return false">'+acctField('acc_fcode','Code einer Freundin / eines Freundes','text',frCode,'off')+
+    '<div class="bar"><button class="primary" data-a="fradd"'+busy+'>Anfrage schicken</button></div></form>'+
+    '<p class="note">Freunde sehen deinen Kontonamen und deine Gesamtwerte in der Bestenliste – keine einzelnen Hände.</p>';
+  return out;
 }
 
 var statsOpen=false,recorded={};
@@ -2803,7 +2866,7 @@ function roundHits(lo,hi,chipIn){
 }
 function isPart(e){return !e.win&&e.players.every(function(p){return p.ok;})&&!!e.guess&&num(e.guess.hits)>0;}
 function calcStats(list){
-  var o={hands:0,wins:0,part:0,streak:0,best:0,hits:0,of:0,perfect:0,guesses:0,pl:{}},run=0;
+  var o={hands:0,wins:0,part:0,streak:0,best:0,hits:0,of:0,perfect:0,guesses:0,pl:{},botIds:{}},run=0;
   (list||[]).forEach(function(e){
     if(!e||!Array.isArray(e.players))return;
     o.hands++;
@@ -2812,13 +2875,17 @@ function calcStats(list){
     if(e.guess&&num(e.guess.of)){o.guesses++;o.hits+=num(e.guess.hits)||0;o.of+=num(e.guess.of);if(num(e.guess.hits)===num(e.guess.of))o.perfect++;}
     e.players.forEach(function(p){
       var id=String(p.id||'');if(!id)return;
+      /* Bots (Übung „bot:Name“, Raum „bot…“) als eine Zeile zusammenfassen */
+      if(/^bot/.test(id)){o.botIds[id]=1;id='bots';p={id:'bots',name:'🤖 Bots',ok:p.ok,rounds:p.rounds};}
       var x=o.pl[id]||(o.pl[id]={id:id,name:'',n:0,ok:0,tgt:0,tgtHit:0,r:[[0,0],[0,0],[0,0],[0,0]]});
       x.name=String(p.name||x.name||'Spieler');x.n++;if(p.ok)x.ok++;
       if(Array.isArray(p.rounds))for(var ri=0;ri<4;ri++){if(p.rounds[ri]===true||p.rounds[ri]===false){x.r[ri][1]++;if(p.rounds[ri])x.r[ri][0]++;}}
     });
-    if(e.guess&&o.pl[e.guess.target]){o.pl[e.guess.target].tgt++;if(num(e.guess.hits)===num(e.guess.of))o.pl[e.guess.target].tgtHit++;}
+    var gt=e.guess&&(/^bot/.test(String(e.guess.target))?'bots':e.guess.target);
+    if(gt&&o.pl[gt]){o.pl[gt].tgt++;if(num(e.guess.hits)===num(e.guess.of))o.pl[gt].tgtHit++;}
   });
   o.streak=run;
+  var nb=Object.keys(o.botIds).length;if(o.pl.bots)o.pl.bots.name='🤖 Bots'+(nb>1?' ('+nb+')':'');
   return o;
 }
 function pct(a,b){return b?Math.round(a*100/b)+' %':'\u2013';}
@@ -2969,16 +3036,16 @@ function render(){
   el.className='wrap'+(code||sp?' inroom':'')+(code&&watching?' watching':'');
   try{document.title=(sp?'Singleplayer – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
-  ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
+  ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc','acc_fcode'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
   /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
   var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
-  ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
+  ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
   el.innerHTML = sp?spView():code?roomView():startView()+acctDialog();
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
-  ['.col-l','.col-r'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
+  ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
   renderChat();
@@ -3373,14 +3440,23 @@ document.addEventListener('click',function(ev){
   else if(a==='vrevoke')voiceRevoke();
   else if(a==='reload'){try{location.reload();}catch(e){}}
   else if(a==='acct')acctOpen();
+  else if(a==='acctfr'){acctTab='fr';acctOpen();frLoad();}
   else if(a==='acctclose'){acctDlg=null;acctErr='';render();}
   else if(a==='acctmode'){ev.preventDefault&&ev.preventDefault();acctErr='';acctDlg=el.getAttribute('data-m');render();}
   else if(a==='acctlogin')acctAuth('login');
   else if(a==='acctreg')acctAuth('register');
   else if(a==='acctrecover')acctAuth('recover');
-  else if(a==='acctrecok'){acctRec=null;acctDlg='me';render();}
+  else if(a==='acctrecok'){acctRec=null;acctDlg='me';if(acctTab==='fr')frLoad();render();}
   else if(a==='acctcopy'){try{navigator.clipboard.writeText(acctRec||'').then(function(){showToast('Kopiert');});}catch(e){}}
-  else if(a==='accttab'){acctTab=el.getAttribute('data-t')==='mp'?'mp':'sp';render();}
+  else if(a==='accttab'){var tt=el.getAttribute('data-t');acctTab=tt==='mp'||tt==='fr'?tt:'sp';if(acctTab==='fr')frLoad();render();}
+  else if(a==='lbmode'){lbMode=el.getAttribute('data-v');render();}
+  else if(a==='lbrange'){lbRange=el.getAttribute('data-v');render();}
+  else if(a==='fradd')frDo('friendadd',{code:acctVal('acc_fcode')});
+  else if(a==='fracc')frDo('friendaccept',{id:el.getAttribute('data-id')},'Ihr seid jetzt befreundet');
+  else if(a==='frdec')frDo('frienddecline',{id:el.getAttribute('data-id')});
+  else if(a==='frrem'){if(confirm(el.getAttribute('data-n')+' als Freund*in entfernen?'))frDo('friendremove',{id:el.getAttribute('data-id')});}
+  else if(a==='frnewcode'){if(confirm('Neuen Freundescode erzeugen? Der alte gilt dann nicht mehr.'))frDo('friendcode',{},'Neuer Code');}
+  else if(a==='frshare')frShare();
   else if(a==='acctpw')acctPassword();
   else if(a==='acctnewrec')acctNewRec();
   else if(a==='acctdel')acctDelete();
@@ -3409,7 +3485,8 @@ document.addEventListener('keydown',function(ev){
   else if(ev.target.id==='rname'&&!code){ev.preventDefault();createRoom();}
   else if(/^acc_/.test(ev.target.id)&&acctDlg){ev.preventDefault();var mm={login:'acctlogin',register:'acctreg',recover:'acctrecover'}[acctDlg];
     if(mm)acctAuth({acctlogin:'login',acctreg:'register',acctrecover:'recover'}[mm]);
-    else if(/^acc_(old|new|new2)$/.test(ev.target.id))acctPassword();}
+    else if(/^acc_(old|new|new2)$/.test(ev.target.id))acctPassword();
+    else if(ev.target.id==='acc_fcode')frDo('friendadd',{code:ev.target.value});}
 });
 document.addEventListener('change',function(ev){
   var el=ev.target;
@@ -3456,6 +3533,7 @@ if(window.addEventListener){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
       acctSync();
+      if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{acctDlg='login';uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';}render();}
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else rejoin();
       if(inviteCode&&myName){var ci=$('code');if(ci)ci.value=inviteCode;}

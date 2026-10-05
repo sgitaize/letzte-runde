@@ -13,6 +13,7 @@
  *   POST /api?a=acct.logout | acct.password {old, pw} | acct.newrecovery {pw} | acct.delete {pw}
  *   POST /api?a=acct.sphands {hands:[…], usage?}    -> Übungsraum-Hände übernehmen (doppelte zählen nicht)
  *   POST /api?a=acct.mphand  {room, hand, day, hr}  -> Raum-Hand aus der Raumstatistik übernehmen (Header x-kr-key)
+ *   GET  /api?a=acct.friends | acct.leaderboard;  POST acct.friendadd {code} | friendaccept|frienddecline|friendremove {id} | friendcode
  *   Admin: accounts | acctreset {id} | acctdel {id}
  */
 'use strict';
@@ -42,6 +43,7 @@ module.exports = function (o) {
   const accts = new Map();      // id -> Anmeldedaten
   const byName = new Map();     // Namensschlüssel -> id
   const bySess = new Map();     // sha256(token) -> id
+  const byCode = new Map();     // Freundescode -> id
   const statCache = new Map();  // id -> Statistik (nur zuletzt benutzte)
 
   const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
@@ -94,7 +96,7 @@ module.exports = function (o) {
       try {
         const a = readSealed(path.join(DIR, f), f.slice(0, -5));
         if (!a || !a.id || !a.name || !a.pw) continue;
-        accts.set(a.id, a); byName.set(nameKey(a.name), a.id);
+        accts.set(a.id, a); byName.set(nameKey(a.name), a.id); if (a.fcode) byCode.set(a.fcode, a.id);
         for (const s of a.sessions || []) bySess.set(s.h, a.id);
       } catch (e) { console.error('Konto lesen', f, e.message + ' (falsches Server-Geheimnis?)'); }
     }
@@ -143,6 +145,51 @@ module.exports = function (o) {
     bySess.set(sha(t), a.id);
     return t;
   }
+  /* ---- Freunde: Anfrage per Freundescode, die andere Person bestätigt. Freunde sehen sich gegenseitig in der Bestenliste. */
+  const MAX_FRIENDS = 100, MAX_PENDING = 50;
+  const flist = (a, k) => (Array.isArray(a[k]) ? a[k] : (a[k] = []));
+  const without = (arr, id) => arr.filter((x) => x !== id);
+  function ensureCode(a) {
+    if (a.fcode && byCode.get(a.fcode) === a.id) return a.fcode;
+    let c; do { c = code(8); } while (byCode.has(c));
+    if (a.fcode) byCode.delete(a.fcode);
+    a.fcode = c; byCode.set(c, a.id); saveAuth(a);
+    return c;
+  }
+  const fmtCode = (c) => c.slice(0, 4) + '-' + c.slice(4);
+  const who = (ids) => ids.map((id) => accts.get(id)).filter(Boolean).map((x) => ({ id: x.id, name: x.name }));
+  function friendsOf(a) {
+    return { code: fmtCode(ensureCode(a)), friends: who(flist(a, 'friends')), incoming: who(flist(a, 'fin')), outgoing: who(flist(a, 'fout')) };
+  }
+  function unlink(a, b) {   // alle Verbindungen zwischen a und b lösen
+    for (const [x, y] of [[a, b], [b, a]]) for (const k of ['friends', 'fin', 'fout']) x[k] = without(flist(x, k), y.id);
+  }
+  function befriend(a, b) {
+    unlink(a, b);
+    if (flist(a, 'friends').length >= MAX_FRIENDS || flist(b, 'friends').length >= MAX_FRIENDS) return false;
+    a.friends.push(b.id); b.friends.push(a.id); return true;
+  }
+  /* Kennzahlen für die Bestenliste (nur Summen, keine einzelnen Hände) */
+  function isPart(e) { return !e.win && e.players.every((p) => p.ok) && !!e.guess && Number(e.guess.hits) > 0; }
+  function summary(hands) {
+    const o = { hands: 0, wins: 0, part: 0, hits: 0, of: 0, best: 0 }; let run = 0;
+    for (const e of hands) {
+      if (!e || !Array.isArray(e.players)) continue;
+      o.hands++;
+      if (e.win) { o.wins++; run++; if (run > o.best) o.best = run; } else if (isPart(e)) o.part++; else run = 0;
+      if (e.guess && e.guess.target !== 'me') { o.hits += Number(e.guess.hits) || 0; o.of += Number(e.guess.of) || 0; }
+    }
+    o.score = o.hands ? (o.wins + o.part / 2) / o.hands : 0;
+    return o;
+  }
+  function boardRow(x) {
+    const s = stats(x.id), wk = Date.now() - 7 * 86400000;
+    const all = s.sp.concat(s.mp).sort((p, q) => p.ts - q.ts), recent = (l) => l.filter((e) => e.ts >= wk);
+    return { id: x.id, name: x.name,
+      all: { sp: summary(s.sp), mp: summary(s.mp), both: summary(all) },
+      week: { sp: summary(recent(s.sp)), mp: summary(recent(s.mp)), both: summary(recent(all)) } };
+  }
+
   function pub(a) { return { id: a.id, name: a.name, created: a.created, reset: !!a.reset }; }
 
   /* Sitzung nur als HttpOnly-Cookie: Skripte auf der Seite kommen nicht heran, SameSite=Strict gegen fremde Seiten */
@@ -331,6 +378,35 @@ module.exports = function (o) {
       setCookie(req, res, '');
       return json(res, 200, { ok: true }), true;
     }
+    if (a === 'acct.friends') return json(res, 200, Object.assign({ ok: true }, friendsOf(acc))), true;
+    if (a === 'acct.leaderboard') return json(res, 200, { ok: true, rows: [acc].concat(who(flist(acc, 'friends')).map((x) => accts.get(x.id))).map(boardRow) }), true;
+    if (/^acct\.friend(add|accept|decline|remove|code)$/.test(a)) {
+      const b = await body(req, res); if (!b) return true;
+      if (a === 'acct.friendcode') { if (acc.fcode) byCode.delete(acc.fcode); acc.fcode = ''; ensureCode(acc); return json(res, 200, Object.assign({ ok: true }, friendsOf(acc))), true; }
+      if (a === 'acct.friendadd') {
+        const fk = 'f:' + acc.id;
+        if (windowed(failName, fk, FAIL_WINDOW).length >= FAIL_MAX_NAME) return json(res, 429, { error: 'Zu viele falsche Codes – bitte 15 Minuten warten' }), true;
+        const other = accts.get(byCode.get(recNorm(b.code)));
+        if (!other || other.id === acc.id) { await fail(fk, ip); return json(res, 404, { error: other ? 'Das ist dein eigener Code' : 'Code unbekannt' }), true; }
+        if (flist(acc, 'friends').includes(other.id)) return json(res, 200, Object.assign({ ok: true, already: true }, friendsOf(acc))), true;
+        let done = false;
+        if (flist(acc, 'fin').includes(other.id)) { if (!befriend(acc, other)) return json(res, 409, { error: 'Zu viele Freunde' }), true; done = true; }   // Gegenseitig angefragt → gleich befreundet
+        else {
+          if (flist(acc, 'fout').length >= MAX_PENDING || flist(other, 'fin').length >= MAX_PENDING) return json(res, 409, { error: 'Zu viele offene Anfragen' }), true;
+          if (!acc.fout.includes(other.id)) { acc.fout.push(other.id); flist(other, 'fin').push(acc.id); }
+        }
+        saveAuth(acc); saveAuth(other);
+        return json(res, 200, Object.assign({ ok: true, friends_now: done, name: other.name }, friendsOf(acc))), true;
+      }
+      const other = accts.get(String(b.id || ''));
+      if (!other) return json(res, 404, { error: 'Konto nicht gefunden' }), true;
+      if (a === 'acct.friendaccept') {
+        if (!flist(acc, 'fin').includes(other.id)) return json(res, 409, { error: 'Keine Anfrage von dieser Person' }), true;
+        if (!befriend(acc, other)) return json(res, 409, { error: 'Zu viele Freunde' }), true;
+      } else unlink(acc, other);   // ablehnen, Anfrage zurückziehen oder entfernen
+      saveAuth(acc); saveAuth(other);
+      return json(res, 200, Object.assign({ ok: true }, friendsOf(acc))), true;
+    }
     if (a === 'acct.sphands') {
       const b = await body(req, res); if (!b) return true;
       const s = stats(acc.id), have = new Set(s.sp.map((e) => e.ts + '.' + e.hand));
@@ -397,6 +473,8 @@ module.exports = function (o) {
 
   function remove(id) {
     const a = accts.get(id); if (!a) return false;
+    for (const k of ['friends', 'fin', 'fout']) for (const oid of flist(a, k)) { const x = accts.get(oid); if (x) { unlink(a, x); saveAuth(x); } }
+    if (a.fcode) byCode.delete(a.fcode);
     dropSessions(a); byName.delete(nameKey(a.name)); accts.delete(id); statCache.delete(id);
     for (const f of [authFile(id), statFile(id)]) try { fs.unlinkSync(f); } catch (e) { /* egal */ }
     return true;
@@ -408,7 +486,7 @@ module.exports = function (o) {
       const list = [...accts.values()].map((x) => {
         let hands = null;
         try { const s = statCache.get(x.id) || readSealed(statFile(x.id), x.id); hands = { sp: s.sp.length, mp: s.mp.length }; } catch (e) { hands = { sp: 0, mp: 0 }; }
-        return { id: x.id, name: x.name, created: x.created, seen: x.seen || x.created, sessions: (x.sessions || []).length, reset: !!x.reset, hands: hands };
+        return { id: x.id, name: x.name, created: x.created, seen: x.seen || x.created, sessions: (x.sessions || []).length, friends: flist(x, 'friends').length, reset: !!x.reset, hands: hands };
       }).sort((p, q) => q.seen - p.seen);
       return json(res, 200, { ok: true, accounts: list }), true;
     }

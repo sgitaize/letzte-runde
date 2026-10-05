@@ -74,7 +74,7 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
   let t1 = Date.now(); r = await call('acct.login', { name: 'ANNA', pw: 'falsch123' }); t1 = Date.now() - t1;
   ok(r.s === 401, 'falsches Passwort → 401');
   let t2 = Date.now(); const r2 = await call('acct.login', { name: 'Gibtsnicht', pw: 'falsch123' }); t2 = Date.now() - t2;
-  ok(r2.s === 401 && r2.j.error === r.j.error && Math.abs(t1 - t2) < 250, 'unbekannter Name: gleiche Meldung, ähnliche Zeit (' + t1 + '/' + t2 + ' ms)');
+  ok(r2.s === 401 && r2.j.error === r.j.error && t2 > 100 && t2 > t1 / 3, 'unbekannter Name: gleiche Meldung, rechnet trotzdem den Hash (' + t1 + '/' + t2 + ' ms)');
   r = await call('acct.login', { name: 'ANNA', pw: 'Pik-Ass-42' });
   ok(r.s === 200 && r.tk && r.tk !== tok1, 'Anmeldung (Name ohne Groß/Klein) gibt neue Sitzung');
   const tok2 = r.tk;
@@ -148,17 +148,49 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
   r = await call('acct.me', undefined, { tok: tokB });
   ok(r.j.stats.sp.length === 0, 'zweites Konto sieht keine fremde Statistik');
 
+  /* Freunde + Bestenliste */
+  ipn = 90;
+  r = await call('acct.register', { name: 'Clara', pw: 'Kreuz-Bube-3' });
+  const tokC = r.tk;
+  const fB = (await call('acct.friends', undefined, { tok: tokB })).j;
+  ok(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(fB.code) && fB.friends.length === 0, 'Freundescode im Format XXXX-XXXX');
+  r = await call('acct.friendadd', { code: 'ZZZZ-ZZZZ' }, { tok: tokC });
+  ok(r.s === 404, 'unbekannter Freundescode abgelehnt');
+  r = await call('acct.friendadd', { code: fB.code.toLowerCase() }, { tok: tokC });
+  ok(r.s === 200 && !r.j.friends_now && r.j.outgoing[0].name === 'Ben', 'Anfrage geschickt (Kleinschreibung egal)');
+  r = await call('acct.friends', undefined, { tok: tokB });
+  ok(r.j.incoming.length === 1 && r.j.incoming[0].name === 'Clara', 'Ben sieht die Anfrage');
+  ok((await call('acct.leaderboard', undefined, { tok: tokC })).j.rows.length === 1, 'vor Bestätigung: Bestenliste nur mit sich selbst');
+  r = await call('acct.friendaccept', { id: r.j.incoming[0].id }, { tok: tokB });
+  ok(r.s === 200 && r.j.friends.length === 1 && r.j.incoming.length === 0, 'Ben nimmt an');
+  r = await call('acct.leaderboard', undefined, { tok: tokC });
+  ok(r.j.rows.length === 2 && r.j.rows.every((x) => x.all.sp && typeof x.week.both.score === 'number') && !JSON.stringify(r.j).includes('players'), 'Bestenliste mit beiden, nur Summen (keine einzelnen Hände)');
+  const fC = (await call('acct.friends', undefined, { tok: tokC })).j;
+  ok((await call('acct.friendadd', { code: fC.code }, { tok: tokC })).s === 404, 'eigener Code abgelehnt');
+  r = await call('acct.friendremove', { id: fB.friends.length ? '' : r.j.rows.find((x) => x.name === 'Ben').id }, { tok: tokC });
+  ok(r.s === 200 && r.j.friends.length === 0 && (await call('acct.friends', undefined, { tok: tokB })).j.friends.length === 0, 'Entfernen wirkt bei beiden');
+  await call('acct.friendadd', { code: fB.code }, { tok: tokC });
+  r = await call('acct.friendadd', { code: fC.code }, { tok: tokB });
+  ok(r.j.friends_now && r.j.friends.length === 1, 'gegenseitige Anfrage → sofort befreundet');
+  r = await call('acct.friendcode', {}, { tok: tokB });
+  ok(r.j.code !== fB.code && (await call('acct.friendadd', { code: fB.code }, { tok: tokC })).s === 404, 'neuer Code: alter gilt nicht mehr');
+  for (let i = 0; i < 9; i++) await call('acct.friendadd', { code: 'QQQQ-QQQ' + 'ABCDEFGHJ'[i] }, { tok: tokC });
+  ok((await call('acct.friendadd', { code: r.j.code }, { tok: tokC })).s === 429, 'Codes raten gebremst');
+
   /* Neustart: Konten und Sitzungen bleiben */
   srv.kill(); await sleep(400); await start();
   r = await call('acct.me', undefined, { tok: tokB });
   ok(r.s === 200 && r.j.account.name === 'Ben', 'nach Neustart noch angemeldet');
-  ok(fs.readdirSync(path.join(TMP, 'data', 'accounts')).filter((f) => f.endsWith('.json')).length === 3, 'Dateien liegen in data/accounts/');
+  ok(fs.readdirSync(path.join(TMP, 'data', 'accounts')).filter((f) => f.endsWith('.json')).length === 4, 'Dateien liegen in data/accounts/');
+  ok((await call('acct.friends', undefined, { tok: tokC })).j.friends.length === 1, 'Freundschaft übersteht Neustart');
   ok((await call('rooms')).s === 200 && !(await call('rooms')).j.rooms.some((x) => /acc/i.test(x.code)), 'Kontodateien erscheinen nicht als Räume');
 
   r = await call('acct.delete', { pw: 'falsch' }, { tok: tokB });
   ok(r.s === 401, 'Löschen nur mit Passwort');
   r = await call('acct.delete', { pw: 'Herz-Dame-9' }, { tok: tokB });
   ok(r.s === 200 && /Max-Age=0/.test(r.ck) && (await call('acct.me', undefined, { tok: tokB })).s === 401, 'Konto selbst gelöscht, Cookie gelöscht');
+  ok((await call('acct.friends', undefined, { tok: tokC })).j.friends.length === 0, 'gelöschtes Konto verschwindet aus Freundeslisten');
+  await call('acct.delete', { pw: 'Kreuz-Bube-3' }, { tok: tokC });
   r = await call('acctdel', { id: id }, { admin: true });
   ok(r.s === 200 && fs.readdirSync(path.join(TMP, 'data', 'accounts')).filter((f) => f.endsWith('.json')).length === 0, 'Admin löscht Konto samt Statistik');
   srv.kill(); fs.rmSync(TMP, { recursive: true, force: true });

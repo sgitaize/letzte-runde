@@ -17,7 +17,7 @@ Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Ha
 - **Bots** – Singleplayer allein gegen 2–5 Bots (läuft komplett im Browser, auch **offline**) und Bots zum Auffüllen echter Räume. Bots schätzen ihre Hand per Monte-Carlo-Simulation, verhandeln um Chips und merken sich Absprachen über die Runden
 - **Lernmodus** im Singleplayer – zeigt, was die eigene Hand wert ist, welcher Chip passt und nach der Hand, warum etwas anders gehört
 - **Statistik** – Quote, Serien, „fast richtig“ (Reihenfolge stimmt, Tipp teilweise getroffen – zählt halb, ohne Feier-Animation), Tipp-Treffer, Treffsicherheit je Runde; ausklappbar „Nutzung & Erfolgsrate“: Spieltage, Hände nach Wochentag und Tageszeit, Anteil richtiger Reihenfolge und richtiger eigener Hand je Tag
-- **Konten (freiwillig)** – nur Name + Passwort, keine E-Mail; Statistik aus Übungsraum und Räumen liegt im Konto und ist auf jedem Gerät da. Passwort vergessen: einmaliger Wiederherstellungscode (bei der Registrierung angezeigt) oder Zurücksetzen durch Admins
+- **Konten (freiwillig)** – nur Name + Passwort, keine E-Mail; Statistik aus Übungsraum und Räumen liegt im Konto und ist auf jedem Gerät da. Freunde per Freundescode/Link (mit Bestätigung) und Bestenliste unter Freunden (7 Tage/insgesamt, Übung/Räume). Passwort vergessen: einmaliger Wiederherstellungscode (bei der Registrierung angezeigt) oder Zurücksetzen durch Admins
 - **Extras** – Chat mit Ton, schnelle Reaktionen (👍 😂 😬 🤔 🔥), optionaler Voice-Chat (WebRTC, direkt zwischen den Geräten, mit Einwilligung), Hell/Dunkel, Querformat-Layout für Tablets
 
 ## Fair und sicher
