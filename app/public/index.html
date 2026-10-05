@@ -337,7 +337,7 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
 .acctbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.acctbar .small{font-size:13px}
 .acctbox{max-width:620px;width:100%;box-sizing:border-box;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 18px 18px}
 .cd-overlay:has(.acctbox){padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.acctbox .field{margin:8px 0}.acctbox input{width:100%;box-sizing:border-box}
-.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.frbtn{padding:1px 6px;font-size:12px;margin-left:4px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
 .seg{display:inline-flex;gap:4px;flex-wrap:wrap}.lbctl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0}
 .stbl.lb td,.stbl.lb th{padding:4px 5px;white-space:nowrap}@media (max-width:420px){.stbl.lb .lbs{display:none}.stbl.lb td,.stbl.lb th{padding:4px 3px;font-size:13px}}.frrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;flex-wrap:wrap}
 .frcode{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;text-align:left}.reccode.sm{font-size:18px;padding:6px 10px;display:inline-block}.acctbox{text-align:left}.acctbox .rings,.acctbox .sthead{text-align:center}.acctmgr{margin-top:14px}
@@ -2684,7 +2684,7 @@ function acctAuth(kind){
     if(r.recovery){acctRec=r.recovery;acctDlg='rec';}else acctDlg='me';
     if(frCode){acctTab='fr';frLoad();}
     if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
-    render();acctSync();
+    render();acctSync();roomLinkSync(true);
   }).catch(acctFail);
 }
 /* Abgleich: Konto-Hände in den Browser holen, fehlende Browser-Hände ins Konto schicken */
@@ -2723,7 +2723,7 @@ function acctMaybeMp(){
     .catch(function(e){if(!e||e.status!==403)acctMpDone[k]=false;});
 }
 function acctOpen(){acctErr='';acctDlg=ACC?'me':'login';render();if(ACC)acctSync();}
-function acctLogout(){if(!ACC)return;api('acct.logout',{},{}).catch(function(){});ACC=null;acctStats=null;acctDlg=null;acctSave();render();}
+function acctLogout(){if(!ACC)return;if(code&&joined)api('acct.roomlink',{},{room:code,off:true}).catch(function(){});roomAcc={};api('acct.logout',{},{}).catch(function(){});ACC=null;acctStats=null;acctDlg=null;acctSave();render();}
 function acctPassword(){
   if(acctBusy)return;var nw=acctVal('acc_new');
   if(nw!==acctVal('acc_new2')){acctErr='Die neuen Passwörter stimmen nicht überein.';render();return;}
@@ -2803,6 +2803,28 @@ function frDo(a,body,msg){
     if(a==='friendadd'){frCode='';showToast(r.friends_now?'Ihr seid jetzt befreundet':r.already?'Ihr seid schon befreundet':'Anfrage an '+r.name+' geschickt');}
     else if(msg)showToast(msg);
     api('acct.leaderboard',{}).then(function(x){acctLb=x.rows;render();}).catch(function(){});render();}).catch(acctFail);
+}
+/* Freunde im Raum: eigener Platz ↔ Konto beim Server melden (alle 2 min), Status der anderen holen */
+var roomAcc={},roomAccAt=0,roomAccCode=null;
+function roomLinkSync(force){
+  if(!ACC||!code||!joined||watching||!S.players.some(function(p){return p.id===uid;}))return;
+  if(!force&&roomAccCode===code&&Date.now()-roomAccAt<120000)return;
+  roomAccAt=Date.now();roomAccCode=code;var c=code;
+  api('acct.roomlink',{},{room:c}).then(function(r){if(code===c){roomAcc=r.members||{};render();}}).catch(function(){roomAccAt=0;});
+}
+setInterval(function(){try{roomLinkSync();}catch(e){}},5000);
+function roomFriend(id){
+  var c=code,n=pname(id);
+  api('acct.roomfriend',{},{room:c,player:id}).then(function(r){if(code===c)roomAcc=r.members||{};
+    showToast(r.now?'Du und '+n+' seid jetzt befreundet':r.already?'Ihr seid schon befreundet':'Freundschaftsanfrage an '+n+' geschickt');acctFr=null;render();})
+    .catch(function(e){showToast((e&&e.message)||'Ging nicht');});
+}
+function frTag(id){
+  if(!ACC||watching||id===uid||!roomAcc[id])return '';
+  var st=roomAcc[id];
+  if(st==='friend')return ' <span class="tag" title="befreundet">👥</span>';
+  if(st==='out')return ' <span class="tag" title="Freundschaftsanfrage wartet auf Bestätigung">👥⏳</span>';
+  return ' <button class="small '+(st==='in'?'primary':'ghost')+' frbtn" data-a="rfriend" data-id="'+esc(id)+'" title="'+(st==='in'?'Freundschaftsanfrage annehmen':'Freundschaftsanfrage schicken')+'">'+(st==='in'?'👥 annehmen':'👥+')+'</button>';
 }
 function frLink(){var c=acctFr&&acctFr.code;return c?location.origin+location.pathname+'?freund='+c:'';}
 function frShare(){
@@ -3249,7 +3271,7 @@ function playerList(inHand){
     out+='<div class="pl'+(id===uid?' me':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+'">'+
       (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
-      '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+voiceTag(id)+reactHtml(id)+
+      '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+'</div>'+
       (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
       (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?'<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04 offen</span>':'')+
@@ -3457,6 +3479,7 @@ document.addEventListener('click',function(ev){
   else if(a==='frrem'){if(confirm(el.getAttribute('data-n')+' als Freund*in entfernen?'))frDo('friendremove',{id:el.getAttribute('data-id')});}
   else if(a==='frnewcode'){if(confirm('Neuen Freundescode erzeugen? Der alte gilt dann nicht mehr.'))frDo('friendcode',{},'Neuer Code');}
   else if(a==='frshare')frShare();
+  else if(a==='rfriend')roomFriend(el.getAttribute('data-id'));
   else if(a==='acctpw')acctPassword();
   else if(a==='acctnewrec')acctNewRec();
   else if(a==='acctdel')acctDelete();

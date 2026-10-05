@@ -14,6 +14,7 @@
  *   POST /api?a=acct.sphands {hands:[…], usage?}    -> Übungsraum-Hände übernehmen (doppelte zählen nicht)
  *   POST /api?a=acct.mphand  {room, hand, day, hr}  -> Raum-Hand aus der Raumstatistik übernehmen (Header x-kr-key)
  *   GET  /api?a=acct.friends | acct.leaderboard;  POST acct.friendadd {code} | friendaccept|frienddecline|friendremove {id} | friendcode
+ *   POST /api?a=acct.roomlink {room, off?} | acct.roomfriend {room, player}   (Header x-kr-key) -> {members: {Spieler-ID: friend|out|in|none}}
  *   Admin: accounts | acctreset {id} | acctdel {id}
  */
 'use strict';
@@ -169,6 +170,53 @@ module.exports = function (o) {
     if (flist(a, 'friends').length >= MAX_FRIENDS || flist(b, 'friends').length >= MAX_FRIENDS) return false;
     a.friends.push(b.id); b.friends.push(a.id); return true;
   }
+  /* Anfrage stellen; hat die andere Person schon angefragt → gleich befreundet */
+  function requestFriend(acc, other) {
+    if (flist(acc, 'friends').includes(other.id)) return { already: true };
+    if (flist(acc, 'fin').includes(other.id)) { if (!befriend(acc, other)) return { error: 'Zu viele Freunde' }; saveAuth(acc); saveAuth(other); return { now: true }; }
+    if (flist(acc, 'fout').length >= MAX_PENDING || flist(other, 'fin').length >= MAX_PENDING) return { error: 'Zu viele offene Anfragen' };
+    if (!acc.fout.includes(other.id)) { acc.fout.push(other.id); flist(other, 'fin').push(acc.id); }
+    saveAuth(acc); saveAuth(other);
+    return {};
+  }
+  function relation(acc, oid) {
+    return flist(acc, 'friends').includes(oid) ? 'friend' : flist(acc, 'fout').includes(oid) ? 'out' : flist(acc, 'fin').includes(oid) ? 'in' : 'none';
+  }
+
+  /* ---- Freunde im Raum: Wer im Raum angemeldet ist, meldet „mein Platz gehört zu meinem Konto“ (geprüft über den Geräteschlüssel).
+     Andere sehen nur den Beziehungsstatus je Platz – nie Konto-ID oder Kontoname. Nur im Speicher, verfällt nach 5 Minuten ohne Auffrischen. */
+  const roomAcc = new Map();   // Raum -> Map(Spieler-ID -> {id: Konto, ts})
+  const ROOM_LINK_MS = 5 * 60 * 1000;
+  function roomMembers(code, r, acc, me) {
+    const m = roomAcc.get(code), out = {}, now = Date.now();
+    if (!m) return out;
+    for (const [pid, v] of m) {
+      if (now - v.ts > ROOM_LINK_MS || !r.docs['players/' + pid] || !accts.has(v.id)) { m.delete(pid); continue; }
+      if (pid !== me && v.id !== acc.id) out[pid] = relation(acc, v.id);
+    }
+    return out;
+  }
+  async function roomAction(a, req, res, acc) {
+    const b = await body(req, res); if (!b) return;
+    const roomCode = String(b.room || '').toUpperCase();
+    const r = /^[A-Z0-9]{1,8}$/.test(roomCode) && o.load(roomCode);
+    if (!r) return json(res, 404, { error: 'Raum nicht gefunden' });
+    const me = o.memberId(r, o.keyHash(req));
+    if (!me) return json(res, 403, { error: 'Nur Spieler dieses Raums' });
+    let m = roomAcc.get(roomCode);
+    if (b.off) { if (m) m.delete(me); return json(res, 200, { ok: true }); }
+    if (!m) { if (roomAcc.size >= 500) roomAcc.clear(); m = new Map(); roomAcc.set(roomCode, m); }
+    if (m.size < 60 || m.has(me)) m.set(me, { id: acc.id, ts: Date.now() });
+    if (a === 'acct.roomfriend') {
+      const v = m.get(String(b.player || '')), other = v && Date.now() - v.ts < ROOM_LINK_MS && accts.get(v.id);
+      if (!other || other.id === acc.id || !r.docs['players/' + b.player]) return json(res, 404, { error: 'Diese Person ist nicht mit einem Konto angemeldet' });
+      const rq = requestFriend(acc, other);
+      if (rq.error) return json(res, 409, { error: rq.error });
+      return json(res, 200, { ok: true, now: !!rq.now, already: !!rq.already, members: roomMembers(roomCode, r, acc, me) });
+    }
+    return json(res, 200, { ok: true, members: roomMembers(roomCode, r, acc, me) });
+  }
+
   /* Kennzahlen für die Bestenliste (nur Summen, keine einzelnen Hände) */
   function isPart(e) { return !e.win && e.players.every((p) => p.ok) && !!e.guess && Number(e.guess.hits) > 0; }
   function summary(hands) {
@@ -378,6 +426,7 @@ module.exports = function (o) {
       setCookie(req, res, '');
       return json(res, 200, { ok: true }), true;
     }
+    if (a === 'acct.roomlink' || a === 'acct.roomfriend') return (await roomAction(a, req, res, acc)), true;
     if (a === 'acct.friends') return json(res, 200, Object.assign({ ok: true }, friendsOf(acc))), true;
     if (a === 'acct.leaderboard') return json(res, 200, { ok: true, rows: [acc].concat(who(flist(acc, 'friends')).map((x) => accts.get(x.id))).map(boardRow) }), true;
     if (/^acct\.friend(add|accept|decline|remove|code)$/.test(a)) {
@@ -388,15 +437,9 @@ module.exports = function (o) {
         if (windowed(failName, fk, FAIL_WINDOW).length >= FAIL_MAX_NAME) return json(res, 429, { error: 'Zu viele falsche Codes – bitte 15 Minuten warten' }), true;
         const other = accts.get(byCode.get(recNorm(b.code)));
         if (!other || other.id === acc.id) { await fail(fk, ip); return json(res, 404, { error: other ? 'Das ist dein eigener Code' : 'Code unbekannt' }), true; }
-        if (flist(acc, 'friends').includes(other.id)) return json(res, 200, Object.assign({ ok: true, already: true }, friendsOf(acc))), true;
-        let done = false;
-        if (flist(acc, 'fin').includes(other.id)) { if (!befriend(acc, other)) return json(res, 409, { error: 'Zu viele Freunde' }), true; done = true; }   // Gegenseitig angefragt → gleich befreundet
-        else {
-          if (flist(acc, 'fout').length >= MAX_PENDING || flist(other, 'fin').length >= MAX_PENDING) return json(res, 409, { error: 'Zu viele offene Anfragen' }), true;
-          if (!acc.fout.includes(other.id)) { acc.fout.push(other.id); flist(other, 'fin').push(acc.id); }
-        }
-        saveAuth(acc); saveAuth(other);
-        return json(res, 200, Object.assign({ ok: true, friends_now: done, name: other.name }, friendsOf(acc))), true;
+        const rq = requestFriend(acc, other);
+        if (rq.error) return json(res, 409, { error: rq.error }), true;
+        return json(res, 200, Object.assign({ ok: true, already: rq.already, friends_now: rq.now, name: other.name }, friendsOf(acc))), true;
       }
       const other = accts.get(String(b.id || ''));
       if (!other) return json(res, 404, { error: 'Konto nicht gefunden' }), true;

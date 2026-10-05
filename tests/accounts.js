@@ -12,10 +12,10 @@ for (const f of fs.readdirSync(path.join(TMP, 'data'))) fs.rmSync(path.join(TMP,
 const PORT = 3987, BASE = 'http://127.0.0.1:' + PORT + '/', SECRET = 'test-admin-secret-123';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (c, m) => { if (!c) throw new Error('FEHLER: ' + m); console.log('  ok  ' + m); };
-const KEY = 'acct-test-geraeteschluessel-1';
+const KEY = 'acct-test-geraeteschluessel-1', KEY2 = 'acct-test-geraeteschluessel-2';
 
 /* Raum mit fertiger Hand in der Statistik, Spieler u1 gehört zum Geräteschlüssel KEY */
-fs.writeFileSync(path.join(TMP, 'data', 'TST1.json'), JSON.stringify({ version: 5, keys: { u1: crypto.createHash('sha256').update(KEY).digest('hex') },
+fs.writeFileSync(path.join(TMP, 'data', 'TST1.json'), JSON.stringify({ version: 5, keys: { u1: crypto.createHash('sha256').update(KEY).digest('hex'), u2: crypto.createHash('sha256').update(KEY2).digest('hex') },
   docs: { room: { code: 'TST1', hostId: 'u1', createdAt: 1, name: 'Testrunde' }, 'players/u1': { name: 'Anna' }, 'players/u2': { name: 'Ben' },
     stats: { hands: [{ hand: 1, ts: Date.now(), win: true, players: [{ id: 'u1', name: 'Anna', ok: true }, { id: 'u2', name: 'Ben', ok: true }], guess: { target: 'u1', hits: 2, of: 2 } }] } } }));
 
@@ -176,6 +176,28 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
   ok(r.j.code !== fB.code && (await call('acct.friendadd', { code: fB.code }, { tok: tokC })).s === 404, 'neuer Code: alter gilt nicht mehr');
   for (let i = 0; i < 9; i++) await call('acct.friendadd', { code: 'QQQQ-QQQ' + 'ABCDEFGHJ'[i] }, { tok: tokC });
   ok((await call('acct.friendadd', { code: r.j.code }, { tok: tokC })).s === 429, 'Codes raten gebremst');
+
+  /* Freundschaftsanfrage direkt im Raum (Platz ↔ Konto über Geräteschlüssel) */
+  const benId = (await call('acct.friends', undefined, { tok: tokC })).j.friends[0].id;
+  await call('acct.friendremove', { id: benId }, { tok: tokC });
+  r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: 'fremder-schluessel-xxxxxx' });
+  ok(r.s === 403, 'Raum-Verknüpfung nur für Spieler des Raums');
+  r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY });
+  ok(r.s === 200 && Object.keys(r.j.members).length === 0, 'Clara im Raum angemeldet, sonst noch niemand');
+  r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokB, key: KEY2 });
+  ok(r.j.members.u1 === 'none', 'Ben sieht: Platz u1 hat ein Konto, noch nicht befreundet');
+  ok(!/a[0-9a-f]{16}|Clara/.test(JSON.stringify(r.j)), 'keine Konto-ID und kein Kontoname im Raum sichtbar');
+  r = await call('acct.roomfriend', { room: 'TST1', player: 'u9' }, { tok: tokB, key: KEY2 });
+  ok(r.s === 404, 'Platz ohne Konto: keine Anfrage');
+  r = await call('acct.roomfriend', { room: 'TST1', player: 'u1' }, { tok: tokB, key: KEY2 });
+  ok(r.s === 200 && !r.j.now && r.j.members.u1 === 'out', 'Ben schickt Anfrage aus dem Raum');
+  r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY });
+  ok(r.j.members.u2 === 'in', 'Clara sieht die Anfrage am Platz von Ben');
+  r = await call('acct.roomfriend', { room: 'TST1', player: 'u2' }, { tok: tokC, key: KEY });
+  ok(r.j.now && r.j.members.u2 === 'friend', 'Clara nimmt im Raum an → befreundet');
+  await call('acct.roomlink', { room: 'TST1', off: true }, { tok: tokB, key: KEY2 });
+  r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY });
+  ok(Object.keys(r.j.members).length === 0, 'nach Abmelden im Raum nicht mehr sichtbar');
 
   /* Neustart: Konten und Sitzungen bleiben */
   srv.kill(); await sleep(400); await start();
