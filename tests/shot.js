@@ -20,8 +20,10 @@ async function cdp() {
   chrome = spawn('chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9333', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50; i++) { try { list = await (await fetch('http://127.0.0.1:9333/json')).json(); break; } catch (e) { await sleep(200); } }
-  const page = list.find((t) => t.type === 'page');
-  const ws = new WebSocket(page.webSocketDebuggerUrl);
+  return connect(list.find((t) => t.type === 'page').webSocketDebuggerUrl);
+}
+async function connect(url) {
+  const ws = new WebSocket(url);
   await new Promise((r) => ws.addEventListener('open', r));
   let id = 0; const wait = new Map();
   ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && wait.has(d.id)) { wait.get(d.id)(d); wait.delete(d.id); } });
@@ -84,6 +86,29 @@ async function cdp() {
   await until('/Runde 1 von 4/.test(document.body.innerText)', 40000);
   await sleep(4000);
   await shoot('mp-runde1');
+  /* TV=1: zweiter Tab als „Tisch“ (andere Origin = eigenes Gerät), Spieler-App mit ausgeblendetem Tisch */
+  let tvShot = async () => {};
+  if (process.env.TV) {
+    const rc = await js('document.querySelector(".code").textContent');
+    const t = await (await fetch('http://127.0.0.1:9333/json/new?' + encodeURIComponent('http://localhost:' + PORT + '/?tisch=' + rc), { method: 'PUT' })).json();
+    const tv = await connect(t.webSocketDebuggerUrl);
+    tvShot = async (name) => {
+      await tv('Page.bringToFront');
+      for (const [w, h] of [[1920, 1080], [1280, 720], [820, 1180]]) {
+        await tv('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+        await sleep(1200);
+        const r = await tv('Page.captureScreenshot', { format: 'png' });
+        const f = path.join(OUT, name + '-' + w + 'x' + h + '.png');
+        fs.writeFileSync(f, Buffer.from(r.result.data, 'base64')); console.log(f);
+      }
+      await send('Page.bringToFront');
+    };
+    await sleep(2500);
+    await tvShot('tv-runde1');
+    await click('[data-a="notable"]'); await sleep(300);
+    await shoot('mp-notable');
+    await click('[data-a="notable"]');
+  }
   if (process.env.MPEND) {   // Hand im Raum zu Ende spielen (Chip, Bereit, Tipp, Aufdecken), Erklärung aufklappen
     for (let i = 0; i < 600 && !(await js('!!document.querySelector(".mpcoach")')); i++) {
       await js('(function(){var r=document.querySelector(\'[data-a="ready"]\');var mine=document.querySelector(".pl.me .chip:not(.ph)");' +
@@ -97,6 +122,7 @@ async function cdp() {
     await sleep(300);
     console.log('mpcoach:', await js('!!document.querySelector(".mpcoach")'), 'insight:', await js('!!document.querySelector(".p-insight")'));
     await shoot('mp-ende');
+    await tvShot('tv-ende');
   }
   console.log('fertig');
 })().catch((e) => { console.error(e); process.exitCode = 1; })

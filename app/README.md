@@ -91,6 +91,8 @@ Die Karten liegen **verschlüsselt** auf dem Server. Das Geben ist auf drei Spie
 
 Host-Rechte sind abgesichert: Jeder Browser hat einen zufälligen Geräteschlüssel (`kr.sk`), der Server kennt nur dessen Hash. Spieler entfernen und Raum schließen darf nur der Host mit seinem Schlüssel; fremde Spielerplätze lassen sich nur übernehmen, wenn der Spieler mindestens 60 s weg ist – der Host-Platz nie. Zuschauer sehen keine Karten außer den aufgedeckten Tischkarten und lesen den Chat nur mit.
 
+**Tisch-Modus:** Ein großer Bildschirm tritt als „nur Tisch“ bei (Startseite „📺 Als Tisch“ oder `…/?tisch=CODE`, Link steht auch unter „Einladen“). Technisch ist das ein Zuschauer ohne Platz und ohne Chat; die Ansicht zeigt Tisch, freie Chips, Tipp, Aufdecken und Ergebnis groß, die Spieler*innen als Plätze rund um den Tisch (Hochformat: darunter), in der Lobby einen großen QR-Code zum Beitreten. Bildschirm bleibt an (Wake Lock), Vollbild per ⤢. Spieler*innen blenden am Handy mit „📺 Tisch aus“ den Tisch aus (`kr.notable`, nur dieses Gerät).
+
 Nicht abgesichert ist der Rest: wer den Raumcode kennt, kann beitreten, es gibt keine Anmeldung. Für Runden unter Freunden reicht das. Wer mehr will, legt in Plesk einen Verzeichnisschutz auf den Ordner.
 
 Die Spieler-ID liegt im `localStorage` des Browsers. Browser-Speicher gelöscht oder Gerät gewechselt = neuer Spieler, der neu beitreten muss (am besten zwischen zwei Händen).

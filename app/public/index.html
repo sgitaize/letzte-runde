@@ -193,6 +193,57 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .acc small{font-size:11px;color:var(--muted)}.stwrap{overflow-x:auto}.stbl td.rc{font-variant-numeric:tabular-nums;white-space:nowrap}
 .panel.offline{border-color:var(--accent)}
 @media (prefers-reduced-motion: reduce){.react-pop{animation:none}}
+/* Spieler*innen-App: Tisch ausblenden, wenn ein großer Bildschirm ihn zeigt */
+.notable .p-board{display:none}
+/* Tisch-Modus (großer Bildschirm): Tisch als Oval in der Mitte, Plätze rundherum, alles wächst mit dem Bildschirm */
+.wrap.tv{max-width:none;height:100vh;height:100dvh;box-sizing:border-box;padding:1.2vmin 2vmin;display:flex;flex-direction:column;overflow:hidden;--u:1vmin}
+.tv-top{display:flex;align-items:center;gap:2vmin;flex:0 0 auto}
+.tv-top .tv-title{flex:1 1 auto;font-size:calc(var(--u)*3);font-weight:650;min-width:0}
+.tv-top .tv-title .note{font-size:.6em;font-weight:400}
+.tv-room{position:relative;flex:1 1 auto;min-height:0;margin:1.5vmin 3vw 1vmin}
+.tv-felt{position:absolute;left:13%;right:13%;top:14%;bottom:14%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*1.6);
+  border:calc(var(--u)*1.2) solid var(--felt2);box-shadow:inset 0 0 calc(var(--u)*6) rgba(0,0,0,.35),0 calc(var(--u)*1) calc(var(--u)*4) rgba(0,0,0,.3)}
+.tv .board{display:flex;gap:calc(var(--u)*1.4)}
+.tv .board .card{width:calc(var(--u)*9.5);height:calc(var(--u)*13.1);border-radius:calc(var(--u)*1.4);margin:0}
+.tv .board .card .r{font-size:calc(var(--u)*3.9)}.tv .board .card .s{font-size:calc(var(--u)*3.5)}
+.tv .flushwarn{font-size:calc(var(--u)*1.9)}
+.tv-mid{display:flex;align-items:center;gap:calc(var(--u)*1.4);flex-wrap:wrap;justify-content:center;font-size:calc(var(--u)*2.4);color:#eef5f0;max-width:70%}
+.tv-mid .chip{width:calc(var(--u)*6);height:calc(var(--u)*6);font-size:calc(var(--u)*2.8)}
+.tv-mid .card{width:calc(var(--u)*5.5);height:calc(var(--u)*7.6);margin:0}.tv-mid .card .r{font-size:calc(var(--u)*2.6)}
+.tv-mid .cards{display:flex;gap:calc(var(--u)*.8)}
+.tv-res .result{padding:calc(var(--u)*.8) calc(var(--u)*2.4);margin:0;color:var(--fg);background:var(--panel)}
+.tv-res{flex-direction:column;gap:calc(var(--u)*.8)}.tv-res .result{font-size:calc(var(--u)*1.8)}.tv-res .result .big{font-size:calc(var(--u)*3.2)}.tv-res .card{width:calc(var(--u)*4);height:calc(var(--u)*5.5)}.tv-res .card .r{font-size:calc(var(--u)*2)}
+.tv-seat{position:absolute;background:var(--panel);border:2px solid var(--line);border-radius:calc(var(--u)*1.6);
+  padding:calc(var(--u)*.9) calc(var(--u)*1.3);min-width:calc(var(--u)*18);max-width:calc(var(--u)*26);box-shadow:0 calc(var(--u)*.6) calc(var(--u)*2.4) rgba(0,0,0,.25);text-align:center}
+.tv-seat.cur{border-color:var(--gold);box-shadow:0 0 0 calc(var(--u)*.5) color-mix(in srgb,var(--gold) 45%,transparent)}
+.tv-seat.res-ok{border-color:var(--accent)}.tv-seat.res-bad{border-color:var(--red)}.tv-seat.off{opacity:.6}
+.tv-head{display:flex;align-items:center;gap:calc(var(--u)*1.1);justify-content:center}
+.tv-head .chip{width:calc(var(--u)*5.4);height:calc(var(--u)*5.4);font-size:calc(var(--u)*2.9);flex:0 0 auto}
+.tv-nm{font-size:calc(var(--u)*2.6);font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--u)*17);position:relative}
+.tv-seat .cards{display:flex;gap:calc(var(--u)*.6);justify-content:center;margin-top:calc(var(--u)*.7)}
+.tv-seat .card{width:calc(var(--u)*4.8);height:calc(var(--u)*6.6);border-radius:calc(var(--u)*.8);margin:0}
+.tv-seat .card .r{font-size:calc(var(--u)*2.4)}.tv-seat .card .s{font-size:calc(var(--u)*2.1)}
+.tv-hand{font-size:calc(var(--u)*1.9);font-weight:600;margin-top:calc(var(--u)*.4)}
+.tv-st{display:flex;gap:calc(var(--u)*.6);justify-content:center;align-items:center;flex-wrap:wrap;margin-top:calc(var(--u)*.6)}
+.tv-st .tag,.tv-seat .say{font-size:calc(var(--u)*1.6)}
+.tv-st .mchip{width:calc(var(--u)*2.8);height:calc(var(--u)*2.8);font-size:calc(var(--u)*1.4)}
+.tag.gold{border-color:var(--gold);color:var(--gold)}
+/* viele Plätze: kleiner */
+.tv-room.n7,.tv-room.n8{--u:.85vmin}.tv-room.n9,.tv-room.n10,.tv-room.n11,.tv-room.n12{--u:.72vmin}
+.tv-lobby{flex:1 1 auto;margin:3vmin 0;border-radius:calc(var(--u)*3);display:flex;align-items:center;justify-content:center;gap:5vmin;padding:4vmin;color:#eef5f0}
+.tv-lobby .qr{width:34vmin}
+.tv-lobby h2{font-size:calc(var(--u)*4.4);color:#eef5f0;margin:0 0 1vmin}
+.tv-lobby .linkbox{font-size:calc(var(--u)*2.4);color:var(--fg)}
+.tv-lobby .note{font-size:calc(var(--u)*2);color:rgba(238,245,240,.75)}
+.tv-names{display:flex;flex-wrap:wrap;gap:1vmin;margin:2vmin 0}.tv-names .tag{font-size:calc(var(--u)*2.6);color:#eef5f0;border-color:rgba(238,245,240,.4);padding:.4vmin 1.6vmin}
+/* Hochformat (z. B. Tablet hochkant): Plätze unter dem Tisch statt rundherum */
+@media (orientation:portrait){
+  .wrap.tv{overflow-y:auto}
+  .tv-room{display:flex;flex-wrap:wrap;gap:2vmin;justify-content:center;margin:2vmin 0;align-content:flex-start}
+  .tv-felt{position:relative;inset:auto;width:100%;min-height:28vh;padding:3vmin 0;border-radius:calc(var(--u)*6)}
+  .tv-seat{position:relative;left:auto!important;top:auto!important;transform:none!important}
+  .tv-lobby{flex-direction:column}
+}
 /* Lernmodus: bewusst anders eingefärbt, damit man ihn sofort vom Spiel unterscheidet */
 .coach-r{display:none}
 .coach{--coachc:#3d6fe0;border:2px solid var(--coachc);border-left-width:7px;background:color-mix(in srgb,var(--coachc) 9%,var(--panel))}
@@ -468,6 +519,11 @@ var myHand=null;      // {hand, cards:[i,i], slots:[], k1:[], k2:[]}
 var boardCache={};    // hand -> [cardIdx|null x5]
 var decrypting=false,decryptFailed=null;
 var watching=false;   // Zuschauer: im Raum, aber ohne Spieler-Eintrag
+/* Tisch-Modus (Simon 2026-10-05): großer Bildschirm tritt als „nur Tisch“ bei (Zuschauer ohne Platz, Link …/?tisch=CODE);
+   Spieler*innen können dann in ihrer App den Tisch ausblenden (nur Hand, Chips, Insight) */
+var tvMode=false,tvWake=null,hideTable=false;
+try{hideTable=localStorage.getItem('kr.notable')==='1';}catch(e){}
+var tvCode=null;try{var _tv=/[?&]tisch=([A-Za-z0-9]{3,8})/.exec(location.search||'');if(_tv)tvCode=_tv[1].toUpperCase();}catch(e){}
 var joined=false;     // eigener Spieler-Eintrag geschrieben (für Kick-/Übernahme-Erkennung)
 var online=null;      // [uid] laut Server, null = unbekannt
 var idle=[];          // [uid] übernehmbar laut Server (lange genug weg, nicht Host)
@@ -1564,7 +1620,8 @@ function invitePanel(c,n,t){
     '<div class="linkbox">'+esc(url)+'</div>'+
     '<div class="bar"><button class="primary" data-a="copylink" data-code="'+esc(c)+'">Link kopieren</button>'+
       (navigator.share?'<button data-a="sharelink" data-code="'+esc(c)+'">Teilen \u2026</button>':'')+
-      (t?'<button class="ghost" data-a="ics" data-code="'+esc(c)+'">📅 In den Kalender</button>':'')+'</div></div></div></div>';
+      (t?'<button class="ghost" data-a="ics" data-code="'+esc(c)+'">📅 In den Kalender</button>':'')+'</div>'+
+    '<p class="note" style="margin-top:8px">📺 <b>Großer Bildschirm als Tisch:</b> dort <span class="linkbox" style="display:inline">'+esc(tvUrl(c))+'</span> öffnen – zeigt Tisch, Chips und alle Spieler*innen groß, ohne eigenen Platz.</p></div></div></div>';
 }
 function copyLink(c){
   var url=inviteUrl(c);
@@ -2623,15 +2680,17 @@ function playNow(){
   doc('players/'+uid).set({name:myName,pub:myPubJwk,joinedAt:cur.joinedAt||Date.now(),ready:null})
     .then(function(){watching=false;joined=true;uiErr='';render();}).catch(showErr);
 }
-function enter(c,watch){
+function enter(c,watch,tv){
+  tvMode=!!tv;if(tvMode)watch=true;
   code=c;uiErr='';uiNote='';ver=-1;docs={};watching=!!watch;joined=false;online=null;idle=[];away={};
   lastNudgeTs=-1;prevMine={key:null,chip:null};inviteOpen=false;turnSeen=null;
   if(inviteCode===c)inviteCode=null;
-  try{if(location.hash&&history.replaceState)history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  try{if(history.replaceState)history.replaceState(null,'',location.pathname+(tvMode?'?tisch='+c:location.search.replace(/[?&]tisch=[^&]*/,'')));}catch(e){}
+  if(tvMode)tvWakeLock(true);
   if(!watching){try{localStorage.setItem('kr.name',myName);try{localStorage.setItem('kr.room',c);}catch(e2){}}catch(e){}}
   api('state',{room:c,since:-1}).then(function(r){
     ver=r.version;docs=r.docs||{};setPresence(r);
-    if(watching&&docs['players/'+uid])watching=false;  // schon Spieler in diesem Raum
+    if(watching&&!tvMode&&docs['players/'+uid])watching=false;  // schon Spieler in diesem Raum (der Tisch bleibt immer Zuschauer)
     applyDocs();
     if(watching){
       var pt=pendingTake;pendingTake=null;
@@ -2650,6 +2709,8 @@ function leave(){
   code=null;docs={};ver=-1;
   S={players:[],chips:{},main:null,deck:null,aA:null,aB:null,bA:null,bB:null,guess:null,reveal:{},room:null};
   myHand=null;busy={};watching=false;openRooms=null;
+  if(tvMode){tvMode=false;tvWakeLock(false);try{if(history.replaceState)history.replaceState(null,'',location.pathname);}catch(e){}
+    try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();}catch(e){}}
   try{localStorage.removeItem('kr.room');}catch(e){}
   render();fetchRooms();
 }
@@ -3055,7 +3116,7 @@ function render(){
   var el=$('app');if(!el)return;
   if(fatal){el.innerHTML='<div class="panel"><h1 class="brand">Letzte Runde</h1><p class="err">'+esc(fatal)+'</p></div>';return;}
   if(!db){el.innerHTML='<div class="panel"><p class="muted">Lädt …</p></div>';return;}
-  el.className='wrap'+(code||sp?' inroom':'')+(code&&watching?' watching':'');
+  el.className='wrap'+(code&&tvMode?' tv':code||sp?' inroom':'')+(code&&watching?' watching':'')+((code||sp)&&hideTable&&!tvMode?' notable':'');
   try{document.title=(sp?'Singleplayer – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
   ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc','acc_fcode'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
@@ -3065,7 +3126,7 @@ function render(){
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
-  el.innerHTML = sp?spView():code?roomView():startView()+acctDialog();
+  el.innerHTML = sp?spView():code?(tvMode?tvView():roomView()):startView()+acctDialog();
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
@@ -3088,7 +3149,8 @@ function startView(){
     '<div class="hr"></div>'+
     '<div class="row"><div class="field"><label class="lbl">Raumcode</label>'+
       '<input id="code" maxlength="6" placeholder="z.B. K7PR" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'"></div>'+
-      '<button data-a="join">Beitreten</button></div>'+
+      '<button data-a="join">Beitreten</button>'+
+      '<button class="ghost" data-a="tvjoin" title="Dieses Gerät (PC, Fernseher, großer Monitor) zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">📺 Als Tisch</button></div>'+
     (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
     (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
     '<div class="hr"></div>'+
@@ -3125,6 +3187,7 @@ function roomView(){
     '<div class="note">'+esc(phaseLabel())+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
       '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
+      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt">'+(hideTable?'🃏 Tisch an':'📺 Tisch aus')+'</button>':'')+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
       '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
@@ -3217,6 +3280,93 @@ function roomView(){
   if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+(ph==='done'?mpCoachHtml():'')+'</div>'+L.slice(afterBoard);
   if(ph==='done')L+=endBar(resolveHand(),isHost()?'start':null,isHost()?'':'Warten auf '+pname(hostId())+' \u2026');
   return cols();
+}
+
+/* ---------- Tisch-Modus: großer Bildschirm zeigt Tisch, Mitte und alle Spieler*innen ---------- */
+function tvUrl(c){return location.origin+location.pathname.replace(/[^/]*$/,'')+'?tisch='+(c||code);}
+function tvJoin(pre){
+  var c=(pre||($('code')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(c.length<3){uiErr='Bitte Raumcode eingeben.';render();return;}
+  api('state',{room:c,since:-1}).then(function(r){
+    if(!r||!r.docs||!r.docs['room']){uiErr='Raum '+c+' nicht gefunden.';render();return;}
+    applyConfig(r.config);enter(c,true,true);
+  }).catch(function(){uiErr='Raum '+c+' nicht gefunden.';tvCode=null;
+    try{if(history.replaceState)history.replaceState(null,'',location.pathname);}catch(e){}render();});
+}
+/* Bildschirm soll beim Spielen nicht ausgehen */
+function tvWakeLock(on){
+  try{
+    if(!on){if(tvWake)tvWake.release();tvWake=null;return;}
+    if(navigator.wakeLock&&!tvWake)navigator.wakeLock.request('screen').then(function(w){tvWake=w;w.addEventListener('release',function(){tvWake=null;});}).catch(function(){});
+  }catch(e){}
+}
+if(document.addEventListener)document.addEventListener('visibilitychange',function(){if(tvMode&&document.visibilityState==='visible')tvWakeLock(true);});
+function tvFullscreen(){
+  try{var d=document.documentElement;
+    if(document.fullscreenElement)document.exitFullscreen();
+    else if(d.requestFullscreen)d.requestFullscreen();}catch(e){}
+}
+function tvSeat(id,i,n){
+  var m=pmap(),p=m[id]||{name:'(weg)'},ph=phase(),h=hand(),c=chipOf(id),rv=revealedCards(id);
+  var board=(ph==='reveal'||ph==='done')?visibleBoard():null,res=resolveHand(),rx=res&&res.by[id];
+  var cards='',z,ord=main().revealOrder||[],cur=ph==='reveal'?ord[num(main().revealIdx)||0]:null;
+  if(rv&&(ph==='reveal'||ph==='done'))cards=cardsHtml(rv)+'';
+  else for(z=0;z<HC();z++)cards+=backHtml();
+  var chip=c!=null?'<div class="chip static r'+(ph==='play'?stage():4)+'">'+c+'</div>':'<div class="chip ph static">–</div>';
+  var status=ph==='play'?(isReady(p)?'<span class="tag ok">👊 bereit</span>':'<span class="tag">… überlegt</span>'):
+    ph==='guess'&&id===main().target?'<span class="tag gold">wird getippt</span>':
+    ph==='guess'?((S.guess&&S.guess.confirmed||{})[id]?'<span class="tag ok">✓ Tipp</span>':'<span class="tag">… tippt</span>'):
+    cur===id?'<span class="tag gold">ist dran</span>':'';
+  var verdict='';
+  if(rx&&rx.hand&&rx.chip!=null)verdict=rx.ok?'<span class="tag res ok">✓ richtig</span>':'<span class="tag res bad">✗ wäre '+(rx.lo===rx.hi?rx.lo:rx.lo+'–'+rx.hi)+'</span>';
+  /* Plätze rund um den Tisch: Ellipse, erster Platz unten Mitte, dann im Uhrzeigersinn */
+  /* Rand-Anker: oben/links bündig am Rand, unten/rechts ebenso – so ragt kein Platz aus dem Bild, egal wie hoch er wird */
+  var a=Math.PI/2+2*Math.PI*i/n,x=(50+50*Math.cos(a)).toFixed(1),y=(50+50*Math.sin(a)).toFixed(1);
+  return '<div class="tv-seat'+(cur===id?' cur':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+(m[id]&&!isOnline(id)?' off':'')+'" style="left:'+x+'%;top:'+y+'%;transform:translate(-'+x+'%,-'+y+'%)">'+
+    '<div class="tv-head">'+chip+'<div class="tv-nm">'+esc(p.name||'Spieler')+(p.bot?' 🤖':'')+reactHtml(id)+'</div></div>'+
+    '<div class="cards">'+cards+'</div>'+
+    (rv&&board&&(ph==='reveal'||ph==='done')?'<div class="tv-hand">'+esc(handName(bestHand(rv.concat(board),rv)))+'</div>':'')+
+    '<div class="tv-st">'+histHtml(id)+status+verdict+(m[id]&&!isOnline(id)?'<span class="tag off">offline</span>':'')+'</div>'+sayHtml(id)+
+  '</div>';
+}
+function tvView(){
+  var ph=phase(),ps=parts(),h=hand();
+  var top='<div class="tv-top"><div class="brand sm"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
+    '<div class="tv-title">'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span><span class="note"> · '+esc(phaseLabel())+'</span></div>'+
+    '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="tvfs" title="Vollbild" aria-label="Vollbild">⤢</button>'+
+    '<button class="small ghost" data-a="leave">Verlassen</button></div></div>';
+  var out=top+(uiErr?'<p class="err">'+esc(uiErr)+'</p>':'')+(cd.key?countdownHtml():'');
+  if(ph==='lobby'||ph==='deal'){
+    var qr=qrSvg(inviteUrl(code));
+    return out+'<div class="tv-lobby felt">'+(qr?'<div class="qr">'+qr+'</div>':'')+
+      '<div><h2>'+(ph==='deal'?'Karten werden gegeben …':preStart()?'⏳ Start '+esc(fmtWhen(num(S.room.startsAt))):'Mitspielen: QR-Code scannen')+'</h2>'+
+      '<div class="linkbox">'+esc(inviteUrl(code))+'</div>'+
+      '<p class="note">Am Handy: Tisch über „📺 Tisch ausblenden“ weglassen – dann nur Hand, Chips und Insight.</p>'+
+      '<div class="tv-names">'+S.players.map(function(p){return '<span class="tag">'+esc(p.name||'Spieler')+(p.bot?' 🤖':'')+reactHtml(p.id)+'</span>';}).join('')+'</div>'+
+      '<p class="note">'+S.players.length+' Spieler*innen'+(S.players.length<(CFG.minPlayers||3)?' · mindestens '+(CFG.minPlayers||3)+' nötig':' · warten auf '+esc(pname(hostId())))+'</p></div></div>';
+  }
+  var bc=boardCache[bkey()]||[null,null,null,null,null],shown=ph==='play'?boardSlotsFor(stage()):[0,1,2,3,4];
+  var st=stage(),fresh=ph==='play'?(st===2?[0,1,2]:st===3?[3]:st===4?[4]:[]):ph==='guess'?[4]:[],bh='';
+  for(var i=0;i<5;i++)bh+=(shown.indexOf(i)>=0&&bc[i]!=null)?cardHtml(bc[i],fresh.indexOf(i)>=0?'fresh':''):'<div class="card empty"></div>';
+  var mid='';
+  if(ph==='play'){
+    var free='';for(var n=1;n<=ps.length;n++)if(!chipHolder(n))free+='<div class="chip static r'+st+'">'+n+'</div>';
+    mid='<div class="tv-mid">'+(free||'<span class="note">alle Chips vergeben</span>')+'</div>';
+  }else if(ph==='guess'){
+    var g=S.guess||{},K=HC(),v='';for(var k=0;k<K;k++)v+=rankHtml(g.cards&&g.cards[k]!=null?g.cards[k]:null);
+    mid='<div class="tv-mid"><span>Tipp auf <b>'+esc(pname(main().target))+'</b></span><div class="cards">'+v+'</div></div>';
+  }else if(ph==='reveal'){
+    var ord=main().revealOrder||[],cur=ord[num(main().revealIdx)||0];
+    mid='<div class="tv-mid"><span>Aufdecken: <b>'+esc(pname(cur))+'</b> · <span id="revleft">'+revLeft()+'</span> s</span></div>';
+  }else if(ph==='done'){
+    var res=resolveHand(),gr=guessResult();
+    if(res&&endArm===code+'.'+h){endArm=null;fx(res.win?'win':res.part?'part':'lose');if(res.win)setTimeout(celebrate,350);}
+    mid='<div class="tv-mid tv-res">'+(res?resultBox(res,gr):'')+
+      (gr?'<div class="row"><span>Tipp auf '+esc(pname(gr.target))+': '+gr.hits+'/'+gr.of+'</span><div class="cards">'+gr.cards.map(function(r,j){return rankHtml(r,'sm '+(gr.marks[j]?'hit':'miss'));}).join('')+'</div></div>':'')+'</div>';
+  }
+  var seats=ps.map(function(id,j){return tvSeat(id,j,ps.length);}).join('');
+  return out+'<div class="tv-room n'+Math.min(ps.length,12)+'"><div class="tv-felt felt"><div class="cards board">'+bh+'</div>'+
+    flushWarn(shown.filter(function(i){return bc[i]!=null;}).map(function(i){return bc[i];}))+mid+'</div>'+seats+'</div>';
 }
 
 /* 3-2-1 legt sich über alles; Zurücknehmen bleibt direkt im Overlay möglich */
@@ -3354,7 +3504,7 @@ function revealPanel(){
 var chatShown=-1,chatMode=null,chatSeenTs=null;
 function renderChat(){
   var box=$('chat');if(!box)return;
-  var on=!!code,canWrite=!!(code&&!watching&&joined);
+  var on=!!(code&&!tvMode),canWrite=!!(code&&!watching&&joined);
   box.style.display=on?'':'none';
   if(!on){chatShown=-1;chatMode=null;return;}
   var mode=canWrite?'rw':'ro';
@@ -3428,6 +3578,9 @@ document.addEventListener('click',function(ev){
   if(watching&&['start','abort','ready','force','confirm','reveal','skip'].indexOf(a)>=0)return;
   if(a==='create')createRoom();
   else if(a==='join')joinRoom();
+  else if(a==='tvjoin')tvJoin();
+  else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
+  else if(a==='tvfs')tvFullscreen();
   else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
   else if(a==='watch')watchRoom(el.getAttribute('data-code'));
   else if(a==='jump')jumpIn(el.getAttribute('data-code'),el.getAttribute('data-id'));
@@ -3558,6 +3711,7 @@ if(window.addEventListener){
       acctSync();
       if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{acctDlg='login';uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';}render();}
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
+      else if(tvCode&&!code)tvJoin(tvCode);
       else rejoin();
       if(inviteCode&&myName){var ci=$('code');if(ci)ci.value=inviteCode;}
     }).catch(function(e){fatal=(e&&e.message)||String(e);render();});

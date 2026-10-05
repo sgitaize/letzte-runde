@@ -12,6 +12,7 @@ Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Ha
 ## Funktionen
 
 - **Räume mit Code und Link** – Einladung per Link/QR-Code mit Vorschau in WhatsApp & Co., Raumnamen, geplante Räume mit Startzeit (Zeitzone des Planenden), Zuschauen, Einspringen für Spieler, die offline gegangen sind
+- **Tisch-Modus für den großen Bildschirm** – ein PC, Fernseher oder Monitor tritt mit „📺 Als Tisch“ (oder Link `…/?tisch=CODE`) bei und zeigt Tisch, Chips in der Mitte und alle Spieler*innen rund um den Tisch groß an; am Handy lässt sich der Tisch dann mit „📺 Tisch aus“ ausblenden (nur Hand, Chips, Insight)
 - **Ablauf wie am Tisch** – 4 Runden (Hand, Flop, Turn, River), Chips aus der Mitte oder von anderen nehmen, „👊 Bereit“ und 3-2-1-Countdown, gemeinsamer Tipp auf die Karten des höchsten Chips, Aufdecken mit 10-s-Countdown
 - **Hausregeln** – eine Kombination zählt nur, wenn die eigenen Karten sie verbessern (ein Paar nur auf dem Tisch zählt nicht); Flush und Straße nach der eigenen höchsten Karte benannt
 - **Bots** – Singleplayer allein gegen 2–5 Bots (läuft komplett im Browser, auch **offline**) und Bots zum Auffüllen echter Räume. Bots schätzen ihre Hand per Monte-Carlo-Simulation, verhandeln um Chips und merken sich Absprachen über die Runden
