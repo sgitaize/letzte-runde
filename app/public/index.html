@@ -2618,6 +2618,7 @@ function roomsHtml(){
         '<div class="note">'+(num(r.startsAt)>srvNow()?'\u23f3 Start '+esc(fmtWhen(num(r.startsAt)))+' \u00b7 ':'')+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
       (full?'':'<button class="small" data-a="joincode" data-code="'+esc(r.code)+'">Beitreten</button>')+
       '<button class="small ghost" data-a="watch" data-code="'+esc(r.code)+'">Zuschauen</button>'+
+      '<button class="small ghost" data-a="tvjoin" data-code="'+esc(r.code)+'" title="Dieses Gerät zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">📺 Als Tisch</button>'+
       ((r.free&&r.free.length)?'<div class="jump">'+r.free.map(function(f){
         return '<button class="small primary" data-a="jump" data-code="'+esc(r.code)+'" data-id="'+esc(f.id)+'">'+
           '\u21aa Für '+esc(f.name)+(f.bot?' \ud83e\udd16':'')+' einspringen</button>';}).join('')+'</div>':'')+
@@ -3588,7 +3589,7 @@ document.addEventListener('click',function(ev){
   if(watching&&['start','abort','ready','force','confirm','reveal','skip'].indexOf(a)>=0)return;
   if(a==='create')createRoom();
   else if(a==='join')joinRoom();
-  else if(a==='tvjoin')tvJoin();
+  else if(a==='tvjoin')tvJoin(el.getAttribute('data-code'));
   else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
   else if(a==='tvfs')tvFullscreen();
   else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
