@@ -14,6 +14,7 @@
  *   POST /api?a=acct.sphands {hands:[…], usage?}    -> Übungsraum-Hände übernehmen (doppelte zählen nicht)
  *   POST /api?a=acct.mphand  {room, hand, day, hr}  -> Raum-Hand aus der Raumstatistik übernehmen (Header x-kr-key)
  *   GET  /api?a=acct.friends | acct.leaderboard;  POST acct.friendadd {code} | friendaccept|frienddecline|friendremove {id} | friendcode
+ *   POST /api?a=acct.myrooms -> {rooms: [{code, pid, name, room, phase}]}  (Plätze des Kontos, die es noch gibt)
  *   POST /api?a=acct.roomlink {room, off?} | acct.roomfriend {room, player}   (Header x-kr-key) -> {members: {Spieler-ID: friend|out|in|none}}
  *   Admin: accounts | acctreset {id} | acctdel {id}
  */
@@ -196,6 +197,37 @@ module.exports = function (o) {
     }
     return out;
   }
+  /* Plätze dauerhaft im Konto (Weiterspielen auf anderem Gerät): {room, pid, ts}, max. 10, nur bei Änderung/stündlich schreiben */
+  const SEATS_MAX = 10;
+  function seatKeep(acc, room, pid) {
+    acc.seats = (acc.seats || []).filter((x) => x.room !== room || x.pid === pid);
+    const s = acc.seats.find((x) => x.room === room), now = Date.now();
+    if (s && now - s.ts < 3600 * 1000) return;
+    if (s) s.ts = now; else acc.seats.unshift({ room, pid, ts: now });
+    acc.seats = acc.seats.slice(0, SEATS_MAX); saveAuth(acc);
+  }
+  function seatDrop(acc, room) {
+    const n = (acc.seats || []).length;
+    acc.seats = (acc.seats || []).filter((x) => x.room !== room);
+    if (acc.seats.length !== n) saveAuth(acc);
+  }
+  /* Darf das angemeldete Konto diesen Platz auf ein neues Gerät holen? */
+  function ownsSeat(req, room, pid) {
+    const acc = current(req);
+    return !!acc && (acc.seats || []).some((x) => x.room === room && x.pid === pid);
+  }
+  function myRooms(acc) {
+    const out = [], keep = [];
+    for (const x of acc.seats || []) {
+      const r = o.load(x.room), p = r && r.docs && r.docs['players/' + x.pid];
+      if (!p) continue;
+      keep.push(x);
+      out.push({ code: x.room, pid: x.pid, name: p.name || '', room: (r.docs.room && r.docs.room.name) || '',
+        phase: (r.docs['state/main'] || {}).phase || 'lobby' });
+    }
+    if (keep.length !== (acc.seats || []).length) { acc.seats = keep; saveAuth(acc); }
+    return out;
+  }
   async function roomAction(a, req, res, acc) {
     const b = await body(req, res); if (!b) return;
     const roomCode = String(b.room || '').toUpperCase();
@@ -204,7 +236,8 @@ module.exports = function (o) {
     const me = o.memberId(r, o.keyHash(req));
     if (!me) return json(res, 403, { error: 'Nur Spieler dieses Raums' });
     let m = roomAcc.get(roomCode);
-    if (b.off) { if (m) m.delete(me); return json(res, 200, { ok: true }); }
+    if (b.off) { if (m) m.delete(me); seatDrop(acc, roomCode); return json(res, 200, { ok: true }); }
+    seatKeep(acc, roomCode, me);
     if (!m) { if (roomAcc.size >= 500) roomAcc.clear(); m = new Map(); roomAcc.set(roomCode, m); }
     if (m.size < 60 || m.has(me)) m.set(me, { id: acc.id, ts: Date.now() });
     if (a === 'acct.roomfriend') {
@@ -427,6 +460,7 @@ module.exports = function (o) {
       return json(res, 200, { ok: true }), true;
     }
     if (a === 'acct.roomlink' || a === 'acct.roomfriend') return (await roomAction(a, req, res, acc)), true;
+    if (a === 'acct.myrooms') return json(res, 200, { ok: true, rooms: myRooms(acc) }), true;
     if (a === 'acct.friends') return json(res, 200, Object.assign({ ok: true }, friendsOf(acc))), true;
     if (a === 'acct.leaderboard') return json(res, 200, { ok: true, rows: [acc].concat(who(flist(acc, 'friends')).map((x) => accts.get(x.id))).map(boardRow) }), true;
     if (/^acct\.friend(add|accept|decline|remove|code)$/.test(a)) {
@@ -545,5 +579,5 @@ module.exports = function (o) {
     return json(res, 200, { ok: true, password: tmp }), true;
   }
 
-  return { handle, admin, count: () => accts.size };
+  return { handle, admin, ownsSeat, count: () => accts.size };
 };

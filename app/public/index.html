@@ -1425,11 +1425,15 @@ function closeRoom(){
   var c=code;
   api('close',{room:c},{uid:uid}).then(function(){uiErr='Raum '+c+' geschlossen.';leave();}).catch(showErr);
 }
-function takeOver(id){
+function takeOver(id,own,fromList){
   var p=pmap()[id];
   if(!p){uiErr='Diesen Spieler gibt es nicht mehr.';render();return;}
-  if(idle.indexOf(id)<0){uiErr=p.name+' ist noch nicht lange genug offline.';render();return;}
-  if(typeof confirm==='function'&&!confirm('Platz von '+p.name+' übernehmen? Dieses Gerät spielt dann als '+p.name+'.'))return;
+  /* Aus der (bis zu 5 s alten) Raumliste: inzwischen hat jemand anderes den Platz → klar sagen, zuschauen */
+  var gone=function(){uiErr='';uiNote='Platz von '+p.name+' wurde gerade schon übernommen \u2013 du schaust zu.';render();};
+  if(!own&&idle.indexOf(id)<0){if(fromList)return gone();uiErr=p.name+' ist noch nicht lange genug offline.';render();return;}
+  if(typeof confirm==='function'&&!confirm(own?'Deinen Platz ('+p.name+') auf dieses Gerät holen? Das andere Gerät schaut dann nur noch zu.'
+    :'Platz von '+p.name+' übernehmen? Dieses Gerät spielt dann als '+p.name+'.'))return;
+  var oldUid=uid;
   uid=id;try{localStorage.setItem('kr.uid',id);}catch(e){}
   myHand=null;busy={};
   newKeys().then(function(){
@@ -1441,8 +1445,14 @@ function takeOver(id){
     uiNote='Du spielst jetzt als '+myName+'.'+
       ((parts().indexOf(id)>=0&&phase()!=='lobby'&&phase()!=='done')?
         ' Die Handkarten dieser Hand liegen auf dem alten Gerät \u2013 Chips und \u201eBereit\u201c gehen, aufdecken kannst du erst ab der nächsten Hand.':'');
+    seatRemember(code,id,myName);
     stopPoll();startPoll();render();
-  }).catch(showErr);
+  }).catch(function(e){
+    uid=oldUid;try{localStorage.setItem('kr.uid',oldUid);}catch(x){}
+    loadKeys();
+    if(e&&e.status===403&&!own)return gone();
+    showErr(e);
+  });
 }
 /* ---------- Designs (Schlicht / Windows 95 / Arcade / Vegas) ---------- */
 var SKINS=[['','Schlicht','#1f5a41'],['win95','Windows 95','#008080'],['arcade','Arcade','#ff2bd6'],['vegas','Casino Vegas','#7a1420']];
@@ -1702,9 +1712,54 @@ function plannedHtml(){
     return '<div class="pl"><span class="code">'+esc(p.code)+'</span><div class="nm">'+(p.name?'<b>'+esc(p.name)+'</b><br>':'')+
       '<span class="note">'+esc(fmtWhen(p.startsAt))+' \u00b7 '+(open?'offen':'noch <span data-left="'+num(p.startsAt)+'">'+fmtLeft(p.startsAt-now)+'</span>')+'</span></div>'+
       '<button class="small ghost" data-a="planlink" data-code="'+esc(p.code)+'">Link</button>'+
-      (open?'<button class="small" data-a="joincode" data-code="'+esc(p.code)+'">Beitreten</button>':'')+'</div>';
+      (open?'<button class="small" data-a="joincode" data-code="'+esc(p.code)+'">Beitreten</button>'+
+        '<button class="small ghost" data-a="tvjoin" data-code="'+esc(p.code)+'" title="Dieses Gerät zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">📺 Als Tisch</button>':'')+'</div>';
   }).join('')+'</div><div class="hr"></div>';
 }
+/* ---------- Deine Plätze: Weiterspielen (dieser Browser) bzw. „Hierher holen“ (gleiches Konto, anderes Gerät) ---------- */
+var mySeats=[],mySeatsAt=0;
+function seatsLocal(){var l=[];try{l=JSON.parse(localStorage.getItem('kr.seats')||'[]');}catch(e){}return Array.isArray(l)?l:[];}
+function seatsStore(l){try{localStorage.setItem('kr.seats',JSON.stringify(l.slice(0,10)));}catch(e){}}
+function seatRemember(c,id,n){seatsStore([{c:c,id:id,n:n||''}].concat(seatsLocal().filter(function(x){return x.c!==c;})));}
+function seatForget(c){seatsStore(seatsLocal().filter(function(x){return x.c!==c;}));}
+/* Plätze prüfen: lokale per Raumzustand (Platz da, gleicher Schlüssel?), Konto-Plätze per acct.myrooms */
+function seatsLoad(){
+  if(code||sp)return;
+  mySeatsAt=Date.now();
+  var loc=seatsLocal(),out=[],seen={};
+  var chk=loc.map(function(x){
+    return api('state',{room:x.c,since:-1}).then(function(r){
+      var me=r.docs&&r.docs['players/'+x.id];
+      if(!me){seatForget(x.c);return;}
+      var ks=null;try{ks=JSON.parse(localStorage.getItem('kr.key.'+x.id)||'null');}catch(e){}
+      if(!ks||!me.pub||!ks.pub||me.pub.x!==ks.pub.x){seatForget(x.c);return;}   // woanders übernommen
+      var m=r.docs['state/main']||{};
+      seen[x.c]=1;out.push({code:x.c,id:x.id,name:me.name||x.n,room:(r.docs.room&&r.docs.room.name)||'',phase:m.phase||'lobby',local:true});
+    }).catch(function(e){if(e&&/nicht gefunden/.test(e.message))seatForget(x.c);});
+  });
+  var acc=ACC?api('acct.myrooms',{},{}).catch(function(){return {rooms:[]};}):Promise.resolve({rooms:[]});
+  Promise.all(chk).then(function(){return acc;}).then(function(r){
+    (r.rooms||[]).forEach(function(x){if(!seen[x.code])out.push({code:x.code,id:x.pid,name:x.name,room:x.room,phase:x.phase,local:false});});
+    mySeats=out;if(!code&&!sp)render();
+  });
+}
+function seatsHtml(){
+  if(!mySeats.length)return '';
+  return '<h2>Deine Plätze</h2><div class="plist">'+mySeats.map(function(x){
+    return '<div class="pl"><span class="code">'+esc(x.code)+'</span><div class="nm">'+(x.room?'<b>'+esc(x.room)+'</b><br>':'')+
+      '<span class="note">als '+esc(x.name)+' \u00b7 '+esc(PHASE_SHORT[x.phase]||x.phase)+(x.local?'':' \u00b7 auf anderem Gerät')+'</span></div>'+
+      (x.local?'<button class="small primary" data-a="seatgo" data-code="'+esc(x.code)+'">Weiterspielen</button>'
+        :'<button class="small primary" data-a="seatgrab" data-code="'+esc(x.code)+'" data-id="'+esc(x.id)+'" title="Dein Platz wechselt auf dieses Gerät">Hierher holen</button>')+'</div>';
+  }).join('')+'</div><div class="hr"></div>';
+}
+function seatGo(c){
+  var x=seatsLocal().filter(function(s){return s.c===c;})[0];if(!x)return;
+  var go=function(){try{localStorage.setItem('kr.room',c);}catch(e){}rejoin();};
+  if(x.id===uid)return go();
+  uid=x.id;try{localStorage.setItem('kr.uid',uid);}catch(e){}
+  loadKeys().then(go);
+}
+function seatGrab(c,id){pendingTake={code:c,id:id,own:true};enter(c,true);}
 function planHtml(){
   var pad=function(x){return (x<10?'0':'')+x;},d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);
   var def=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':00';
@@ -2616,7 +2671,8 @@ function roomsHtml(){
     return '<div class="pl"><span class="code">'+esc(r.code)+'</span>'+
       '<div class="nm">'+(r.name?'<b>'+esc(r.name)+'</b><br>':'')+esc((r.names||[]).join(', '))+
         '<div class="note">'+(num(r.startsAt)>srvNow()?'\u23f3 Start '+esc(fmtWhen(num(r.startsAt)))+' \u00b7 ':'')+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
-      (full?'':'<button class="small" data-a="joincode" data-code="'+esc(r.code)+'">Beitreten</button>')+
+      (full?'<button class="small" disabled title="Alle Plätze belegt – zuschauen oder für jemanden einspringen geht">voll ('+num(r.players)+'/'+num(CFG.maxPlayers)+')</button>'
+        :'<button class="small" data-a="joincode" data-code="'+esc(r.code)+'">Beitreten</button>')+
       '<button class="small ghost" data-a="watch" data-code="'+esc(r.code)+'">Zuschauen</button>'+
       '<button class="small ghost" data-a="tvjoin" data-code="'+esc(r.code)+'" title="Dieses Gerät zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">📺 Als Tisch</button>'+
       ((r.free&&r.free.length)?'<div class="jump">'+r.free.map(function(f){
@@ -2635,7 +2691,7 @@ function fetchRooms(){
     if(spPending)reportSpHand0();
   }).catch(function(){if(!netDown){netDown=true;if(!code&&!sp)render();}});
 }
-setInterval(function(){if(!code&&!sp&&!document.hidden)fetchRooms();},5000);
+setInterval(function(){if(!code&&!sp&&!document.hidden){fetchRooms();if(Date.now()-mySeatsAt>30000)seatsLoad();}},5000);
 
 /* ---------- Raum betreten / erstellen ---------- */
 function newCode(){var s='';for(var i=0;i<4;i++)s+=CODE_ALPHABET[crypto.getRandomValues(new Uint32Array(1))[0]%CODE_ALPHABET.length];return s;}
@@ -2702,12 +2758,12 @@ function enter(c,watch,tv){
     applyDocs();
     if(watching){
       var pt=pendingTake;pendingTake=null;
-      if(pt&&pt.code===c)setTimeout(function(){if(isBotP(pt.id))replaceBot(pt.id);else takeOver(pt.id);},0);
+      if(pt&&pt.code===c)setTimeout(function(){if(isBotP(pt.id))replaceBot(pt.id);else takeOver(pt.id,pt.own,true);},0);
       return;
     }
     var cur=docs['players/'+uid]||{};
     return doc('players/'+uid).set({name:myName||cur.name||'Spieler',pub:myPubJwk,joinedAt:cur.joinedAt||Date.now(),ready:null})
-      .then(function(){joined=true;});
+      .then(function(){joined=true;seatRemember(c,uid,myName);});
   }).then(function(){startPoll();}).catch(showErr);
 }
 function leave(){
@@ -2720,7 +2776,7 @@ function leave(){
   if(tvMode){tvMode=false;tvWakeLock(false);try{if(history.replaceState)history.replaceState(null,'',location.pathname);}catch(e){}
     try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();}catch(e){}}
   try{localStorage.removeItem('kr.room');}catch(e){}
-  render();fetchRooms();
+  render();fetchRooms();seatsLoad();
 }
 function upd(){ try{tick();}catch(e){console.error(e);} try{maybeRecord();}catch(e){console.error(e);} try{acctMaybeMp();}catch(e){console.error(e);} render(); }
 
@@ -2753,7 +2809,7 @@ function acctAuth(kind){
     if(r.recovery){acctRec=r.recovery;acctDlg='rec';}else acctDlg='me';
     if(frCode){acctTab='fr';frLoad();}
     if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
-    render();acctSync();roomLinkSync(true);
+    render();acctSync();roomLinkSync(true);seatsLoad();
   }).catch(acctFail);
 }
 /* Abgleich: Konto-Hände in den Browser holen, fehlende Browser-Hände ins Konto schicken */
@@ -3162,7 +3218,7 @@ function startView(){
     (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
     (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
     '<div class="hr"></div>'+
-    plannedHtml()+
+    seatsHtml()+plannedHtml()+
     '<h2>Offene Räume</h2><div id="roomlist">'+roomsHtml()+'</div>'+
     '<div class="hr"></div>'+
     '<details><summary>So läuft eine Hand</summary><ol class="steps">'+
@@ -3594,6 +3650,8 @@ document.addEventListener('click',function(ev){
   else if(a==='tvfs')tvFullscreen();
   else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
   else if(a==='watch')watchRoom(el.getAttribute('data-code'));
+  else if(a==='seatgo')seatGo(el.getAttribute('data-code'));
+  else if(a==='seatgrab')seatGrab(el.getAttribute('data-code'),el.getAttribute('data-id'));
   else if(a==='jump')jumpIn(el.getAttribute('data-code'),el.getAttribute('data-id'));
   else if(a==='play')playNow();
   else if(a==='theme')toggleTheme();
@@ -3693,7 +3751,7 @@ function rejoin(){
     var me=r.docs&&r.docs['players/'+uid];
     if(!me||code){try{localStorage.removeItem('kr.room');}catch(e){}return;}
     if(me.pub&&myPubJwk&&me.pub.x!==myPubJwk.x){
-      try{localStorage.removeItem('kr.room');}catch(e){}
+      try{localStorage.removeItem('kr.room');}catch(e){}seatForget(c);
       uiNote='Dein Platz in Raum '+c+' wurde auf einem anderen Gerät übernommen. Du kannst zuschauen oder neu beitreten.';render();return;
     }
     applyConfig(r.config);myName=me.name||myName;enter(c);
@@ -3720,7 +3778,7 @@ if(window.addEventListener){
     loadKeys().then(function(){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
-      acctSync();
+      acctSync();seatsLoad();
       if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{acctDlg='login';uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';}render();}
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else if(tvCode&&!code)tvJoin(tvCode);

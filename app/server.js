@@ -1081,7 +1081,8 @@ async function api(req, res, u) {
     if (!kh) return json(res, 403, { error: 'Geraeteschluessel fehlt' });
     if (isBotId(r, pid)) return json(res, 403, { error: 'Bot-Platz' });
     const free = !(r.keys && r.keys[pid]);
-    const takeover = !free && r.keys[pid] !== kh && takeable(code, r, pid);
+    // Übernahme: Platz lange genug offline – oder das angemeldete Konto besitzt den Platz (Weiterspielen auf anderem Gerät)
+    const takeover = !free && r.keys[pid] !== kh && (takeable(code, r, pid) || accounts.ownsSeat(req, code, pid));
     if (!free && r.keys[pid] !== kh && !takeover) return json(res, 403, { error: 'Fremder Spielerplatz' });
     r.keys = r.keys || {};
     r.keys[pid] = kh;                    // neu, bestätigt oder übernommen (Spieler war offline)

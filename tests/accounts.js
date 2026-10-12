@@ -21,8 +21,10 @@ fs.writeFileSync(path.join(TMP, 'data', 'TST1.json'), JSON.stringify({ version: 
 
 let srv;
 function start() {
-  srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT), ADMIN_SECRET: SECRET }), stdio: 'ignore' });
-  return sleep(700);
+  srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT), ADMIN_SECRET: SECRET, KR_TAKEOVER_MS: '600000' }), stdio: 'ignore' });
+  return (async () => {   // warten, bis der Server antwortet (unter Last dauert der Start länger)
+    for (let i = 0; i < 60; i++) { await sleep(250); try { if ((await fetch(BASE + 'api?a=config')).ok) return; } catch (e) { /* startet noch */ } }
+  })();
 }
 let ipn = 1;
 async function call(a, body, o) {
@@ -195,6 +197,19 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
   ok(r.j.members.u2 === 'in', 'Clara sieht die Anfrage am Platz von Ben');
   r = await call('acct.roomfriend', { room: 'TST1', player: 'u2' }, { tok: tokC, key: KEY });
   ok(r.j.now && r.j.members.u2 === 'friend', 'Clara nimmt im Raum an → befreundet');
+  /* Deine Plätze: Platz bleibt im Konto, gleiches Konto holt ihn auf ein anderes Gerät */
+  r = await call('acct.myrooms', {}, { tok: tokC });
+  ok(r.s === 200 && r.j.rooms.length === 1 && r.j.rooms[0].code === 'TST1' && r.j.rooms[0].pid === 'u1' && r.j.rooms[0].name === 'Anna', 'Konto kennt seinen Platz (myrooms)');
+  const setP = (pid, key, tok) => call('set&room=TST1&path=players/' + pid, { name: 'Anna' }, { key: key, tok: tok });
+  ok((await setP('u1', 'neues-geraet-schluessel-3', null)).s === 403, 'ohne Konto: Platz nicht übernehmbar (Host, gerade da)');
+  ok((await setP('u2', 'neues-geraet-schluessel-3', tokC)).s === 403, 'fremder Platz trotz Konto nicht übernehmbar');
+  ok((await setP('u1', 'neues-geraet-schluessel-3', tokC)).s === 200, 'eigener Platz mit Konto auf neues Gerät geholt');
+  ok((await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY })).s === 403, 'altes Gerät gehört nicht mehr zum Platz');
+  ok((await setP('u1', KEY, tokC)).s === 200, 'und wieder zurückgeholt');
+  await call('acct.roomlink', { room: 'TST1', off: true }, { tok: tokC, key: KEY });
+  ok((await call('acct.myrooms', {}, { tok: tokC })).j.rooms.length === 0, 'Abmelden im Raum entfernt den Platz aus dem Konto');
+  ok((await setP('u1', 'neues-geraet-schluessel-3', tokC)).s === 403, 'danach keine Übernahme mehr');
+  await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY });
   await call('acct.roomlink', { room: 'TST1', off: true }, { tok: tokB, key: KEY2 });
   r = await call('acct.roomlink', { room: 'TST1' }, { tok: tokC, key: KEY });
   ok(Object.keys(r.j.members).length === 0, 'nach Abmelden im Raum nicht mehr sichtbar');
