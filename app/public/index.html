@@ -60,7 +60,7 @@ p{margin:0 0 10px}
 html.kr-app .installhelp,html.kr-lan .installhelp{display:none}
 .placebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin:12px 0 0;padding:8px 8px 8px 12px;
   border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
-.placebar .pl{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
+.placebar .plc{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
 .placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
 .placebar .sub{color:var(--muted)}
 /* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
@@ -1587,12 +1587,12 @@ function appMsg(m){
 var appAwakeOn=null;
 function appAwake(on){if(on!==appAwakeOn){appAwakeOn=on;appMsg({a:'awake',on:on});}}
 function placeBar(){
-  if(KRA&&KRA.lanGuest)return '<div class="placebar"><p class="pl"><span class="dot"></span><span><b>Spiel im WLAN</b> <span class="sub">· ohne Internet</span></span></p></div>';
+  if(KRA&&KRA.lanGuest)return '<div class="placebar"><p class="plc"><span class="dot"></span><span><b>Spiel im WLAN</b> <span class="sub">· ohne Internet</span></span></p></div>';
   if(!KRA||!KRA.app)return '';
   var t=KRA.mode==='lan'?'<b>Du hostest im WLAN</b> <span class="sub">· ohne Internet</span>':
         KRA.mode==='join'?'<b>Im WLAN</b> <span class="sub">· bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,''))+'</span>':
         '<b>Online</b> <span class="sub">· gang.aize.eu</span>';
-  return '<div class="placebar"><p class="pl"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'Spielort · QR':'Spielort')+'</button></div>';
+  return '<div class="placebar"><p class="plc"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'Spielort · QR':'Spielort')+'</button></div>';
 }
 function vib(p){
   if(KRA&&KRA.app){appMsg({a:'haptic',k:(p&&p.length>1)||p>=60?'success':p>=35?'medium':'light'});return;}
