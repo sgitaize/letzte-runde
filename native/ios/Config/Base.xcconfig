@@ -1,0 +1,4 @@
+// Gemeinsame Einstellungen. Team und eigene Bundle-ID in Config/Local.xcconfig (nicht im Repo), z. B.:
+//   DEVELOPMENT_TEAM = XXXXXXXXXX
+KR_BUNDLE_ID = de.sgitaize.letzterunde
+#include? "Local.xcconfig"

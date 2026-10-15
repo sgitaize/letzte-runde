@@ -1,0 +1,5 @@
+Config/Local.xcconfig
+Vendor/
+LetzteRunde.xcodeproj/
+build/
+*.xcarchive
