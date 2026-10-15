@@ -64,7 +64,7 @@ android {
 // Spiel und Server aus app/ ins APK (assets/game) – wie Scripts/bundle-game.sh bei iOS
 val bundleGame by tasks.registering(Sync::class) {
     from("../../../app") {
-        include("server.js", "bots.js", "accounts.js", "app-host.js", "selfsigned.js", "package.json")
+        include("server.js", "bots.js", "accounts.js", "moderation.js", "app-host.js", "selfsigned.js", "package.json")
         include("public/**")
         exclude("public/sw.js", "public/admin.html")
     }

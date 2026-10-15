@@ -72,12 +72,15 @@ function login(s){
   return call('login').then(function(r){
     cfg=r.config;defs=r.defaults;
     try{sessionStorage.setItem('kr.admin',s);}catch(e){}
-    err='';return rooms().then(accounts);
+    err='';return rooms().then(accounts).then(reports);
   });
 }
 var roomList=[],acctList=[],acctPw=null;
 function rooms(){return call('rooms').then(function(r){roomList=r.rooms||[];render();});}
 function accounts(){return call('accounts').then(function(r){acctList=r.accounts||[];render();});}
+var repList=[];
+function reports(){return call('reports').then(function(r){repList=r.reports||[];render();});}
+var REASON={beleidigung:'Beleidigung',spam:'Spam',name:'Unangemessener Name',sonstiges:'Sonstiges'};
 
 function render(){
   var el=$('app');
@@ -128,6 +131,15 @@ function render(){
            :'<p class="note">Keine Räume.</p>')+
       '<div class="bar"><button class="small" id="refresh">Aktualisieren</button>'+
       '<button class="small danger" id="delall">Alle Räume löschen</button></div></div>'+
+    '<div class="panel"><h2>Meldungen ('+repList.length+')</h2>'+
+      '<p class="note">Spieler*innen melden andere im Raum (Grund + letzte 20 Chatzeilen, vom Server erfasst). <b>T</b> = gemeldete Person, <b>R</b> = meldende Person. Raum ggf. oben löschen.</p>'+
+      (repList.length?repList.map(function(x){
+        return '<div class="panel"><b>'+esc(x.target)+'</b> gemeldet von '+esc(x.by)+' · '+esc(REASON[x.reason]||x.reason)+
+          ' · Raum <code>'+esc(x.room)+'</code>'+(x.roomName?' „'+esc(x.roomName)+'“':'')+' · <span class="note">'+new Date(x.ts).toLocaleString('de-DE')+'</span>'+
+          (x.note?'<p>'+esc(x.note)+'</p>':'')+
+          (x.chat&&x.chat.length?'<div class="note">'+x.chat.map(function(c){return (c.id?'<b>['+esc(c.id)+']</b> ':'')+esc(c.name)+': '+esc(c.text);}).join('<br>')+'</div>':'<p class="note">Kein Chat.</p>')+
+          '<div class="bar"><button class="small" data-rdone="'+esc(x.id)+'">erledigt</button></div></div>';
+      }).join('')+'<div class="bar"><button class="small danger" id="repall">Alle als erledigt</button></div>':'<p class="note">Keine offenen Meldungen.</p>')+'</div>'+
     '<div class="panel"><h2>Konten ('+acctList.length+')</h2>'+
       '<p class="note">Name + Passwort, keine E-Mail. „Passwort zurücksetzen“ erzeugt ein Einmal-Passwort, das du der Person gibst; sie wird überall abgemeldet und soll danach ein eigenes setzen.</p>'+
       (acctPw?'<p class="ok">Einmal-Passwort für <b>'+esc(acctPw.name)+'</b>: <code>'+esc(acctPw.pw)+'</code> (wird nur jetzt angezeigt)</p>':'')+
@@ -151,10 +163,17 @@ function render(){
     if(!defs)return;
     call('config',defs).then(function(r){cfg=r.config;msg='Auf Standard zurückgesetzt.';err='';render();}).catch(function(e){err=e.message;render();});
   };
-  $('refresh').onclick=function(){rooms().then(accounts).catch(function(e){err=e.message;render();});};
+  $('refresh').onclick=function(){rooms().then(accounts).then(reports).catch(function(e){err=e.message;render();});};
   $('delall').onclick=function(){
     if(!confirm('Wirklich alle Räume löschen? Laufende Spiele werden beendet.'))return;
     call('delroom',{all:true}).then(rooms).catch(function(e){err=e.message;render();});
+  };
+  Array.prototype.forEach.call(el.querySelectorAll('[data-rdone]'),function(b){
+    b.onclick=function(){call('repdone',{id:b.getAttribute('data-rdone')}).then(reports).catch(function(e){err=e.message;render();});};
+  });
+  if($('repall'))$('repall').onclick=function(){
+    if(!confirm('Alle Meldungen als erledigt markieren?'))return;
+    call('repdone',{all:true}).then(reports).catch(function(e){err=e.message;render();});
   };
   Array.prototype.forEach.call(el.querySelectorAll('[data-areset]'),function(b){
     b.onclick=function(){

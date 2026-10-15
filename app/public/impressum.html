@@ -45,7 +45,7 @@
 
     <h3>Kurz gesagt</h3>
     <ul>
-      <li>Keine Anmeldung, keine Cookies, kein Tracking, keine Werbung, keine Analyse-Dienste.</li>
+      <li>Spielen ohne Anmeldung (ein Konto ist freiwillig), kein Tracking, keine Werbung, keine Analyse-Dienste.</li>
       <li>Gespeichert wird nur, was zum Spielen nötig ist – und Räume werden automatisch gelöscht.</li>
     </ul>
 
@@ -64,6 +64,18 @@
     <h3>Benutzerkonto (freiwillig)</h3>
     <p>Spielen geht ohne Konto. Legst du eines an, speichern wir deinen Kontonamen, dein Passwort nicht selbst, sondern nur als nicht umkehrbaren, gesalzenen Hash (scrypt), einen Hash deines Wiederherstellungscodes, Anmeldezeitpunkte und deine Spielstatistik (Ergebnisse der Hände im Übungsraum und in Räumen, inklusive der Namen der Mitspielenden und Bots dieser Hände). Eine E-Mail-Adresse brauchen wir nicht. Zweck ist, dass deine Statistik auf allen deinen Geräten verfügbar ist (Art. 6 Abs. 1 lit. b DSGVO). Die Kontodaten liegen zusätzlich verschlüsselt (AES-256) auf dem Server. Solange du angemeldet bist, speichert dein Browser ein Anmelde-Cookie (<code>kr_acct</code>, bis zu 180 Tage, nur über HTTPS, für Skripte nicht lesbar). Über einen Freundescode kannst du dich mit anderen befreunden; erst wenn die andere Person zustimmt, seht ihr gegenseitig euren Kontonamen und eure Gesamtwerte (Anzahl Hände, Quote, Tipp-Treffer, beste Serie) in der Bestenliste – keine einzelnen Hände. Bist du in einem Raum angemeldet, sehen andere dort angemeldete Spielende nur, dass dein Platz zu einem Konto gehört (für den Knopf „Freundschaftsanfrage“) – nicht deinen Kontonamen; diese Zuordnung liegt nur kurz im Arbeitsspeicher. Freundschaften lassen sich jederzeit lösen. Du kannst dein Konto samt Statistik jederzeit selbst unter „Konto &amp; Statistik → Konto verwalten“ löschen; die Admins können Passwörter zurücksetzen und Konten löschen, sehen aber keine Passwörter.</p>
 
+    <h3>Melden und Stummschalten</h3>
+    <p>Im Raum kannst du andere Spielende stummschalten oder melden. Stummschalten wirkt nur auf deinem Gerät: Es speichert lokal die Spieler-ID der Person und blendet deren Chat, Sprechblasen und Reaktionen bei dir aus. Eine Meldung speichert auf dem Server den Raumcode und Raumnamen, die Namen der meldenden und der gemeldeten Person, den Grund, den Zeitpunkt und die letzten 20 Chatnachrichten des Raums, damit der Betreiber Beleidigungen oder Missbrauch prüfen und z. B. den Raum schließen kann. Meldungen werden nach der Bearbeitung gelöscht, spätestens aber verdrängt, sobald 300 neuere vorliegen. Chat, Spieler- und Raumnamen laufen außerdem durch einen Wortfilter, der grobe Beleidigungen durch Sternchen ersetzt. Rechtsgrundlage: berechtigtes Interesse an einem respektvollen, sicheren Spiel (Art. 6 Abs. 1 lit. f DSGVO).</p>
+    <h3>Apps für iPhone, iPad und Android</h3>
+    <p>Die Apps enthalten das Spiel selbst und laufen auf deinem Gerät; es gelten dieselben Regeln wie im Browser, mit diesen Ergänzungen:</p>
+    <ul>
+      <li><b>Online spielen:</b> Räume, Konten und Statistik laufen wie im Browser über gang.aize.eu. Die App leitet die Anfragen nur weiter; das Anmelde-Cookie liegt im App-Speicher.</li>
+      <li><b>Spielen im WLAN (ohne Internet):</b> Hostest du ein Spiel im WLAN, läuft der Spielserver auf deinem Gerät. Raum, Namen, Chat und Statistik liegen dann nur auf deinem Gerät und werden nicht an uns übertragen. Andere Geräte im selben WLAN verbinden sich direkt mit dir (per QR-Code oder Suche im lokalen Netzwerk). Dafür fragt die App nach dem Zugriff auf das lokale Netzwerk.</li>
+      <li><b>WLAN-Hände ins Konto (freiwillig, Standard aus):</b> Schaltest du das im Konto ein, schickt die App die Ergebnisse deiner Hände aus WLAN-Spielen beim nächsten Online-Kontakt in dein Konto (gleiche Angaben wie bei Raum-Händen, markiert als „lokal“; sie zählen nicht in der Bestenliste). Bis dahin liegen sie in einer Warteschlange auf deinem Gerät.</li>
+      <li><b>Kamera:</b> nur zum Scannen eines QR-Codes für ein Spiel im WLAN. Es werden keine Bilder gespeichert oder übertragen.</li>
+      <li><b>Mikrofon:</b> nur für den Voice-Chat (siehe unten), wenn du ihn aktiv betrittst.</li>
+      <li>Die Apps enthalten keine Werbung, kein Tracking und keine Analyse- oder Absturzberichte-Dienste Dritter. Die Android-App (APK) lädst du direkt von dieser Seite; für die iOS-App gelten zusätzlich die Bedingungen von Apple für den App Store.</li>
+    </ul>
     <h3>Voice-Chat (falls eingeschaltet)</h3>
     <p>Der Voice-Chat verbindet die Geräte der Mitspieler direkt (WebRTC); der Ton läuft verschlüsselt von Gerät zu Gerät und nicht über unseren Server und wird nicht aufgezeichnet. Für den Verbindungsaufbau tauschen die Geräte über unseren Server technische Verbindungsdaten aus, die auch deine IP-Adresse enthalten und für deine Mitspieler sichtbar sind. Zum Ermitteln der eigenen öffentlichen Adresse fragt dein Browser STUN-Server von Google und Cloudflare an; dabei wird deine IP-Adresse an diese Anbieter übermittelt. Vor der ersten Nutzung fragen wir nach deiner Einwilligung; sie wird nur auf deinem Gerät gespeichert. Den Zugriff auf dein Mikrofon erlaubst du zusätzlich selbst im Browser; der Voice-Chat startet nur, wenn du ihn aktiv betrittst (Art. 6 Abs. 1 lit. a DSGVO). Du kannst die Einwilligung jederzeit im Spiel über „ⓘ“ neben dem Voice-Knopf zurücknehmen.</p>
     <h3>Cookies und Einwilligungen</h3>
@@ -74,7 +86,7 @@
 
     <h3>Deine Rechte</h3>
     <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch (Art. 15–21 DSGVO). Wende dich dazu an die oben genannte E-Mail-Adresse. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg.</p>
-    <p class="muted">Stand: September 2026</p>
+    <p class="muted">Stand: Oktober 2026</p>
   </section>
   <a class="back" href="./">← Zurück zum Spiel</a>
 </main>

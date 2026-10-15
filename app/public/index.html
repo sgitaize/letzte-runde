@@ -57,7 +57,7 @@ p{margin:0 0 10px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .row:has(> .field){align-items:flex-end}
 /* App (window.KR_APP): Installationshilfe nur im Browser */
-html.kr-app .installhelp,html.kr-lan .installhelp{display:none}
+html.kr-app .installhelp,html.kr-lan .installhelp,html.kr-app .apkdl,html.kr-lan .apkdl{display:none}
 .placebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin:12px 0 0;padding:8px 8px 8px 12px;
   border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
 .placebar .plc{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
@@ -2437,8 +2437,8 @@ function stealHtml(){
 function sayOf(id){var q=(S.say||{})[id];return q&&typeof q.t==='string'&&Date.now()-(q.ts-(srvOff||0))<REACT_MS?q.t:null;}
 /* Server-Bot unsicher → „offen für Wechsel“ (Dokument open/<bot>, gilt nur für diese Hand, Runde und diesen Chip) */
 function isOpenBot(id,h,c){var o=(S.open||{})[id];return !!(o&&o.hand===h&&o.stage===stage()&&o.chip===c);}
-function sayHtml(id){var t=sayOf(id);return t?'<div class="say">\ud83d\udcac '+esc(t)+'</div>':'';}
-function reactHtml(id){var e=reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
+function sayHtml(id){var t=isMuted(id)?'':sayOf(id);return t?'<div class="say">\ud83d\udcac '+esc(t)+'</div>':'';}
+function reactHtml(id){var e=isMuted(id)?'':reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
 function reactBar(){
   if(!sp&&(watching||!joined||!code))return '';
   return '<div class="reactbar" role="group" aria-label="Schnelle Reaktion">'+REACTS.map(function(e,i){
@@ -3242,7 +3242,7 @@ function render(){
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
-  el.innerHTML = sp?spView():code?(tvMode?tvView():roomView()):startView()+acctDialog();
+  el.innerHTML = sp?spView():code?(tvMode?tvView():roomView()+modDialog()):startView()+acctDialog();
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
@@ -3290,6 +3290,7 @@ function startView(){
   '</details></div>'+
   '<div id="playcount">'+countsHtml()+'</div>'+
   '<p class="sitefoot"><a href="impressum.html">Impressum</a> \u00b7 <a href="impressum.html#datenschutz">Datenschutz</a> \u00b7 '+
+    '<a class="apkdl" href="app/letzte-runde.apk" download>\ud83e\udd16 Android-App (APK)</a><span class="apkdl"> \u00b7 </span>'+
     '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">GitHub (Open Source)</a> \u00b7 '+
     '<a href="https://simongutjahr.de" target="_blank" rel="noopener">Mehr von Simon</a></p>';
 }
@@ -3540,7 +3541,7 @@ function playerList(inHand){
     out+='<div class="pl'+(id===uid?' me':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+'">'+
       (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
-      '<div class="nm">'+esc(p.name||'Spieler')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
+      '<div class="nm">'+esc(p.name||'Spieler')+(isMuted(id)?' <span class="tag" title="stummgeschaltet">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+'</div>'+
       (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
       (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?'<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04 offen</span>':'')+
@@ -3550,6 +3551,7 @@ function playerList(inHand){
         (watching&&m[id]&&!isOnline(id)?'<span class="note">'+(id===hostId()?'Host \u2013 Rolle wandert nach '+Math.round(HOSTMOVE_MS/60000)+' min weiter':
           'übernehmbar in '+Math.max(1,Math.ceil((TAKE_MS-(away[id]||0))/1000))+' s')+'</span>':''))+
       (!watching&&isHost()&&id!==uid&&m[id]&&!isBotP(id)&&!isOnline(id)?'<button class="small ghost" data-botify="'+esc(id)+'" title="Offline-Spieler durch einen Bot ersetzen">\ud83e\udd16 ersetzen</button>':'')+
+      (id!==uid&&!isBotP(id)?'<button class="small ghost" data-mod="'+esc(id)+'" title="Stummschalten oder melden" aria-label="'+esc(p.name||'Spieler')+': stummschalten oder melden">\u22ef</button>':'')+
       (!watching&&isHost()&&id!==uid&&m[id]?'<button class="small ghost" data-kick="'+esc(id)+'" title="Aus dem Raum entfernen">\u2715</button>':'')+
       cards+verdict+
     '</div>';
@@ -3621,6 +3623,38 @@ function revealPanel(){
 
 /* ---------- Chat ---------- */
 var chatShown=-1,chatMode=null,chatSeenTs=null;
+/* ---------- Stummschalten / Melden ----------
+   Stummschalten wirkt nur auf diesem Gerät (Chat, Sprechblasen, Reaktionen), gemerkt über die Spieler-ID.
+   Melden schickt Raum + Grund; Namen und Chatverlauf nimmt der Server selbst (Admin → Meldungen). */
+var muted=(function(){try{var m=JSON.parse(localStorage.getItem('kr.mute')||'[]');return Array.isArray(m)?m.filter(function(x){return typeof x==='string';}):[];}catch(e){return [];}})();
+var modFor=null,modMsg='',modBusy=false;
+function isMuted(id){return muted.indexOf(id)>=0;}
+function setMuted(id,on){
+  muted=muted.filter(function(x){return x!==id;});if(on)muted.push(id);muted=muted.slice(-200);
+  try{localStorage.setItem('kr.mute',JSON.stringify(muted));}catch(e){}
+  modMsg=on?pname(id)+' ist bei dir stummgeschaltet.':'';chatShown=-1;render();
+}
+function modReport(reason){
+  if(!modFor||modBusy)return;modBusy=true;modMsg='';render();
+  api('report',{room:code},{uid:uid,target:modFor,reason:reason}).then(function(r){
+    modBusy=false;modMsg=r.dup?'Du hast '+pname(modFor)+' bereits gemeldet.':'Danke – die Meldung ist beim Betreiber eingegangen.';render();
+  }).catch(function(e){modBusy=false;modMsg=(e&&e.message)||String(e);render();});
+}
+function modDialog(){
+  if(!modFor||!code)return '';
+  if(!pmap()[modFor]){modFor=null;return '';}
+  var n=esc(pname(modFor)),mu=isMuted(modFor),dis=modBusy?' disabled':'',canRep=joined&&!watching;
+  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="modh"><div class="cd-box vbox">'+
+    '<div class="spread"><h2 id="modh">'+n+'</h2><button class="small ghost" data-a="modclose" aria-label="Schließen">✕</button></div>'+
+    '<div class="bar"><button data-a="modmute">'+(mu?'\ud83d\udd08 Wieder einblenden':'\ud83d\udd07 Stummschalten')+'</button></div>'+
+    '<p class="note">Stummschalten blendet Chat, Sprechblasen und Reaktionen dieser Person nur bei dir aus – auch in späteren Räumen.</p>'+
+    (canRep?'<h3>\ud83d\udea9 Melden</h3><p class="note">Die Meldung geht mit den letzten Chatnachrichten dieses Raums an den Betreiber.</p>'+
+      '<div class="bar"><button class="small" data-a="modrep" data-r="beleidigung"'+dis+'>Beleidigung</button><button class="small" data-a="modrep" data-r="spam"'+dis+'>Spam</button>'+
+      '<button class="small" data-a="modrep" data-r="name"'+dis+'>Unangemessener Name</button><button class="small" data-a="modrep" data-r="sonstiges"'+dis+'>Sonstiges</button></div>':'')+
+    (modMsg?'<p class="info">'+esc(modMsg)+'</p>':'')+
+    (isHost()?'<p class="note">Als Host kannst du '+n+' mit ✕ aus dem Raum entfernen.</p>':'<p class="note">Der Host kann Spieler*innen aus dem Raum entfernen.</p>')+
+  '</div></div>';
+}
 function renderChat(){
   var box=$('chat');if(!box)return;
   var on=!!(code&&!tvMode),canWrite=!!(code&&!watching&&joined);
@@ -3634,7 +3668,7 @@ function renderChat(){
         '<p class="note">Als Zuschauer liest du mit. Schreiben können nur Spieler.</p>')+'</div>';
     chatShown=-1;chatMode=mode;
   }
-  var list=S.chat||[],last=list.length?list[list.length-1].ts+'|'+list.length:'0';
+  var list=(S.chat||[]).filter(function(c){return !isMuted(c.id);}),last=list.length?list[list.length-1].ts+'|'+list.length:'0';
   if(last===chatShown)return;
   /* Ton nur für neue Nachrichten anderer, nicht beim ersten Laden des Verlaufs */
   var newest=list.length?list[list.length-1].ts:0;
@@ -3680,12 +3714,13 @@ document.addEventListener('click',function(ev){
   unlockAudio();
   if(ev.target.closest&&ev.target.closest('.hap'))return;
   if(skinMenuEl&&!skinMenuEl.contains(ev.target)&&!(ev.target.closest&&ev.target.closest('[data-a="skin"]'))){skinMenuEl.remove();skinMenuEl=null;}
-  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify],[data-gslot],[data-grank]'):null;
+  var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify],[data-gslot],[data-grank],[data-mod]'):null;
   if(!el)return;
   var a=el.getAttribute('data-a');
   if(el.tagName==='BUTTON'&&el.classList.contains('primary'))fx('tap');
   if(el.hasAttribute('data-chip')){takeChip(parseInt(el.getAttribute('data-chip'),10));return;}
   if(el.hasAttribute('data-kick')){kickPlayer(el.getAttribute('data-kick'));return;}
+  if(el.hasAttribute('data-mod')){modFor=el.getAttribute('data-mod');modMsg='';render();return;}
   if(el.hasAttribute('data-take')){takeOver(el.getAttribute('data-take'));return;}
   if(el.hasAttribute('data-replace')){replaceBot(el.getAttribute('data-replace'));return;}
   if(el.hasAttribute('data-react')){sendReact(el.getAttribute('data-react'));return;}
@@ -3760,6 +3795,9 @@ document.addEventListener('click',function(ev){
   else if(a==='acctnewrec')acctNewRec();
   else if(a==='acctdel')acctDelete();
   else if(a==='acctlogout')acctLogout();
+  else if(a==='modclose'){modFor=null;render();}
+  else if(a==='modmute'){setMuted(modFor,!isMuted(modFor));}
+  else if(a==='modrep')modReport(el.getAttribute('data-r'));
   else if(a==='sp')spStart();
   else if(a==='spnext')spNewHand();
   else if(a==='spbots')spSetBots(el.getAttribute('data-n'));

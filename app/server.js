@@ -7,7 +7,7 @@
  *   GET  /r/CODE                    -> Einladung mit Vorschau (WhatsApp & Co.), leitet auf /#CODE weiter
  *   POST /api?a=create|set|del|chip|rename|record|addbot|replacebot|sphand|voice|signal|signals|react|botify
  *   POST /api?a=acct.*                 -> Benutzerkonten (accounts.js)
- *   POST /admin-api?a=login|config|rooms|delroom|accounts|acctreset|acctdel   (Header x-admin-secret)
+ *   POST /admin-api?a=login|config|rooms|delroom|accounts|acctreset|acctdel|reports|repdone   (Header x-admin-secret)
  *   WS   /ws?room=CODE              -> Push bei jeder Änderung
  *
  * Räume liegen als JSON-Datei in ./data/. Kein Build, keine Datenbank.
@@ -62,6 +62,7 @@ function runInfo() {
 function shutdown(sig) {
   console.log('Beendet durch ' + sig + ' (' + runInfo() + ')');
   try { flushAll(); } catch (x) { /* egal */ }
+  try { moderation.flush(); } catch (x) { /* egal */ }
   try { fs.unlinkSync(RUN_FILE); } catch (x) { /* egal */ }
   process.exit(0);
 }
@@ -576,7 +577,7 @@ function roomCount() {
 /* Erlaubte Dokumentpfade für allgemeines set/del; alles andere wird abgelehnt */
 const DOC_RE = /^(state\/(main|guess)|deal\/(deck|assignA|assignB|boardA|boardB)|chips\/[0-9]{1,2}|reveal\/[A-Za-z0-9_.~:@+-]{1,40}|players\/[A-Za-z0-9_.~:@+-]{1,40})$/;
 /* Raumname: optional, frei wählbar, aber ohne Steuerzeichen/Spitzklammern, max. 30 Zeichen */
-function cleanRoomName(s) { return String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30); }
+function cleanRoomName(s) { return filterWords(String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30)); }
 /* Zeitzone des Planenden (IANA, z. B. Europe/Berlin) – nur übernehmen, wenn Node sie kennt */
 function cleanTz(tz) {
   tz = String(tz || '');
@@ -693,6 +694,8 @@ setInterval(guard(() => {                 // Keepalive gegen Proxy-Timeouts; stu
 /* ------------------------------------------------ Bots ------------------- */
 const bots = require('./bots')({ rooms, commit, chipMove });
 const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
+const moderation = require('./moderation')({ dataDir: DATA, json, readBody, cleanName });
+function filterWords(s) { return require('./moderation').filter(s); }
 setInterval(guard(bots.tick, 'Bots'), 300).unref();
 /* Hängt die Ereignisschleife (lange Rechnung, z. B. Bots), merken es alle Spieler*innen sofort → protokollieren */
 let lagAt = Date.now(), lagWarnAt = 0;
@@ -706,7 +709,7 @@ setInterval(guard(() => { if (rooms.size) console.log('Status: ' + runInfo() + '
 /* ------------------------------------------------ HTTP ------------------- */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.apk': 'application/vnd.android.package-archive', '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json' };
 
 function json(res, codeNum, obj) {
@@ -1035,6 +1038,15 @@ async function api(req, res, u) {
     console.log('Raum ' + code + ' vom Host geschlossen');
     return json(res, 200, { ok: true });
   }
+  if (a === 'report') {
+    /* Spieler*in melden (App-Store 1.2): nur Spieler des Raums; Namen und Chatverlauf nimmt der Server selbst */
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
+    const who = String(body.uid || '').replace(ID_RE, '').slice(0, 40), target = String(body.target || '').replace(ID_RE, '').slice(0, 40);
+    if (!authPlayer(r, who, req)) return json(res, 403, { error: 'Nur Spieler' });
+    if (!target || target === who || !r.docs['players/' + target] || isBotId(r, target)) return json(res, 400, { error: 'Spieler unbekannt' });
+    const fresh = moderation.report(r, code, who, target, String(body.reason || ''), body.note);
+    return json(res, 200, { ok: true, dup: !fresh });
+  }
   if (a === 'nudge') {
     /* Anstupsen: nur Spieler, höchstens alle 10 s pro Paar; wird als kurzlebiges Dokument verteilt */
     let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
@@ -1052,7 +1064,7 @@ async function api(req, res, u) {
     const who = String(body.uid || '').replace(ID_RE, '').slice(0, 40);
     const pl = r.docs['players/' + who];
     if (!who || !pl || !authPlayer(r, who, req)) return json(res, 403, { error: 'Chat nur für Spieler' });
-    const text = String(body.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 300);
+    const text = filterWords(String(body.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 300));
     if (!text) return json(res, 400, { error: 'Leer' });
     const list = ((r.docs.chat && r.docs.chat.msgs) || []).slice(-59);
     list.push({ id: who, name: cleanName(pl.name).slice(0, 18), text: text, ts: Date.now() });
@@ -1099,7 +1111,7 @@ async function api(req, res, u) {
     let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
     if (!body || typeof body !== 'object') return json(res, 400, { error: 'Dokument fehlt' });
     if (p.indexOf('players/') === 0) {
-      body = { name: cleanName(body.name), pub: (body.pub && typeof body.pub === 'object') ? body.pub : null,
+      body = { name: filterWords(cleanName(body.name)), pub: (body.pub && typeof body.pub === 'object') ? body.pub : null,
         // Beitrittszeit bestimmt der Server (sonst könnte man sich per altem Datum nach vorn schieben)
         joinedAt: (r.docs[p] && Number(r.docs[p].joinedAt)) || Date.now(),
         ready: (body.ready && typeof body.ready === 'object') ? { hand: Number(body.ready.hand) || 0, stage: Number(body.ready.stage) || 0, fp: String(body.ready.fp || '').replace(/[^a-z0-9]/g, '').slice(0, 16) } : null };
@@ -1169,6 +1181,7 @@ async function adminApi(req, res, u) {
     }
     return json(res, 200, { ok: true, deleted: n });
   }
+  if (await moderation.admin(a, req, res)) return;
   if (await accounts.admin(a, req, res)) return;
   return json(res, 400, { error: 'Unbekannte Aktion' });
 }
@@ -1181,6 +1194,15 @@ function serveStatic(req, res, u) {
   if (rel === '/' || rel === '') rel = '/index.html';
   const f = path.join(PUBLIC, path.normalize(rel).replace(/^(\.\.[/\\])+/, ''));
   if (!f.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
+  /* Große Downloads (Android-APK) streamen statt ganz in den Speicher zu lesen */
+  if (path.extname(f) === '.apk') {
+    return fs.stat(f, (err, st) => {
+      if (err || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
+      res.writeHead(200, { 'Content-Type': MIME['.apk'], 'Content-Length': st.size, 'Content-Disposition': 'attachment; filename="letzte-runde.apk"', 'Cache-Control': 'no-cache' });
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(f).on('error', () => res.destroy()).pipe(res);
+    });
+  }
   fs.readFile(f, (err, buf) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
     // Passwort-Verknüpfung der Apps (iOS webcredentials, Android Asset Links) muss als JSON kommen
@@ -1242,7 +1264,7 @@ function handleReq(req, res) {
     if (isAdmin || isApi) {
       noteIpSource(req);
       const a = u.searchParams.get('a') || '';
-      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : /^acct\.(login|register|recover|password|newrecovery|delete)$/.test(a) ? 5 : 1;
+      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : /^acct\.(login|register|recover|password|newrecovery|delete)$/.test(a) || a === 'report' ? 5 : 1;
       if (!rateOk(clientIp(req), cost)) {
         res.setHeader('Retry-After', '5');
         return json(res, 429, { error: 'Zu viele Anfragen – bitte kurz warten' });
