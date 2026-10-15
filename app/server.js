@@ -1187,6 +1187,7 @@ async function adminApi(req, res, u) {
 }
 
 /* ------------------------------------------------ Static ----------------- */
+const APK_URL = 'https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk';
 function serveStatic(req, res, u) {
   let rel;
   try { rel = decodeURIComponent(u.pathname); } catch (e) { res.writeHead(400); return res.end(); }
@@ -1194,15 +1195,8 @@ function serveStatic(req, res, u) {
   if (rel === '/' || rel === '') rel = '/index.html';
   const f = path.join(PUBLIC, path.normalize(rel).replace(/^(\.\.[/\\])+/, ''));
   if (!f.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
-  /* Große Downloads (Android-APK) streamen statt ganz in den Speicher zu lesen */
-  if (path.extname(f) === '.apk') {
-    return fs.stat(f, (err, st) => {
-      if (err || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
-      res.writeHead(200, { 'Content-Type': MIME['.apk'], 'Content-Length': st.size, 'Content-Disposition': 'attachment; filename="letzte-runde.apk"', 'Cache-Control': 'no-cache' });
-      if (req.method === 'HEAD') return res.end();
-      fs.createReadStream(f).on('error', () => res.destroy()).pipe(res);
-    });
-  }
+  /* Android-APK liegt in den GitHub-Releases (schnelles CDN, versioniert); alte Links leiten dorthin weiter */
+  if (rel === '/app/letzte-runde.apk') { res.writeHead(302, { Location: APK_URL, 'Cache-Control': 'no-cache' }); return res.end(); }
   fs.readFile(f, (err, buf) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
     // Passwort-Verknüpfung der Apps (iOS webcredentials, Android Asset Links) muss als JSON kommen

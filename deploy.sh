@@ -17,13 +17,8 @@ for f in "${FILES[@]}"; do
   echo "hochgeladen: $f"
 done
 
-# Android-App (signierte Release-APK vom VPS-Build), nur beim vollen Deploy
-APK=native/android/app/build/outputs/apk/release/app-release.apk
-if [[ $# -eq 0 && -f "$APK" ]]; then
-  curl -sS --max-time 300 --ssl-reqd -k --ftp-create-dirs --user "$FTP_USER:$FTP_PASS" \
-    -T "$APK" "ftp://$FTP_HOST/httpdocs/public/app/letzte-runde.apk"
-  echo "hochgeladen: public/app/letzte-runde.apk ($(du -h "$APK" | cut -f1))"
-fi
+# Android-App: nicht mehr auf den Webspace – die APK kommt als GitHub-Release (siehe INTERN.md „Android-Release“),
+# /app/letzte-runde.apk leitet dorthin weiter.
 
 # Passenger-Neustart
 EMPTY="$(mktemp)"; trap 'rm -f "$EMPTY"' EXIT

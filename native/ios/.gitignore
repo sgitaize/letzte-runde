@@ -3,3 +3,4 @@ Vendor/
 LetzteRunde.xcodeproj/
 build/
 *.xcarchive
+__pycache__/

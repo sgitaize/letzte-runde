@@ -1,4 +1,4 @@
-/* Moderation: Wortfilter (Chat, Spieler-/Raumnamen), Melden, Admin-Liste der Meldungen; dazu der APK-Download.
+/* Moderation: Wortfilter (Chat, Spieler-/Raumnamen), Melden, Admin-Liste der Meldungen; dazu die APK-Weiterleitung.
    Startet einen eigenen Server (Port 3985) aus einer Wegwerf-Kopie von app/.
    Nutzung: node tests/moderation.js <app-verzeichnis> */
 'use strict';
@@ -19,8 +19,6 @@ const h = (k) => crypto.createHash('sha256').update(k).digest('hex');
 fs.writeFileSync(path.join(TMP, 'data', 'MOD1.json'), JSON.stringify({ version: 3, keys: { u1: h(KEY), u2: h(KEY2) }, bots: { bot1: { name: 'Emma' } },
   docs: { room: { code: 'MOD1', hostId: 'u1', createdAt: 1, name: 'Testrunde' }, 'players/u1': { name: 'Anna' }, 'players/u2': { name: 'Ben' }, 'players/bot1': { name: 'Emma', bot: true } } }));
 
-fs.mkdirSync(path.join(TMP, 'public', 'app'), { recursive: true });
-fs.writeFileSync(path.join(TMP, 'public', 'app', 'letzte-runde.apk'), crypto.randomBytes(3 * 1048576));
 const { filter } = require(path.join(TMP, 'moderation.js'));
 let srv;
 function start() {
@@ -94,11 +92,9 @@ const docs = async () => (await call('state', '&room=MOD1&since=-1')).j.docs;
   ok(r.s === 200 && r.j.removed === 1, 'Meldung erledigt');
   r = await call('repdone', '', { all: true }, { admin: true });
   ok(r.s === 200 && (await call('reports', '', undefined, { admin: true })).j.reports.length === 0, 'alle erledigt');
-  /* Android-APK: gestreamt, als Download */
-  const dl = await fetch(BASE + 'app/letzte-runde.apk'), buf = Buffer.from(await dl.arrayBuffer());
-  ok(dl.status === 200 && dl.headers.get('content-type') === 'application/vnd.android.package-archive' && /attachment/.test(dl.headers.get('content-disposition')) &&
-    buf.equals(fs.readFileSync(path.join(TMP, 'public', 'app', 'letzte-runde.apk'))), 'APK-Download vollständig, richtiger Typ, als Anhang');
-  ok((await fetch(BASE + 'app/gibtsnicht.apk')).status === 404, 'fehlende APK → 404');
+  /* Android-APK: liegt in den GitHub-Releases, der alte Pfad leitet weiter */
+  const dl = await fetch(BASE + 'app/letzte-runde.apk', { redirect: 'manual' });
+  ok(dl.status === 302 && dl.headers.get('location') === 'https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk', 'alter APK-Link leitet auf das GitHub-Release');
   ok((await fetch(BASE + 'api?a=config')).ok, 'Server läuft weiter');
   console.log('MODERATION BESTANDEN');
 })().catch((e) => { console.error(e.message || e); process.exitCode = 1; })
