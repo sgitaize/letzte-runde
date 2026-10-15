@@ -1,0 +1,10 @@
+.gradle/
+build/
+app/build/
+app/.cxx/
+app/libnode/
+app/src/main/assets/game/
+local.properties
+signing.properties
+*.jks
+*.apk
