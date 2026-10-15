@@ -21,7 +21,9 @@ const net = require('net');
 
 /* Log-Datei für Betrieb ohne Shell-Zugang (per FTP lesbar): logs/app.log
    Schutz gegen Log-Flut: höchstens LOG_PER_MIN Zeilen je Minute, ab LOG_MAX wird nach app.log.1 rotiert. */
-const LOG_FILE = path.join(__dirname, 'logs', 'app.log');
+/* KR_VAR_DIR: beschreibbares Verzeichnis für data/, logs/, tmp/ (App: Container des Geräts). Standard: neben server.js */
+const VAR_DIR = process.env.KR_VAR_DIR || __dirname;
+const LOG_FILE = path.join(VAR_DIR, 'logs', 'app.log');
 const LOG_MAX = 5 * 1024 * 1024;
 const LOG_PER_MIN = 120;
 try { fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true }); } catch (e) { /* egal */ }
@@ -51,7 +53,7 @@ process.on('uncaughtException', (e) => { console.error('uncaughtException', e); 
 process.on('unhandledRejection', (e) => { console.error('unhandledRejection', e); });
 /* Wer beendet uns? Bisher endete der Prozess still (Passenger/Plesk) – jetzt steht Grund, Laufzeit und Speicher im Log.
    Endet ein Lauf ohne diese Zeile (SIGKILL, Speicherlimit), meldet der nächste Start das über tmp/running.json. */
-const T0 = Date.now(), RUN_DIR = path.join(__dirname, 'tmp'), RUN_FILE = path.join(RUN_DIR, 'running-' + process.pid + '.json');
+const T0 = Date.now(), RUN_DIR = path.join(VAR_DIR, 'tmp'), RUN_FILE = path.join(RUN_DIR, 'running-' + process.pid + '.json');
 function runInfo() {
   let ws = 0; try { for (const set of subs.values()) ws += set.size; } catch (e) { /* vor Init */ }
   let nr = 0; try { nr = rooms.size; } catch (e) { /* vor Init */ }
@@ -95,7 +97,7 @@ const ROOT = __dirname;
 // Dateien entweder in public/ oder flach neben server.js
 const PUBLIC = fs.existsSync(path.join(ROOT, 'public', 'index.html'))
   ? path.join(ROOT, 'public') : ROOT;
-const DATA = path.join(ROOT, 'data');
+const DATA = path.join(VAR_DIR, 'data');
 
 /* Grenzen – ein echter Raum (3 Spieler, 2 Hände) hat ca. 20 KB und 18 Dokumente */
 const MAX_BODY = 131072;             // 128 KB je Dokument
@@ -1264,7 +1266,7 @@ function handleUpgrade(req, sock) {
    (→ Spieler „verschwinden“, Host wechselt, Chips springen). Deshalb: Der erste Prozess öffnet tmp/leader.sock
    und bedient alles; weitere Prozesse reichen Anfragen und WebSockets nur dorthin durch. Fällt der Führende weg,
    übernimmt der nächste. */
-const LEADER_SOCK = process.env.KR_LEADER_SOCK || path.join(ROOT, 'tmp', 'leader.sock');
+const LEADER_SOCK = process.env.KR_LEADER_SOCK || path.join(VAR_DIR, 'tmp', 'leader.sock');
 let isLeader = false, leaderSrv = null;
 function tryLead(cb) {
   try { fs.mkdirSync(path.dirname(LEADER_SOCK), { recursive: true }); } catch (e) { /* egal */ }
@@ -1311,5 +1313,12 @@ const PP = typeof PhusionPassenger !== 'undefined' ? PhusionPassenger : null;   
 if (PP) { try { PP.configure({ autoInstall: false }); } catch (e) { console.error('Passenger', e.message); } }
 tryLead((ok) => {
   if (!ok) console.log('Weitere Instanz (pid ' + process.pid + ') – reicht alles an die führende weiter');
-  server.listen(PP ? 'passenger' : PORT, () => console.log('Letzte Runde läuft ' + (PP ? 'unter Passenger' : 'auf Port ' + PORT) + ' (pid ' + process.pid + ')'));
+  /* KR_LISTEN_HOST: z. B. 127.0.0.1 (nur dieses Gerät) oder 0.0.0.0 (WLAN-Host in der App) */
+  const onListen = () => console.log('Letzte Runde läuft ' + (PP ? 'unter Passenger' : 'auf Port ' + PORT) + ' (pid ' + process.pid + ')');
+  if (PP) server.listen('passenger', onListen);
+  else if (process.env.KR_LISTEN_HOST) server.listen(PORT, process.env.KR_LISTEN_HOST, onListen);
+  else server.listen(PORT, onListen);
 });
+
+/* Für den App-Host (app-host.js): Zugriff auf den Server, um weggenommene Sockets neu zu öffnen */
+module.exports = { server };

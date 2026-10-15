@@ -9,7 +9,9 @@
  */
 'use strict';
 const H = require('./public/hand.js');
-const subtle = globalThis.crypto.subtle;
+// Web-Crypto: global ab Node 19, in Node 18 (App: nodejs-mobile) nur über require('crypto').webcrypto
+const WC = globalThis.crypto || require('crypto').webcrypto;
+const subtle = WC.subtle;
 
 /* ------------------------------------------------ Krypto (wie im Browser) -- */
 const EC = { name: 'ECDH', namedCurve: 'P-256' };
@@ -17,8 +19,8 @@ const b64 = (u8) => Buffer.from(u8).toString('base64');
 const ub64 = (s) => new Uint8Array(Buffer.from(String(s), 'base64'));
 const hx = (u8) => Buffer.from(u8).toString('hex');
 const uhx = (h) => new Uint8Array(Buffer.from(h, 'hex'));
-const rnd = (n) => globalThis.crypto.getRandomValues(new Uint8Array(n));
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = globalThis.crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const rnd = (n) => WC.getRandomValues(new Uint8Array(n));
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = WC.getRandomValues(new Uint32Array(1))[0] % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const seq = (n) => Array.from({ length: n }, (_, i) => i);
 const impPub = (j) => subtle.importKey('jwk', j, EC, true, []);
 const impPriv = (j) => subtle.importKey('jwk', j, EC, true, ['deriveBits']);

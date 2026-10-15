@@ -55,6 +55,11 @@ p{margin:0 0 10px}
 .small{font-size:13px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row:has(> .field){align-items:flex-end}
+/* App (window.KR_APP): Installationshilfe nur im Browser */
+html.kr-app .installhelp,html.kr-lan .installhelp{display:none}
+.placebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;margin:10px 0 0}
+.placebar .info{margin:0}
 .spread{display:flex;align-items:center;justify-content:space-between;gap:8px}
 button{font:inherit;font-weight:560;padding:9px 14px;border-radius:9px;border:1px solid var(--line);
   background:var(--panel);color:var(--fg);cursor:pointer}
@@ -1564,7 +1569,27 @@ function beep(freq,dur,delay,vol){
   }catch(e){}
 }
 var hapEl=null;
+/* ---------- App-Brücke (iOS: webkit.messageHandlers.kr, Android: KRAndroid) ---------- */
+var KRA=window.KR_APP||null;
+try{if(KRA)document.documentElement.classList.add(KRA.lanGuest?'kr-lan':'kr-app');}catch(e){}
+function appMsg(m){
+  if(!KRA||!KRA.app)return false;
+  try{window.webkit.messageHandlers.kr.postMessage(m);return true;}catch(e){}
+  try{window.KRAndroid.post(JSON.stringify(m));return true;}catch(e){}
+  return false;
+}
+var appAwakeOn=null;
+function appAwake(on){if(on!==appAwakeOn){appAwakeOn=on;appMsg({a:'awake',on:on});}}
+function placeBar(){
+  if(KRA&&KRA.lanGuest)return '<div class="placebar"><p class="info">📶 Spiel im WLAN – ohne Internet. Konto und Statistik gibt es hier nicht.</p></div>';
+  if(!KRA||!KRA.app)return '';
+  var t=KRA.mode==='lan'?'📶 <b>Du hostest im WLAN</b> – Mitspieler scannen deinen QR-Code':
+        KRA.mode==='join'?'📶 <b>Im WLAN</b> bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,'')):
+        '🌐 <b>Online</b> – Räume auf gang.aize.eu';
+  return '<div class="placebar"><p class="info">'+t+'</p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'QR-Code':'Spielort')+'</button></div>';
+}
 function vib(p){
+  if(KRA&&KRA.app){appMsg({a:'haptic',k:(p&&p.length>1)||p>=60?'success':p>=35?'medium':'light'});return;}
   try{
     if(navigator.vibrate){navigator.vibrate(p);return;}
     if(!hapEl){hapEl=document.createElement('label');hapEl.className='hap';hapEl.setAttribute('aria-hidden','true');
@@ -1618,7 +1643,9 @@ function waitingHtml(ids,doneTxt){
 }
 /* ---------- Einladung (Link + QR) ---------- */
 /* Einladungslink …/r/CODE: der Server liefert dort Vorschau-Daten (WhatsApp & Co.) und leitet auf …/#CODE weiter */
-function inviteUrl(c){return location.origin+location.pathname.replace(/[^/]*$/,'')+'r/'+(c||code);}
+/* In der App läuft die Seite auf http://127.0.0.1 – Links für andere zeigen dann auf gang.aize.eu bzw. den WLAN-Host (window.KR_APP vom App-Host) */
+function pubBase(){var a=window.KR_APP;return (a&&a.origin)?a.origin.replace(/\/$/,'')+'/':location.origin+location.pathname.replace(/[^/]*$/,'');}
+function inviteUrl(c){return pubBase()+'r/'+(c||code);}
 var qrCache={};
 function qrSvg(url){
   if(qrCache[url])return qrCache[url];
@@ -2434,7 +2461,8 @@ function reportSpHand(){
 function offlineBanner(){
   if(!isOffline())return '';
   return '<div class="panel offline"><p class="info">📴 <b>Offline</b> – Räume gehen gerade nicht, der Singleplayer schon.</p>'+
-    '<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button></div></div>';
+    '<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button>'+
+    (KRA&&KRA.app?'<button data-a="place">📶 Im WLAN spielen</button>':'')+'</div></div>';
 }
 
 /* ---------- Insight: Positionswechsel aller Spieler über die Runden als Verlauf (Chip je Runde, oben = höchster) ---------- */
@@ -2951,7 +2979,7 @@ function frTag(id){
   if(st==='out')return ' <span class="tag" title="Freundschaftsanfrage wartet auf Bestätigung">👥⏳</span>';
   return ' <button class="small '+(st==='in'?'primary':'ghost')+' frbtn" data-a="rfriend" data-id="'+esc(id)+'" title="'+(st==='in'?'Freundschaftsanfrage annehmen':'Freundschaftsanfrage schicken')+'">'+(st==='in'?'👥 annehmen':'👥+')+'</button>';
 }
-function frLink(){var c=acctFr&&acctFr.code;return c?location.origin+location.pathname+'?freund='+c:'';}
+function frLink(){var c=acctFr&&acctFr.code;var a=window.KR_APP;return c?((a&&a.acct)?a.acct.replace(/\/$/,'')+'/':location.origin+location.pathname)+'?freund='+c:'';}
 function frShare(){
   var l=frLink(),t='Werde mein Freund bei „Letzte Runde“ – mein Freundescode: '+(acctFr&&acctFr.code);
   if(navigator.share)navigator.share({title:'Letzte Runde',text:t,url:l}).catch(function(){});
@@ -3180,6 +3208,7 @@ function render(){
   var el=$('app');if(!el)return;
   if(fatal){el.innerHTML='<div class="panel"><h1 class="brand">Letzte Runde</h1><p class="err">'+esc(fatal)+'</p></div>';return;}
   if(!db){el.innerHTML='<div class="panel"><p class="muted">Lädt …</p></div>';return;}
+  appAwake(!!(code||sp));
   el.className='wrap'+(code&&tvMode?' tv':code||sp?' inroom':'')+(code&&watching?' watching':'')+((code||sp)&&hideTable&&!tvMode?' notable':'');
   try{document.title=(sp?'Singleplayer – ':code&&roomName()?roomName()+' – ':'')+'Letzte Runde';}catch(e){}
   var keep={},act=document.activeElement&&document.activeElement.id;
@@ -3202,7 +3231,7 @@ function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
   return '<div class="panel hero">'+
     '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+fxBtn()+themeBtn()+'</div></div>'+
-    offlineBanner()+(inviteCode?inviteHint():'')+
+    placeBar()+offlineBanner()+(inviteCode?inviteHint():'')+
     '<div class="hr"></div>'+
     '<div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
       '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+acctBar()+
@@ -3347,7 +3376,7 @@ function roomView(){
 }
 
 /* ---------- Tisch-Modus: großer Bildschirm zeigt Tisch, Mitte und alle Spieler*innen ---------- */
-function tvUrl(c){return location.origin+location.pathname.replace(/[^/]*$/,'')+'?tisch='+(c||code);}
+function tvUrl(c){return pubBase()+'?tisch='+(c||code);}
 function tvJoin(pre){
   var c=(pre||($('code')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(c.length<3){uiErr='Bitte Raumcode eingeben.';render();return;}
@@ -3646,6 +3675,7 @@ document.addEventListener('click',function(ev){
   if(a==='create')createRoom();
   else if(a==='join')joinRoom();
   else if(a==='tvjoin')tvJoin(el.getAttribute('data-code'));
+  else if(a==='place')appMsg({a:'place'});
   else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
   else if(a==='tvfs')tvFullscreen();
   else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
