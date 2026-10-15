@@ -33,7 +33,7 @@ class PlaceSheet(private val act: MainActivity) {
     private val body = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), dp(28)) }
     private val games = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL }
     private val hostBox = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
-    private val error = TextView(act).apply { setTextColor(Color.parseColor("#C0392B")); visibility = View.GONE }
+    private val errorView = TextView(act).apply { setTextColor(Color.parseColor("#C0392B")); visibility = View.GONE }
     private var state: NodeHost.State? = null
     private var https = false
 
@@ -55,7 +55,7 @@ class PlaceSheet(private val act: MainActivity) {
             addView(manual, LinearLayout.LayoutParams(0, -2, 1f))
             addView(MaterialButton(act).apply { text = "Beitreten"; setOnClickListener { joinAddress(manual.text.toString()) } })
         })
-        body.addView(error)
+        body.addView(errorView)
         dialog.setContentView(ScrollView(act).apply { addView(body) })
         dialog.setOnDismissListener { act.lan.stopBrowse() }
         dialog.show()
@@ -73,7 +73,7 @@ class PlaceSheet(private val act: MainActivity) {
 
     private fun set(mode: String, join: String? = null) {
         act.lifecycleScope.launch {
-            error.visibility = View.GONE
+            errorView.visibility = View.GONE
             runCatching { NodeHost.setMode(mode, join) }
                 .onSuccess {
                     state = it
@@ -81,7 +81,7 @@ class PlaceSheet(private val act: MainActivity) {
                     act.reload()
                     if (mode == "lan") renderHost() else dialog.dismiss()
                 }
-                .onFailure { error.text = it.message; error.visibility = View.VISIBLE }
+                .onFailure { errorView.text = it.message; errorView.visibility = View.VISIBLE }
         }
     }
 
@@ -122,7 +122,7 @@ class PlaceSheet(private val act: MainActivity) {
                 text = "♠  ${g.name}"; isAllCaps = false
                 setOnClickListener {
                     act.lan.resolve(g) { url -> act.runOnUiThread {
-                        if (url == null) { error.text = "${g.name} antwortet nicht."; error.visibility = View.VISIBLE } else set("join", url)
+                        if (url == null) { errorView.text = "${g.name} antwortet nicht."; errorView.visibility = View.VISIBLE } else set("join", url)
                     } }
                 }
             })
@@ -138,7 +138,7 @@ class PlaceSheet(private val act: MainActivity) {
         if (s.isEmpty()) return
         if (!s.contains("://")) s = "http://$s"
         val u = runCatching { java.net.URI(s) }.getOrNull()
-        if (u?.host == null) { error.text = "Ungültige Adresse."; error.visibility = View.VISIBLE; return }
+        if (u?.host == null) { errorView.text = "Ungültige Adresse."; errorView.visibility = View.VISIBLE; return }
         var port = if (u.port > 0) u.port else NodeHost.LAN_PORT
         if (u.scheme == "https" && port == NodeHost.LAN_PORT + 1) port = NodeHost.LAN_PORT   // App spricht immer http zum Host
         set("join", "http://${u.host}:$port")

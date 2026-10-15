@@ -14,7 +14,7 @@ import java.util.UUID
 
 /**
  * Eingebettetes Node (nodejs-mobile) mit game/app-host.js – wie NodeHost.swift unter iOS.
- * Die WebView lädt immer http://127.0.0.1:<port>/; gesteuert wird über /__app/* mit einem Token, das nur die App kennt.
+ * Die WebView lädt immer http://127.0.0.1:<port>/; gesteuert wird über /__app/… mit einem Token, das nur die App kennt.
  */
 object NodeHost {
     init {
