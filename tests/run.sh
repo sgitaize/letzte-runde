@@ -10,6 +10,7 @@
 #   offline     Übungsraum ohne Netz über Service Worker, echtes Chromium (Server 3992)
 #   konten      Benutzerkonten (eigener Server 3987)
 #   plaetze     „Deine Plätze“ / Weiterspielen in echtem Chromium (Server 3986)
+#   wlan        WLAN-Host der App: Browser-Gast über http + App im selben Raum, echtes Chromium (Ports 3970/3980)
 #   subtle      Web-Crypto-Ersatz für WLAN-Gäste gegen echte Web-Crypto (ohne Server)
 # Nutzung: tests/run.sh      Ergebnis: letzte Zeile „exit 0“ = alles grün
 set -u
@@ -36,12 +37,13 @@ run subtle 60  node "$DIR/tests/subtle.js"
 if command -v chromium >/dev/null; then run voice 300 node --experimental-websocket "$DIR/tests/voice.js" "$DIR/app"
   run offline 300 node --experimental-websocket "$DIR/tests/offline.js" "$DIR/app"
   run plaetze 120 node --experimental-websocket "$DIR/tests/seats.js" "$DIR/app"
-else for n in voice offline plaetze; do echo "0 0" > "$LOGDIR/$n.rc"; echo "übersprungen (kein chromium)" > "$LOGDIR/$n.log"; done; fi
+  run wlan    300 node --experimental-websocket "$DIR/tests/lan.js" "$DIR/app"
+else for n in voice offline plaetze wlan; do echo "0 0" > "$LOGDIR/$n.rc"; echo "übersprungen (kein chromium)" > "$LOGDIR/$n.log"; done; fi
 wait $(jobs -p | grep -v -e "^$S1$" -e "^$S2$") 2>/dev/null
-for n in sim ws stress bots uebung multi konten subtle voice offline plaetze; do while [ ! -f "$LOGDIR/$n.rc" ]; do sleep 1; done; done
+for n in sim ws stress bots uebung multi konten subtle voice offline plaetze wlan; do while [ ! -f "$LOGDIR/$n.rc" ]; do sleep 1; done; done
 kill $S1 $S2 2>/dev/null; rm -rf "$TMP"
 RC=0
-for n in sim ws stress bots uebung multi konten subtle voice offline plaetze; do
+for n in sim ws stress bots uebung multi konten subtle voice offline plaetze wlan; do
   read -r c s < "$LOGDIR/$n.rc"
   if [ "$c" = 0 ]; then printf '✓ %-7s %3ss  %s\n' "$n" "$s" "$(grep -c '^  ok ' "$LOGDIR/$n.log") Prüfungen"
   else RC=1; printf '✗ %-7s %3ss  (exit %s) – %s\n' "$n" "$s" "$c" "$LOGDIR/$n.log"; tail -n 12 "$LOGDIR/$n.log" | sed 's/^/    /'; fi
