@@ -63,6 +63,8 @@ html.kr-app .installhelp,html.kr-lan .installhelp{display:none}
 .placebar .plc{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
 .placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
 .placebar .sub{color:var(--muted)}
+.optin{display:flex;gap:10px;align-items:flex-start;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
+.optin input{margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--accent)}
 /* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
 button.linkbtn{background:none;border:0;padding:2px 0;margin:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;min-height:0;box-shadow:none}
 button.linkbtn:hover{opacity:.8}
@@ -2874,12 +2876,23 @@ function acctPushSp(e){
   if(!ACC)return;var c=toAcct(e);
   api('acct.sphands',{},{hands:[c]}).then(function(){if(acctStats)acctStats.sp.push(c);}).catch(function(){});   // offline: nächster Abgleich holt es nach
 }
+/* Räume im WLAN (App hostet oder ist Gast) liegen nicht auf gang.aize.eu → dort nicht prüfbar.
+   Nur mit Opt-in (kr.lanup) gehen sie über acct.lanhand ins Konto, als „lokal“ markiert, ohne Bestenliste. */
+function inLan(){return !!(KRA&&KRA.app&&(KRA.mode==='lan'||KRA.mode==='join'));}
+function lanUp(){try{return localStorage.getItem('kr.lanup')==='1';}catch(e){return false;}}
 function acctMaybeMp(){
   if(!ACC||!code||!joined||watching||phase()!=='done')return;
-  var h=hand(),k=code+'.'+h;
-  if(acctMpDone[k]||!(S.stats||[]).some(function(e){return num(e.hand)===h;}))return;
-  acctMpDone[k]=true;var now=Date.now();
-  api('acct.mphand',{},{room:code,hand:h,day:dayKey(now),hr:new Date(now).getHours()}).then(function(){acctStats=null;})
+  var h=hand(),k=code+'.'+h,e=(S.stats||[]).filter(function(x){return num(x.hand)===h;})[0];
+  if(acctMpDone[k]||!e)return;
+  acctMpDone[k]=true;var now=Date.now(),day=dayKey(now),hr=new Date(now).getHours();
+  if(inLan()){
+    if(!lanUp())return;
+    var rm=S.room||{};
+    api('acct.lanhand',{},{room:code,created:num(rm.createdAt)||0,roomName:rm.name||'',hand:toAcct(e),day:day,hr:hr}).then(function(){acctStats=null;})
+      .catch(function(er){if(!er||er.status>=500)acctMpDone[k]=false;});   // 4xx: Hand passt nicht → nicht ständig neu senden
+    return;
+  }
+  api('acct.mphand',{},{room:code,hand:h,day:day,hr:hr}).then(function(){acctStats=null;})
     .catch(function(e){if(!e||e.status!==403)acctMpDone[k]=false;});
 }
 function acctOpen(){acctErr='';acctDlg=ACC?'me':'login';render();if(ACC)acctSync();}
@@ -2938,6 +2951,8 @@ function acctDialog(){
       '<button class="small'+(acctTab==='fr'?' primary':' ghost')+'" data-a="accttab" data-t="fr">🏆 Freunde'+(acctFr&&acctFr.incoming.length?' <span class="badge">'+acctFr.incoming.length+'</span>':'')+'</button></div>'+
       (acctTab==='fr'?friendsHtml():!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Übungsraum':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':
         statsPanel(list,us&&us.d?{d:us.d,h:us.h}:null,true))+
+      (KRA&&KRA.app&&acctTab!=='fr'?'<label class="optin"><input type="checkbox" id="acc_lanup"'+(lanUp()?' checked':'')+'><span><b>WLAN-Hände ins Konto übertragen</b><br>'+
+        '<span class="muted small">Hände aus Spielen im WLAN (ohne Internet) werden nachgeschickt, sobald du wieder online bist. Sie stehen als „lokal“ in deiner Statistik und zählen nicht in der Bestenliste.</span></span></label>':'')+
       '<details class="acctmgr"><summary>⚙️ Konto verwalten</summary>'+err+
       '<form class="accf" onsubmit="return false"><h3>Passwort ändern</h3>'+(ACC&&ACC.reset?'':acctField('acc_old','Altes Passwort','password','','current-password'))+
         (ACC&&ACC.reset?acctField('acc_old','Einmal-Passwort vom Admin','password','','current-password'):'')+
@@ -3774,6 +3789,7 @@ document.addEventListener('keydown',function(ev){
 });
 document.addEventListener('change',function(ev){
   var el=ev.target;
+  if(el.id==='acc_lanup'){try{localStorage.setItem('kr.lanup',el.checked?'1':'0');}catch(e){}return;}
   if(!el.hasAttribute||!el.hasAttribute('data-g'))return;
   var i=parseInt(el.getAttribute('data-g').slice(1),10);
   setGuessCard(i,el.value===''?null:parseInt(el.value,10));

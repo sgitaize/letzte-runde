@@ -13,6 +13,7 @@
  *   POST /api?a=acct.logout | acct.password {old, pw} | acct.newrecovery {pw} | acct.delete {pw}
  *   POST /api?a=acct.sphands {hands:[…], usage?}    -> Übungsraum-Hände übernehmen (doppelte zählen nicht)
  *   POST /api?a=acct.mphand  {room, hand, day, hr}  -> Raum-Hand aus der Raumstatistik übernehmen (Header x-kr-key)
+ *   POST /api?a=acct.lanhand {room, created, roomName, hand:{…}, day, hr} -> Hand aus einem WLAN-Raum der App (ungeprüft, „local“)
  *   GET  /api?a=acct.friends | acct.leaderboard;  POST acct.friendadd {code} | friendaccept|frienddecline|friendremove {id} | friendcode
  *   POST /api?a=acct.myrooms -> {rooms: [{code, pid, name, room, phase}]}  (Plätze des Kontos, die es noch gibt)
  *   POST /api?a=acct.roomlink {room, off?} | acct.roomfriend {room, player}   (Header x-kr-key) -> {members: {Spieler-ID: friend|out|in|none}}
@@ -265,10 +266,12 @@ module.exports = function (o) {
   }
   function boardRow(x) {
     const s = stats(x.id), wk = Date.now() - 7 * 86400000;
-    const all = s.sp.concat(s.mp).sort((p, q) => p.ts - q.ts), recent = (l) => l.filter((e) => e.ts >= wk);
+    /* WLAN-Hände (local) sind vom Server nicht prüfbar → zählen nicht in der Bestenliste */
+    const mp = s.mp.filter((e) => !e.local);
+    const all = s.sp.concat(mp).sort((p, q) => p.ts - q.ts), recent = (l) => l.filter((e) => e.ts >= wk);
     return { id: x.id, name: x.name,
-      all: { sp: summary(s.sp), mp: summary(s.mp), both: summary(all) },
-      week: { sp: summary(recent(s.sp)), mp: summary(recent(s.mp)), both: summary(recent(all)) } };
+      all: { sp: summary(s.sp), mp: summary(mp), both: summary(all) },
+      week: { sp: summary(recent(s.sp)), mp: summary(recent(mp)), both: summary(recent(all)) } };
   }
 
   function pub(a) { return { id: a.id, name: a.name, created: a.created, reset: !!a.reset }; }
@@ -335,20 +338,21 @@ module.exports = function (o) {
     const ks = Object.keys(u.d).sort(); for (const k of ks.slice(0, -USAGE_DAYS)) delete u.d[k];
   }
   const rounds = (x) => (Array.isArray(x && x.rounds) ? [0, 1, 2, 3].map((i) => (x.rounds[i] === true ? true : x.rounds[i] === false ? false : null)) : null);
-  /* Übungsraum-Hand vom Client prüfen. Eigener Spieler heißt „me“, Bots „bot:<Name>“. */
-  function cleanSp(e) {
+  /* Übungsraum-Hand vom Client prüfen. Eigener Spieler heißt „me“, Bots „bot:<Name>“.
+     lan: Hand aus einem WLAN-Raum (Mitspieler mit Raum-IDs, bis zu 12) */
+  function cleanSp(e, lan) {
     if (!e || typeof e !== 'object') return null;
     const hand = Number(e.hand), ts = Number(e.ts);
     if (!Number.isInteger(hand) || hand < 0 || hand > 1e7) return null;
     if (!Number.isFinite(ts) || ts < 1.6e12 || ts > Date.now() + 86400000) return null;
-    const pl = (Array.isArray(e.players) ? e.players : []).slice(0, 8).map((p) => {
+    const pl = (Array.isArray(e.players) ? e.players : []).slice(0, lan ? 12 : 8).map((p) => {
       const id = String((p && p.id) || '');
-      if (id !== 'me' && !/^bot:[^<>\u0000-\u001f]{1,24}$/.test(id)) return null;
-      const x = { id: id, name: cleanName(p.name).slice(0, 18), ok: !!p.ok }, r = rounds(p);
+      if (id !== 'me' && !/^bot:[^<>\u0000-\u001f]{1,24}$/.test(id) && !(lan && /^[A-Za-z0-9_-]{1,40}$/.test(id))) return null;
+      const x = { id: id, name: cleanName(typeof p.name === 'string' ? p.name : '').slice(0, 18), ok: !!p.ok }, r = rounds(p);
       if (r) x.rounds = r;
       return x;
     });
-    if (!pl.length || pl.some((p) => !p) || !pl.some((p) => p.id === 'me')) return null;
+    if (!pl.length || pl.some((p) => !p) || !pl.some((p) => p.id === 'me') || new Set(pl.map((p) => p.id)).size !== pl.length) return null;
     let guess = null;
     const g = e.guess;
     if (g && typeof g === 'object' && pl.some((p) => p.id === String(g.target))) {
@@ -497,6 +501,21 @@ module.exports = function (o) {
       s.sp.sort((x, y) => x.ts - y.ts); s.sp = s.sp.slice(-SP_KEEP);
       if (added || b.usage) saveStats(acc.id);
       return json(res, 200, { ok: true, added: added }), true;
+    }
+    if (a === 'acct.lanhand') {
+      /* Hand aus einem WLAN-Raum der App (Opt-in im Client). Der Raum liegt nicht auf diesem Server → nicht prüfbar,
+         daher als „local“ markiert und nicht in der Bestenliste. Dubletten über Raum + Erstellzeit + Hand. */
+      const b = await body(req, res); if (!b) return true;
+      const roomCode = String(b.room || '').toUpperCase(), created = Number(b.created);
+      if (!/^[A-Z0-9]{1,8}$/.test(roomCode) || !(created >= 0 && created < 1e14)) return json(res, 400, { error: 'Raum' }), true;
+      const e = cleanSp(b.hand, true); if (!e) return json(res, 400, { error: 'Hand' }), true;
+      const key = 'lan.' + roomCode + '.' + Math.round(created) + '.' + e.hand, s = stats(acc.id);
+      if (s.mp.some((x) => x.key === key)) return json(res, 200, { ok: true, dup: true }), true;
+      e.key = key; e.room = roomCode; e.roomName = typeof b.roomName === 'string' && b.roomName.trim() ? cleanName(b.roomName).slice(0, 30) : ''; e.local = true;
+      s.mp.push(e); s.mp.sort((x, y) => x.ts - y.ts); s.mp = s.mp.slice(-MP_KEEP);
+      usageAdd(s.usage.mp, String(b.day || ''), Number(b.hr), e);
+      saveStats(acc.id);
+      return json(res, 200, { ok: true }), true;
     }
     const b = await body(req, res); if (!b) return true;
     if (a === 'acct.password') {

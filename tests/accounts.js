@@ -105,6 +105,36 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
   const mp = r.j.stats.mp[0];
   ok(r.j.stats.mp.length === 1 && mp.players[0].id === 'me' && mp.guess.target === 'me' && mp.roomName === 'Testrunde', 'Raum-Hand mit „me“ und Raumname');
 
+  /* WLAN-Hand aus der App: ungeprüft → „local“, nicht doppelt, nicht in der Bestenliste */
+  const lan = (hand, players) => ({ room: 'W7QX', created: t0 - 5000, roomName: 'Hütte', day: '2026-10-05', hr: 22,
+    hand: { hand: hand, ts: t0 + hand * 1000, win: true, players: players || [{ id: 'me', name: 'Anna', ok: true }, { id: 'p_k3x9', name: 'Ben', ok: true }], guess: { target: 'p_k3x9', hits: 2, of: 3 } } });
+  r = await call('acct.lanhand', lan(1), {});
+  ok(r.s === 401, 'WLAN-Hand nur angemeldet');
+  r = await call('acct.lanhand', lan(1), { tok: tok1 });
+  ok(r.s === 200 && !r.j.dup, 'WLAN-Hand übernommen');
+  r = await call('acct.lanhand', lan(1), { tok: tok2 });
+  ok(r.s === 200 && r.j.dup, 'WLAN-Hand nicht doppelt (auch vom zweiten Gerät)');
+  r = await call('acct.lanhand', lan(2, [{ id: 'p_k3x9', name: 'Ben', ok: true }]), { tok: tok1 });
+  ok(r.s === 400, 'WLAN-Hand ohne eigenen Platz abgelehnt');
+  r = await call('acct.lanhand', lan(3, [{ id: 'me', name: 'A', ok: true }, { id: '<img>', name: 'x', ok: true }]), { tok: tok1 });
+  ok(r.s === 400, 'WLAN-Hand mit kaputter Spieler-ID abgelehnt');
+  r = await call('acct.lanhand', lan(4, [{ id: 'me', name: 'A', ok: true }, { id: 'me', name: 'A', ok: true }]), { tok: tok1 });
+  ok(r.s === 400, 'WLAN-Hand mit doppeltem Platz abgelehnt');
+  r = await call('acct.lanhand', Object.assign(lan(5), { room: '../x' }), { tok: tok1 });
+  ok(r.s === 400, 'WLAN-Hand mit ungültigem Raumcode abgelehnt');
+  r = await call('acct.me', undefined, { tok: tok1 });
+  const lh = r.j.stats.mp.find((x) => x.local);
+  ok(r.j.stats.mp.length === 2 && lh && lh.room === 'W7QX' && lh.roomName === 'Hütte' && lh.guess.target === 'p_k3x9', 'WLAN-Hand als „lokal“ in der Statistik');
+  r = await call('acct.leaderboard', undefined, { tok: tok1 });
+  ok(r.j.rows[0].all.mp.hands === 1, 'WLAN-Hände zählen nicht in der Bestenliste');
+  let junk = 0;
+  for (const x of [null, [], 'x', { room: 'A', created: 'x', hand: null }, { room: 'A', created: 1, hand: { hand: 1, ts: 1e300, players: 'me' } },
+    { room: 'A', created: 1, hand: { hand: 1, ts: t0, players: new Array(5000).fill({ id: 'me' }) } }, { room: 'A', created: -1, hand: {} },
+    { room: 'A', created: 1, roomName: { toString: 1 }, hand: { hand: 1e9, ts: t0, players: [{ id: 'me' }] } }]) {
+    r = await call('acct.lanhand', x, { tok: tok1 }); if (r.s === 400) junk++;
+  }
+  ok(junk === 8 && (await call('acct.me', undefined, { tok: tok1 })).s === 200, 'kaputte WLAN-Hände → 400, Server läuft weiter');
+
   /* Passwort ändern: andere Sitzungen abgemeldet */
   r = await call('acct.password', { old: 'falsch', pw: 'neuesPW123' }, { tok: tok1 });
   ok(r.s === 401, 'Passwort ändern mit falschem alten Passwort abgelehnt');

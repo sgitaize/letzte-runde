@@ -10,8 +10,8 @@
  *   Modus „join“    Räume auf einem anderen Gerät im WLAN, das hostet
  *
  *   Konten (/api?a=acct.*) gehen immer zu gang.aize.eu. Ohne Internet landen Übungsraum-Hände
- *   (acct.sphand) in einer Warteschlange und werden beim nächsten Kontakt nachgeschickt – nur mit Konto,
- *   denn der Client schickt sie nur angemeldet.
+ *   (acct.sphands) und WLAN-Hände (acct.lanhand, nur mit Opt-in) in einer Warteschlange und werden beim
+ *   nächsten Kontakt nachgeschickt – nur mit Konto, denn der Client schickt sie nur angemeldet.
  *
  * Steuerung aus der App (nur 127.0.0.1, Header x-kr-app = KR_APP_TOKEN; die App reicht das Token per
  * WKUserScript/evaluateJavascript an die WebView, es steht nicht im HTML – andere Apps auf dem Gerät
@@ -109,7 +109,7 @@ function proxy(req, res, body, isAcct) {
   });
   if (body) p.end(body); else p.end();
 }
-function queueable(req, body) { return req.method === 'POST' && /[?&]a=acct\.sphand\b/.test(req.url) && body.length < 65536; }
+function queueable(req, body) { return req.method === 'POST' && /[?&]a=acct\.(sphands|lanhand)\b/.test(req.url) && body.length < 65536; }
 let flushing = false;
 function flushQueue(h) {
   if (flushing || !queue.length || !h.cookie) return;
