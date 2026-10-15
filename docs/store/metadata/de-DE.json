@@ -1,0 +1,15 @@
+{
+  "locale": "de-DE",
+  "privacyPolicyUrl": "https://gang.aize.eu/impressum.html#datenschutz",
+  "supportUrl": "https://github.com/sgitaize/letzte-runde/issues",
+  "marketingUrl": "https://gang.aize.eu",
+  "name": "Letzte Runde - Kartenspiel",
+  "subtitle": "Pokern im Team mit Freunden",
+  "promotionalText": "Kooperatives Poker für 3 bis 8: Ordnet eure Hände von schwach bis stark – ohne darüber zu reden. Online, im WLAN ohne Internet oder allein gegen Bots.",
+  "description": "Letzte Runde ist Poker, nur andersherum: Ihr spielt nicht gegeneinander, sondern alle zusammen gegen die Karten.\n\nSO GEHT'S\n• Jeder bekommt zwei verdeckte Handkarten, nach und nach kommen bis zu fünf Karten auf den Tisch – wie beim Texas Hold'em.\n• In jeder der vier Runden nimmt sich jeder einen Chip: 1 für die schwächste Hand, der höchste Chip für die stärkste.\n• Reden über Karten ist tabu. Ihr verständigt euch nur über die Chips – nehmt sie aus der Mitte oder schnappt sie euch gegenseitig weg.\n• Am Ende wird aufgedeckt: Stimmt die Reihenfolge, habt ihr alle gewonnen. Liegt einer daneben, verliert der ganze Tisch.\n• Optional tippt ihr gemeinsam die Karten des Spielers mit dem höchsten Chip.\n\nSPIELEN, WIE ES PASST\n• Online: Raum erstellen, Link teilen, los. Freunde spielen in der App oder einfach im Browser mit – ohne Installation.\n• Im WLAN ohne Internet: Dein Handy hostet das Spiel, die anderen treten per QR-Code bei. Ideal für Hütte, Zug oder Keller.\n• Singleplayer: Übe allein gegen 2 bis 5 Bots, mit Lernmodus, der erklärt, was gerade passiert. Läuft komplett offline.\n• Tisch-Modus: Ein Tablet oder Fernseher zeigt den Tisch groß für alle, die Handys zeigen nur die eigenen Karten.\n• Geplante Runden mit Uhrzeit, Bots für freie Plätze, Chat, Reaktionen und optionaler Voice-Chat.\n\nFAIR UND PRIVAT\n• Die Karten werden verschlüsselt verteilt – weder der Server noch andere Geräte können fremde Karten sehen.\n• Kein Konto nötig, keine Werbung, kein Tracking. Ein freiwilliges Konto (nur Name und Passwort, keine E-Mail) speichert deine Statistik auf allen Geräten und zeigt eine Bestenliste mit Freunden.\n• Spieler*innen lassen sich stummschalten und melden, der Host kann Personen aus dem Raum entfernen.\n\nOpen Source: github.com/sgitaize/letzte-runde\nKein Glücksspiel: Es gibt keine Einsätze, kein Echtgeld und nichts zu kaufen.",
+  "keywords": "poker,kartenspiel,kooperativ,teamspiel,party,freunde,hold'em,wlan,offline,bots,spieleabend,karten",
+  "screenshots": {
+    "APP_IPHONE_67": "screenshots/iphone",
+    "APP_IPAD_PRO_3GEN_129": "screenshots/ipad"
+  }
+}
