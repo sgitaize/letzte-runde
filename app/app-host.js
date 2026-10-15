@@ -60,6 +60,7 @@ process.env.KR_LISTEN_HOST = '127.0.0.1';
 process.env.KR_VAR_DIR = VAR_DIR;
 process.env.KR_LEADER_SOCK = process.env.KR_LEADER_SOCK || path.join(os.tmpdir(), 'kr-' + APP_PORT + '.sock');
 process.env.KR_MEM_MB = process.env.KR_MEM_MB || '120';
+process.env.KR_MEM_METRIC = 'heap';           // RSS wäre die ganze App (UIKit, WebView)
 const inner = require('./server.js');   // { server } – für Selbstheilung (siehe unten)
 
 /* ------------------------------------------------------------- Proxy --- */

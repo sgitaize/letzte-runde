@@ -58,8 +58,14 @@ p{margin:0 0 10px}
 .row:has(> .field){align-items:flex-end}
 /* App (window.KR_APP): Installationshilfe nur im Browser */
 html.kr-app .installhelp,html.kr-lan .installhelp{display:none}
-.placebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;margin:10px 0 0}
-.placebar .info{margin:0}
+.placebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin:12px 0 0;padding:8px 8px 8px 12px;
+  border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
+.placebar .pl{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
+.placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
+.placebar .sub{color:var(--muted)}
+/* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
+button.linkbtn{background:none;border:0;padding:2px 0;margin:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;min-height:0;box-shadow:none}
+button.linkbtn:hover{opacity:.8}
 .spread{display:flex;align-items:center;justify-content:space-between;gap:8px}
 button{font:inherit;font-weight:560;padding:9px 14px;border-radius:9px;border:1px solid var(--line);
   background:var(--panel);color:var(--fg);cursor:pointer}
@@ -1581,12 +1587,12 @@ function appMsg(m){
 var appAwakeOn=null;
 function appAwake(on){if(on!==appAwakeOn){appAwakeOn=on;appMsg({a:'awake',on:on});}}
 function placeBar(){
-  if(KRA&&KRA.lanGuest)return '<div class="placebar"><p class="info">📶 Spiel im WLAN – ohne Internet. Konto und Statistik gibt es hier nicht.</p></div>';
+  if(KRA&&KRA.lanGuest)return '<div class="placebar"><p class="pl"><span class="dot"></span><span><b>Spiel im WLAN</b> <span class="sub">· ohne Internet</span></span></p></div>';
   if(!KRA||!KRA.app)return '';
-  var t=KRA.mode==='lan'?'📶 <b>Du hostest im WLAN</b> – Mitspieler scannen deinen QR-Code':
-        KRA.mode==='join'?'📶 <b>Im WLAN</b> bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,'')):
-        '🌐 <b>Online</b> – Räume auf gang.aize.eu';
-  return '<div class="placebar"><p class="info">'+t+'</p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'QR-Code':'Spielort')+'</button></div>';
+  var t=KRA.mode==='lan'?'<b>Du hostest im WLAN</b> <span class="sub">· ohne Internet</span>':
+        KRA.mode==='join'?'<b>Im WLAN</b> <span class="sub">· bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,''))+'</span>':
+        '<b>Online</b> <span class="sub">· gang.aize.eu</span>';
+  return '<div class="placebar"><p class="pl"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'Spielort · QR':'Spielort')+'</button></div>';
 }
 function vib(p){
   if(KRA&&KRA.app){appMsg({a:'haptic',k:(p&&p.length>1)||p>=60?'success':p>=35?'medium':'light'});return;}
@@ -1788,6 +1794,7 @@ function seatGo(c){
 }
 function seatGrab(c,id){pendingTake={code:c,id:id,own:true};enter(c,true);}
 function planHtml(){
+  if(KRA&&(KRA.lanGuest||KRA.mode==='lan'||KRA.mode==='join'))return '';
   var pad=function(x){return (x<10?'0':'')+x;},d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);
   var def=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':00';
   var sh=planShow&&plannedOf(planShow);
@@ -2895,12 +2902,13 @@ function acctDelete(){
   api('acct.delete',{},{pw:acctVal('acc_pwc')},15000).then(function(){acctBusy=false;ACC=null;acctStats=null;acctDlg=null;acctSave();showToast('Konto gelöscht');render();}).catch(acctFail);
 }
 function acctBar(){
+  if(KRA&&KRA.lanGuest)return '';   // WLAN-Gast: Konten gibt es nur online
   return '<div class="acctbar">'+(ACC?'<span>👤 <b>'+esc(ACC.name)+'</b></span><button class="small ghost" data-a="acct">Konto &amp; Statistik</button>'+(acctFr&&acctFr.incoming.length?'<button class="small primary" data-a="acctfr">📨 '+acctFr.incoming.length+' Freundschaftsanfrage'+(acctFr.incoming.length>1?'n':'')+'</button>':''):
     '<button class="small ghost" data-a="acct">👤 Anmelden / Konto erstellen</button><span class="muted small">Statistik auf allen Geräten</span>')+'</div>';
 }
 function acctField(id,lbl,type,val,ac){
   return '<div class="field"><label class="lbl" for="'+id+'">'+lbl+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(val||'')+'"'+
-    (ac?' autocomplete="'+ac+'"':'')+(id==='acc_name'?' maxlength="18" autocapitalize="off" spellcheck="false"':'')+(id==='acc_rec'?' autocapitalize="characters" spellcheck="false"':'')+'></div>';
+    (ac?' autocomplete="'+ac+'"':'')+(ac&&ac!=='off'?' name="'+(ac==='current-password'?'password':ac)+'"':'')+(id==='acc_name'?' maxlength="18" autocapitalize="off" spellcheck="false"':'')+(id==='acc_rec'?' autocapitalize="characters" spellcheck="false"':'')+'></div>';
 }
 function acctDialog(){
   if(!acctDlg)return '';
@@ -2908,17 +2916,17 @@ function acctDialog(){
   var close='<button class="small ghost" data-a="acctclose" aria-label="Schließen">✕</button>';
   var head=function(t){return '<div class="spread"><h2 id="accth">'+t+'</h2>'+close+'</div>';};
   var err=acctErr?'<p class="err">'+esc(acctErr)+'</p>':'';
-  if(m==='login')b=head('👤 Anmelden')+'<form class="accf" data-f="login" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_pw','Passwort','password','','current-password')+err+
+  if(m==='login')b=head('👤 Anmelden')+'<form class="accf" data-f="login" method="post" action="#" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_pw','Passwort','password','','current-password')+err+
     '<div class="bar"><button class="primary" data-a="acctlogin"'+busy+'>'+(acctBusy?'…':'Anmelden')+'</button></div></form>'+
-    '<p class="note"><a href="#" data-a="acctmode" data-m="register">Neues Konto erstellen</a> · <a href="#" data-a="acctmode" data-m="recover">Passwort vergessen?</a></p>';
+    '<p class="note"><button type="button" class="linkbtn" data-a="acctmode" data-m="register">Neues Konto erstellen</button> · <button type="button" class="linkbtn" data-a="acctmode" data-m="recover">Passwort vergessen?</button></p>';
   else if(m==='register')b=head('👤 Konto erstellen')+'<p class="note">Ohne E-Mail: nur Name und Passwort. Deine Statistik aus Übungsraum und Räumen liegt dann im Konto und ist auf jedem Gerät da, auf dem du dich anmeldest. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.</p>'+
-    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name (2–18 Zeichen; sehen nur du, deine Freunde und der Admin)','text',myName,'username')+acctField('acc_pw','Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Passwort wiederholen','password','','new-password')+err+
+    '<form class="accf" method="post" action="#" onsubmit="return false">'+acctField('acc_name','Name (2–18 Zeichen; sehen nur du, deine Freunde und der Admin)','text',myName,'username')+acctField('acc_pw','Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Passwort wiederholen','password','','new-password')+err+
     '<div class="bar"><button class="primary" data-a="acctreg"'+busy+'>'+(acctBusy?'…':'Konto erstellen')+'</button></div></form>'+
-    '<p class="note"><a href="#" data-a="acctmode" data-m="login">Ich habe schon ein Konto</a></p>';
+    '<p class="note"><button type="button" class="linkbtn" data-a="acctmode" data-m="login">Ich habe schon ein Konto</button></p>';
   else if(m==='recover')b=head('🔑 Passwort vergessen')+'<p class="note">Mit dem Wiederherstellungscode, den du beim Erstellen bekommen hast, setzt du ein neues Passwort. Ohne Code: Admin fragen, der kann das Passwort zurücksetzen.</p>'+
-    '<form class="accf" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_rec','Wiederherstellungscode','text','','off')+acctField('acc_pw','Neues Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Neues Passwort wiederholen','password','','new-password')+err+
+    '<form class="accf" method="post" action="#" onsubmit="return false">'+acctField('acc_name','Name','text',myName,'username')+acctField('acc_rec','Wiederherstellungscode','text','','off')+acctField('acc_pw','Neues Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_pw2','Neues Passwort wiederholen','password','','new-password')+err+
     '<div class="bar"><button class="primary" data-a="acctrecover"'+busy+'>'+(acctBusy?'…':'Neues Passwort setzen')+'</button></div></form>'+
-    '<p class="note"><a href="#" data-a="acctmode" data-m="login">Zurück zum Anmelden</a></p>';
+    '<p class="note"><button type="button" class="linkbtn" data-a="acctmode" data-m="login">Zurück zum Anmelden</button></p>';
   else if(m==='rec')b='<h2 id="accth">🔑 Dein Wiederherstellungscode</h2><p>Schreib ihn dir auf oder speichere ihn im Passwort-Manager. Er wird <b>nur jetzt</b> angezeigt und gilt einmal; danach bekommst du einen neuen.</p>'+
     '<p class="reccode">'+esc(acctRec||'')+'</p><div class="bar"><button data-a="acctcopy">Kopieren</button><button class="primary" data-a="acctrecok">Notiert ✓</button></div>';
   else if(m==='me'){
@@ -3014,7 +3022,7 @@ function friendsHtml(){
   if(f.outgoing.length)out+=f.outgoing.map(function(x){return '<div class="frrow muted"><span>⏳ '+esc(x.name)+' (wartet auf Bestätigung)</span><button class="small ghost" data-a="frdec" data-id="'+esc(x.id)+'"'+busy+'>Zurückziehen</button></div>';}).join('');
   out+='<div class="frcode"><div><span class="lbl" style="display:block">Dein Freundescode</span><div class="reccode sm">'+esc(f.code)+'</div></div>'+
     '<div class="bar"><button class="small" data-a="frshare">Teilen</button><button class="small ghost" data-a="frnewcode"'+busy+' title="Alter Code gilt dann nicht mehr">Neuer Code</button></div></div>'+
-    '<form class="accf" onsubmit="return false">'+acctField('acc_fcode','Code einer Freundin / eines Freundes','text',frCode,'off')+
+    '<form class="accf" method="post" action="#" onsubmit="return false">'+acctField('acc_fcode','Code einer Freundin / eines Freundes','text',frCode,'off')+
     '<div class="bar"><button class="primary" data-a="fradd"'+busy+'>Anfrage schicken</button></div></form>'+
     '<p class="note">Freunde sehen deinen Kontonamen und deine Gesamtwerte in der Bestenliste – keine einzelnen Hände.</p>';
   return out;

@@ -1,0 +1,11 @@
+[{
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "de.sgitaize.letzterunde",
+    "sha256_cert_fingerprints": ["A9:60:4A:B5:62:5B:CB:2F:E0:E2:F7:38:A2:E0:3A:83:9A:C8:6C:21:60:A3:A7:B3:93:D0:72:C0:63:E0:C7:60"]
+  }
+}, {
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": { "namespace": "web", "site": "https://gang.aize.eu" }
+}]

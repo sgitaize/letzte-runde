@@ -262,12 +262,14 @@ setInterval(guard(() => evict(ROOM_IDLE_MS), 'evict'), 60000).unref();
 
 /* Speicher knapp → zuerst entladen, und solange es knapp bleibt keine neuen Räume/Dokumente */
 let memTight = false, memCheckedAt = 0;
+/* KR_MEM_METRIC=heap: in der App gehört der ganze Prozess (UIKit/WebView) zum RSS – dort zählt nur der JS-Heap */
+const memNow = () => (process.env.KR_MEM_METRIC === 'heap' ? process.memoryUsage().heapUsed : process.memoryUsage().rss);
 function memoryTight() {
   const now = Date.now();
   if (now - memCheckedAt < 1000) return memTight;
   memCheckedAt = now;
-  let rss = process.memoryUsage().rss;
-  if (rss > MEM_SOFT) { evict(5000); rss = process.memoryUsage().rss; }
+  let rss = memNow();
+  if (rss > MEM_SOFT) { evict(5000); rss = memNow(); }
   if ((rss > MEM_SOFT) !== memTight) console.warn('Speicher ' + (rss > MEM_SOFT ? 'knapp' : 'wieder ok') + ': ' + Math.round(rss / 1048576) + ' MB');
   memTight = rss > MEM_SOFT;
   return memTight;
@@ -1181,7 +1183,9 @@ function serveStatic(req, res, u) {
   if (!f.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
   fs.readFile(f, (err, buf) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream',
+    // Passwort-Verknüpfung der Apps (iOS webcredentials, Android Asset Links) muss als JSON kommen
+    const aasa = path.basename(f) === 'apple-app-site-association';
+    res.writeHead(200, { 'Content-Type': aasa ? 'application/json' : (MIME[path.extname(f)] || 'application/octet-stream'),
       'Cache-Control': 'no-cache' });
     res.end(buf);
   });
