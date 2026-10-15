@@ -163,7 +163,7 @@ const sp = (ts, hand, ok1) => ({ hand: hand, ts: ts, win: ok1, day: '2026-10-05'
 
   /* Admin: Liste, Zurücksetzen, Löschen */
   r = await call('accounts', {}, { admin: true });
-  ok(r.s === 200 && r.j.accounts.length === 1 && r.j.accounts[0].hands.sp === 3 && r.j.accounts[0].hands.mp === 1, 'Admin sieht Konto mit Handzahlen');
+  ok(r.s === 200 && r.j.accounts.length === 1 && r.j.accounts[0].hands.sp === 3 && r.j.accounts[0].hands.mp === 2, 'Admin sieht Konto mit Handzahlen (Raum + WLAN)');
   const id = r.j.accounts[0].id;
   ok(!JSON.stringify(r.j).includes('hash') && !JSON.stringify(r.j).includes('"rec"'), 'Admin-Liste ohne Hashes');
   r = await call('acctreset', { id: id }, { admin: true });
