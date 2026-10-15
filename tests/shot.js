@@ -2,7 +2,8 @@
    Startet einen lokalen Server (Port 3995) aus einer Wegwerf-Kopie von app/ und fotografiert
    Singleplayer und Mehrspieler-Raum (1 Mensch + 3 Bots) in mehreren Bildschirmgrößen.
    Nutzung: node --experimental-websocket tests/shot.js <ausgabe-ordner> [breite x höhe ...]
-   Beispiel: node --experimental-websocket tests/shot.js /tmp/shots 1024x768 1366x768 390x844 */
+   Beispiel: node --experimental-websocket tests/shot.js /tmp/shots 1024x768 1366x768 390x844
+   CHROME=<pfad> (Standard chromium), DSF=<pixeldichte>, APPSIM=1: wie in der App (window.KR_APP, Spielort-Leiste) */
 'use strict';
 const { spawn, execSync } = require('child_process');
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -17,7 +18,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let srv, chrome;
 
 async function cdp() {
-  chrome = spawn('chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9333', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
+  chrome = spawn(process.env.CHROME || 'chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9333', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50; i++) { try { list = await (await fetch('http://127.0.0.1:9333/json')).json(); break; } catch (e) { await sleep(200); } }
   return connect(list.find((t) => t.type === 'page').webSocketDebuggerUrl);
@@ -51,6 +52,7 @@ async function connect(url) {
     }
   }
   await send('Page.enable');
+  if (process.env.APPSIM) await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://gang.aize.eu"};' });
   await send('Emulation.setDeviceMetricsOverride', { width: SIZES[0][0], height: SIZES[0][1], deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
