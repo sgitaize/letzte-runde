@@ -5,6 +5,7 @@
 | Texte, Kategorie, Review-Notizen (wie hochgeladen) | [metadata/](metadata/) |
 | Screenshots iPhone 6,9″ (1320 × 2868) | [screenshots/iphone/](screenshots/iphone/) |
 | Screenshots iPad 13″ (2064 × 2752) | [screenshots/ipad/](screenshots/ipad/) |
+| Kopfzeile (Produktseite) 5244 × 2950 und 3840 × 1646 | [header/](header/) – Quelle [header.html](header.html), rendern: `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=2622,1475 --screenshot=$PWD/docs/store/header/kopfzeile-5244x2950.png file://$PWD/docs/store/header.html` (bzw. `--window-size=1920,823` für 3840 × 1646); Upload per Hand (Drag & Drop) |
 | Screenshots neu erzeugen | `CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node --experimental-websocket docs/store/storeshots.js` |
 | Hochladen (Texte, Kategorie, Review, Screenshots) | `python3 native/ios/Scripts/asc_metadata.py [--no-screenshots]` (pyjwt, cryptography, requests; Schlüssel in `~/.appstoreconnect/`) |
 | Datenschutzerklärung | https://gang.aize.eu/impressum.html#datenschutz |
