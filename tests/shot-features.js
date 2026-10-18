@@ -35,7 +35,9 @@ async function tab(port, url) {
   await new Promise((r) => ws.addEventListener('open', r));
   let id = 0; const wait = new Map();
   ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && wait.has(d.id)) { wait.get(d.id)(d); wait.delete(d.id); } });
-  const send = (method, params) => new Promise((r) => { const i = ++id; wait.set(i, r); ws.send(JSON.stringify({ id: i, method, params: params || {} })); });
+  /* jede Anfrage mit Zeitgrenze – eine verlorene Antwort hält sonst das ganze Skript an */
+  const send = (method, params) => new Promise((r) => { const i = ++id; wait.set(i, r); ws.send(JSON.stringify({ id: i, method, params: params || {} }));
+    setTimeout(() => { if (wait.has(i)) { wait.delete(i); r({ error: 'timeout' }); } }, method === 'Page.captureScreenshot' ? 20000 : 8000); });
   const js = async (e) => { const r = await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true }); return r.result && r.result.result && r.result.result.value; };
   const T = {
     send, js,
@@ -44,6 +46,7 @@ async function tab(port, url) {
     size: (w, h, dsf) => send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dsf || 2, mobile: w < 700 }),
     shot: async (name, opt) => {
       opt = opt || {};
+      await send('Page.bringToFront');   // Hintergrund-Tabs liefern sonst manchmal kein Bild
       if (opt.scroll) await js('(function(){var e=document.querySelector(' + JSON.stringify(opt.scroll) + ');if(e)e.scrollIntoView({block:"' + (opt.block || 'start') + '"});return 1;})()');
       await sleep(opt.wait || 500);
       const r = await send('Page.captureScreenshot', { format: 'png' });
