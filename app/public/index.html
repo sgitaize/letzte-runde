@@ -450,7 +450,19 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
 .acctbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.acctbar .small{font-size:13px}
 .acctbox{max-width:620px;width:100%;box-sizing:border-box;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 18px 18px}
 .cd-overlay:has(.acctbox){padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.acctbox .field{margin:8px 0}.acctbox input:not([type=checkbox]){width:100%;box-sizing:border-box}
-.acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.frbtn{padding:1px 6px;font-size:12px;margin-left:4px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+.acctbox h3{font-size:15px;margin:14px 0 4px}
+/* Konto-Dialoge oben verankert (springen nicht, wenn der Inhalt wächst); die Konto-Seite hat eine feste Höhe, nur der Inhalt scrollt */
+.cd-overlay.acdlg{align-items:flex-start;padding-top:max(16px,min(8vh,60px))}
+.acctbox.acme{display:flex;flex-direction:column;height:min(720px,calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));overflow:hidden;padding:14px 16px 0}
+.achead{display:flex;align-items:center;gap:12px}.achead .acwho{flex:1;min-width:0}.achead h2{margin:0;font-size:19px;color:var(--fg);text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:700 21px Georgia,serif;color:#fff;background:linear-gradient(140deg,var(--felt),var(--accent))}
+.actabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin:12px 0 0;padding:3px;border-radius:12px;background:var(--chip)}
+.actabs button{border:0;background:transparent;padding:8px 2px;font-size:13px;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actabs button.on{background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);font-weight:650}.actabs .cnt{font-size:11px;color:var(--muted)}
+.acbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 2px 16px}
+.acbody>.seg{margin-bottom:8px}.acsec{border-top:1px solid var(--line);margin-top:14px;padding-top:4px}
+.acdanger{margin-top:14px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--red) 45%,var(--line));border-radius:12px}.acdanger h3{margin-top:0;color:var(--red)}
+@media(max-width:380px){.actabs button{font-size:12px}}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.frbtn{padding:1px 6px;font-size:12px;margin-left:4px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
 .seg{display:inline-flex;gap:4px;flex-wrap:wrap}.lbctl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0}
 .stbl.lb td,.stbl.lb th{padding:4px 5px;white-space:nowrap}@media (max-width:420px){.stbl.lb .lbs{display:none}.stbl.lb td,.stbl.lb th{padding:4px 3px;font-size:13px}}.frrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;flex-wrap:wrap}
 .frcode{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;text-align:left}.reccode.sm{font-size:18px;padding:6px 10px;display:inline-block}.acctbox{text-align:left}.acctbox .rings,.acctbox .sthead{text-align:center}.acctmgr{margin-top:14px}
@@ -3224,26 +3236,40 @@ function acctDialog(){
   else if(m==='rec')b='<h2 id="accth">🔑 Dein Wiederherstellungscode</h2><p>Schreib ihn dir auf oder speichere ihn im Passwort-Manager. Er wird <b>nur jetzt</b> angezeigt und gilt einmal; danach bekommst du einen neuen.</p>'+
     '<p class="reccode">'+esc(acctRec||'')+'</p><div class="bar"><button data-a="acctcopy">Kopieren</button><button class="primary" data-a="acctrecok">Notiert ✓</button></div>';
   else if(m==='me'){
-    var st=acctStats,list=st&&acctTab!=='fr'?(acctTab==='sp'?st.sp:st.mp).map(fromAcct):null,us=st&&st.usage&&acctTab!=='fr'?st.usage[acctTab]:null;
-    b=head('👤 '+esc(ACC?ACC.name:''))+
-      (ACC&&ACC.reset?'<p class="info">Dein Passwort wurde vom Admin zurückgesetzt – bitte unten ein eigenes setzen.</p>':'')+
-      '<div class="row acctabs"><button class="small'+(acctTab==='sp'?' primary':' ghost')+'" data-a="accttab" data-t="sp">Übungsraum</button>'+
-      '<button class="small'+(acctTab==='mp'?' primary':' ghost')+'" data-a="accttab" data-t="mp">Räume</button>'+
-      '<button class="small'+(acctTab==='fr'?' primary':' ghost')+'" data-a="accttab" data-t="fr">🏆 Freunde'+(acctFr&&acctFr.incoming.length?' <span class="badge">'+acctFr.incoming.length+'</span>':'')+'</button></div>'+
-      (acctTab==='fr'?friendsHtml():!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Übungsraum':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':
-        statsPanel(list,us&&us.d?{d:us.d,h:us.h}:null,true))+
-      (KRA&&KRA.app&&acctTab!=='fr'?'<label class="optin"><input type="checkbox" id="acc_lanup"'+(lanUp()?' checked':'')+'><span><b>WLAN-Hände ins Konto übertragen</b><br>'+
+    /* Konto-Seite (#5): Kopf mit Überblick, darunter Statistik · Freunde · Plätze · Einstellungen. Feste Höhe, oben verankert –
+       der Dialog springt beim Umschalten und Nachladen nicht mehr. */
+    var st=acctStats,stTab=acctTab==='sp'||acctTab==='mp',list=st&&stTab?(acctTab==='sp'?st.sp:st.mp).map(fromAcct):null,us=st&&st.usage&&stTab?st.usage[acctTab]:null;
+    var all=st?calcStats((st.sp||[]).concat(st.mp||[]).map(fromAcct)):null,nIn=acctFr&&acctFr.incoming.length;
+    var tab=function(t,lbl){var on=t==='st'?stTab:acctTab===t;return '<button class="'+(on?'on':'')+'" data-a="accttab" data-t="'+(t==='st'?(stTab?acctTab:'sp'):t)+'" role="tab" aria-selected="'+on+'">'+lbl+'</button>';};
+    var body='';
+    if(stTab)body=seg('accttab',acctTab,[['sp','🤖 Singleplayer'],['mp','👥 Räume']])+
+      (!st?'<p class="muted">Lädt …</p>':!list.length?'<p class="note">Noch keine Hände '+(acctTab==='sp'?'im Singleplayer':'in Räumen')+' im Konto. Ab jetzt zählt jede fertige Hand.</p>':statsPanel(list,us&&us.d?{d:us.d,h:us.h}:null,true));
+    else if(acctTab==='fr')body=friendsHtml();
+    else if(acctTab==='pl')body=mySeats.length?'<div class="plist">'+mySeats.map(function(x){
+        return '<div class="pl"><span class="code">'+esc(x.code)+'</span><div class="nm">'+(x.room?'<b>'+esc(x.room)+'</b><br>':'')+
+          '<span class="note">als '+esc(x.name)+' \u00b7 '+esc(PHASE_SHORT[x.phase]||x.phase)+(x.local?'':' \u00b7 auf anderem Gerät')+'</span></div>'+
+          (x.local?'<button class="small primary" data-a="seatgo" data-code="'+esc(x.code)+'">Weiterspielen</button>'
+            :'<button class="small primary" data-a="seatgrab" data-code="'+esc(x.code)+'" data-id="'+esc(x.id)+'">Hierher holen</button>')+'</div>';}).join('')+'</div>'+
+        '<p class="note">Plätze aus Räumen, in denen du gerade sitzt – auch auf deinen anderen Geräten (gleiches Konto).</p>'
+      :'<p class="note">Gerade sitzt du in keinem Raum. Plätze aus Räumen, in denen du mitspielst, stehen hier – auch von deinen anderen Geräten.</p>';
+    else body=err+
+      (KRA&&KRA.app?'<label class="optin"><input type="checkbox" id="acc_lanup"'+(lanUp()?' checked':'')+'><span><b>WLAN-Hände ins Konto übertragen</b><br>'+
         '<span class="muted small">Hände aus Spielen im WLAN (ohne Internet) werden nachgeschickt, sobald du wieder online bist. Sie stehen als „lokal“ in deiner Statistik und zählen nicht in der Bestenliste.</span></span></label>':'')+
-      '<details class="acctmgr"><summary>⚙️ Konto verwalten</summary>'+err+
-      '<form class="accf" onsubmit="return false"><h3>Passwort ändern</h3>'+(ACC&&ACC.reset?'':acctField('acc_old','Altes Passwort','password','','current-password'))+
-        (ACC&&ACC.reset?acctField('acc_old','Einmal-Passwort vom Admin','password','','current-password'):'')+
+      '<form class="accf acsec" onsubmit="return false"><h3>🔑 Passwort ändern</h3>'+(ACC&&ACC.reset?acctField('acc_old','Einmal-Passwort vom Admin','password','','current-password'):acctField('acc_old','Altes Passwort','password','','current-password'))+
         acctField('acc_new','Neues Passwort (mind. 8 Zeichen)','password','','new-password')+acctField('acc_new2','Neues Passwort wiederholen','password','','new-password')+
         '<div class="bar"><button data-a="acctpw"'+busy+'>Passwort ändern</button></div></form>'+
-      '<form class="accf" onsubmit="return false"><h3>Wiederherstellungscode / Konto löschen</h3>'+acctField('acc_pwc','Passwort zur Bestätigung','password','','current-password')+
-        '<div class="bar"><button data-a="acctnewrec"'+busy+'>Neuen Code erzeugen</button><button class="ghost danger" data-a="acctdel"'+busy+'>Konto löschen</button></div></form>'+
-      '</details><div class="bar"><button class="ghost" data-a="acctlogout">Abmelden</button></div>';
+      '<form class="accf acsec" onsubmit="return false"><h3>🛟 Wiederherstellungscode</h3><p class="note">Neuer Code, falls du den alten verloren hast – der alte gilt dann nicht mehr.</p>'+acctField('acc_pwc','Passwort zur Bestätigung','password','','current-password')+
+        '<div class="bar"><button data-a="acctnewrec"'+busy+'>Neuen Code erzeugen</button></div>'+
+        '<div class="acdanger"><h3>Konto löschen</h3><p class="note">Löscht Konto, Statistik im Konto und Freundschaften. Die Statistik in diesem Browser bleibt.</p>'+
+        '<button class="ghost danger" data-a="acctdel"'+busy+'>Konto endgültig löschen</button></div></form>'+
+      '<div class="bar acsec"><button class="ghost" data-a="acctlogout">Abmelden</button><span class="note">auf diesem Gerät</span></div>';
+    b='<div class="achead"><div class="avatar" aria-hidden="true">'+esc(((ACC&&ACC.name)||'?').slice(0,1).toUpperCase())+'</div>'+
+        '<div class="acwho"><h2 id="accth">'+esc(ACC?ACC.name:'')+'</h2><div class="note">'+(all&&all.hands?all.hands+' Hände \u00b7 '+pct(all.wins+all.part/2,all.hands)+' richtig'+(all.best>1?' \u00b7 beste Serie '+all.best:''):st?'Noch keine Hände im Konto':'Lädt …')+'</div></div>'+close+'</div>'+
+      (ACC&&ACC.reset?'<p class="info">Dein Passwort wurde vom Admin zurückgesetzt – bitte unter ⚙️ Konto ein eigenes setzen.</p>':'')+
+      '<div class="actabs" role="tablist">'+tab('st','📊 Statistik')+tab('fr','🏆 Freunde'+(nIn?' <span class="badge">'+nIn+'</span>':''))+tab('pl','🪑 Plätze'+(mySeats.length?' <span class="cnt">'+mySeats.length+'</span>':''))+tab('set','⚙️ Konto')+'</div>'+
+      '<div class="acbody">'+body+'</div>';
   }
-  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="accth"><div class="cd-box vbox acctbox">'+b+'</div></div>';
+  return '<div class="cd-overlay vdlg acdlg" role="dialog" aria-modal="true" aria-labelledby="accth"><div class="cd-box vbox acctbox'+(m==='me'?' acme':'')+'">'+b+'</div></div>';
 }
 
 /* ---------- Freunde + Bestenliste ---------- */
@@ -3519,14 +3545,14 @@ function render(){
   ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc','acc_fcode'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
   /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
   var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
-  ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
+  ['.col-l','.col-r','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
   el.innerHTML = (sp?spView():code?(tvMode?tvView():roomView()+modDialog()):startView()+acctDialog()+donateDialog())+(tvMode?'':bundleDialog());
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   if(flash.sel&&Date.now()<flash.until){var fl=qs(flash.sel);if(fl)fl.classList.add('flash');}
-  ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
+  ['.col-l','.col-r','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
   renderChat();
@@ -4099,7 +4125,7 @@ document.addEventListener('click',function(ev){
   else if(a==='acctrecover')acctAuth('recover');
   else if(a==='acctrecok'){acctRec=null;acctDlg='me';if(acctTab==='fr')frLoad();render();}
   else if(a==='acctcopy'){try{navigator.clipboard.writeText(acctRec||'').then(function(){showToast('Kopiert');});}catch(e){}}
-  else if(a==='accttab'){var tt=el.getAttribute('data-t');acctTab=tt==='mp'||tt==='fr'?tt:'sp';if(acctTab==='fr')frLoad();render();}
+  else if(a==='accttab'){var tt=el.getAttribute('data-t')||el.getAttribute('data-v');acctTab=['mp','fr','pl','set'].indexOf(tt)>=0?tt:'sp';if(acctTab==='fr')frLoad();if(acctTab==='pl')seatsLoad();var ab=document.querySelector&&document.querySelector('.acbody');if(ab)ab.scrollTop=0;render();}
   else if(a==='lbmode'){lbMode=el.getAttribute('data-v');render();}
   else if(a==='lbrange'){lbRange=el.getAttribute('data-v');render();}
   else if(a==='fradd')frDo('friendadd',{code:acctVal('acc_fcode')});
