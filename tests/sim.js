@@ -468,5 +468,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   await sleep(300); const qd=(await (await fetch(BASE+'api?a=get&room='+pc+'&path=players/'+Q.__kr.uid())).json()).doc;
   ok(qd.joinedAt>1000&&Q.__kr.isHost(),'Gefälschtes Beitrittsdatum wird ignoriert, Host bleibt');
   Q.__kr.closeRoom(); await until(()=>!Ri.__kr.code(),'geplanter Raum geschlossen');
+  await until(()=>Pl.__kr.planned().length===0&&!Pl.els.app.innerHTML.includes('Deine geplanten Räume'),'geplanter Raum aus der Liste',35000);
+  ok(true,'Geschlossener geplanter Raum verschwindet aus „Deine geplanten Räume“ (#12)');
   console.log('ALLE TESTS BESTANDEN');process.exit(0);
 })().catch(e=>{console.error(e.message);process.exit(1);});

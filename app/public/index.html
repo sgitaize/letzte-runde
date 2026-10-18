@@ -1466,7 +1466,7 @@ function closeRoom(){
   if(!isHost()||watching)return;
   if(typeof confirm==='function'&&!confirm(roomLabel(code,roomName())+' für alle schließen?'))return;
   var c=code;
-  api('close',{room:c},{uid:uid}).then(function(){uiErr='Raum '+c+' geschlossen.';leave();}).catch(showErr);
+  api('close',{room:c},{uid:uid}).then(function(){uiErr='Raum '+c+' geschlossen.';planned=planned.filter(function(p){return p.code!==c;});savePlanned();leave();}).catch(showErr);
 }
 function takeOver(id,own,fromList){
   var p=pmap()[id];
@@ -1840,6 +1840,19 @@ function icsDownload(c){
     a.download='letzte-runde-'+c+'.ics';document.body.appendChild(a);a.click();
     setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
   }catch(e){showToast('Kalender nicht möglich');}
+}
+/* Geplante Räume liegen nur im Browser (kr.planned) – beim Server nachfragen, ob es sie noch gibt (#12):
+   geschlossen, im Admin gelöscht oder abgelaufen (404) → weg; nach dem Start nur, solange jemand drin ist (2 h Nachlauf) */
+var plannedAt=0;
+function plannedCheck(){
+  if(!planned.length||Date.now()-plannedAt<20000)return;
+  plannedAt=Date.now();
+  var drop=function(c){planned=planned.filter(function(p){return p.code!==c;});savePlanned();if(planShow===c)planShow=null;if(!code&&!sp)render();};
+  planned.slice().forEach(function(p){
+    api('info',{room:p.code}).then(function(r){
+      if(num(p.startsAt)<srvNow()-2*3600000&&!num(r.players))drop(p.code);
+    }).catch(function(e){if(e&&e.status===404)drop(p.code);});
+  });
 }
 function plannedHtml(){
   var now=srvNow(),list=planned.filter(function(p){return p.startsAt>now-6*3600000;});
@@ -2910,7 +2923,7 @@ function fetchRooms(){
     if(spPending)reportSpHand0();
   }).catch(function(){if(!netDown){netDown=true;if(!code&&!sp)render();}});
 }
-setInterval(function(){if(!code&&!sp&&!document.hidden){fetchRooms();if(Date.now()-mySeatsAt>30000)seatsLoad();}},5000);
+setInterval(function(){if(!code&&!sp&&!document.hidden){fetchRooms();if(Date.now()-mySeatsAt>30000)seatsLoad();plannedCheck();}},5000);
 
 /* ---------- Raum betreten / erstellen ---------- */
 function newCode(){var s='';for(var i=0;i<4;i++)s+=CODE_ALPHABET[crypto.getRandomValues(new Uint32Array(1))[0]%CODE_ALPHABET.length];return s;}
@@ -4125,7 +4138,7 @@ if(window.addEventListener){
     if(!u){u='u'+hx(rnd(8));try{localStorage.setItem('kr.uid',u);}catch(e){}}
     uid=u;db=1;
     api('config',{}).then(function(r){applyConfig(r.config);render();}).catch(function(){});
-    fetchRooms();fetchInviteInfo();
+    fetchRooms();fetchInviteInfo();plannedCheck();
     loadKeys().then(function(){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
