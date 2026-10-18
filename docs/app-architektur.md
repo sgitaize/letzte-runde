@@ -92,3 +92,13 @@ Lösung, zweistufig:
 4. Statistik-Warteschlange + Opt-in.
 5. Android-Hülle (Build auf dem VPS), APK-Download auf simongutjahr.de.
 6. Store-Material, Datenschutz, Spendenknopf.
+
+## Spiellogik nachladen (seit 1.1)
+
+- Das Spiel im App-Paket (`game/`, beim Build gestempelt: `game/bundle.json` = Unix-Sekunden) läuft immer, auch ohne dass die App je online war. Fällt der Server weg, bleibt es beim zuletzt eingebauten bzw. geladenen Stand.
+- Der Online-Server bietet `/app/bundle.json` an (signiert mit Ed25519; öffentlicher Schlüssel `bundle-key.pub` im App-Paket). `app-host.js` prüft beim Start und alle 6 h; neuer als das eingebaute Spiel und inhaltlich anders → die Seite zeigt beim Start „Neue Spiellogik“ (Pflicht für Online-Räume, wenn der Admin `minLogic` setzt).
+- „Jetzt laden“ holt nur geänderte Dateien, prüft jede Prüfsumme und legt sie unter `KR_VAR_DIR/bundle/<build>/` ab (bleibt bei App-Updates erhalten, wird verworfen, sobald ein App-Update neueres Spiel mitbringt).
+- Probezeit: Die Seite meldet sich nach dem Start (`/__bundle/ok`); tut sie das nicht (3 Starts oder 10 s), fällt der Host auf das vorige bzw. eingebaute Spiel zurück. Stürzt der eingebettete WLAN-Server aus einem Bundle ab, ebenso.
+- Der WLAN-Host startet seinen Server erst beim Hosten, aus dem aktiven Bundle – Seite, Server und Bots rechnen also gleich. Läuft er schon, wird ein neues Bundle erst beim nächsten App-Start aktiv.
+- Nicht nachladbar ist `app-host.js` selbst (Brücke zur App); Bundles, die einen neueren Host brauchen (`minHost` > `HOST_API`), zeigen „App-Update nötig“.
+

@@ -54,6 +54,7 @@ const bget = async (p) => (await fetch(A + '/__bundle/' + p)).json();
 const bpost = async (p) => { const r = await fetch(A + '/__bundle/' + p, { method: 'POST', body: '{}' }); return Object.assign({ status: r.status }, await r.json()); };
 const page = async () => (await fetch(A + '/')).text();
 const krApp = (html) => JSON.parse(/window\.KR_APP=(\{.*?\});<\/script>/.exec(html)[1]);
+const WATCH = /if\(!window\.KR_BOOTED\)location\.reload\(\)/;
 const checked = async () => { const s = await bpost('check'); return s; };
 
 (async () => {
@@ -81,9 +82,9 @@ const checked = async () => { const s = await bpost('check'); return s; };
   s = await bpost('apply');
   ok(s.status === 200 && s.reload && s.active.build === M.build && s.active.src === 'download', 'Update geladen und aktiv');
   let html = await page();
-  ok(/kr-mark neu/.test(html) && krApp(html).logic === 77 && /KR_BOOTED/.test(html), 'Seite aus dem Bundle, mit Start-Wächter (Probezeit)');
+  ok(/kr-mark neu/.test(html) && krApp(html).logic === 77 && WATCH.test(html), 'Seite aus dem Bundle, mit Start-Wächter (Probezeit)');
   await bpost('ok');
-  ok(!/KR_BOOTED/.test(await page()) && !(await bget('state')).active.trial, 'Seite meldet sich → Probezeit vorbei');
+  ok(!WATCH.test(await page()) && !(await bget('state')).active.trial, 'Seite meldet sich → Probezeit vorbei');
   ok((await checked()).available === null, 'danach kein Update mehr angeboten');
 
   /* Neustart ohne Netz: gespeicherte Logik bleibt */

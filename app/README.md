@@ -59,6 +59,8 @@ Einstellbar (gilt ab der nächsten Hand, laufende Hände behalten ihre Werte):
 | Gemeinsamer Tipp vor dem Aufdecken | an |
 | Höchster Chip deckt zuerst auf | an (sonst ab Chip 1 aufwärts) |
 | Räume löschen nach … Stunden | 48 |
+| Spendenlink („💛 Unterstützen“ im Browser/Android, `{betrag}` → 2/5/10) | leer = aus |
+| Mindest-Spiellogik für Online-Räume (ältere Apps/Browser: Update-Hinweis, kein neuer Raum/Beitritt) | 0 = aus |
 
 Unter „Konten“: Name, gespeicherte Hände, angemeldete Geräte, zuletzt aktiv. **Passwort zurücksetzen** erzeugt ein Einmal-Passwort (wird nur einmal angezeigt), meldet alle Geräte ab und hebt eine Sperre nach Fehlversuchen auf; die Person setzt danach im Spiel ein eigenes Passwort. Konten lassen sich samt Statistik löschen.
 
@@ -91,8 +93,12 @@ Die Karten liegen **verschlüsselt** auf dem Server. Das Geben ist auf drei Spie
 
 Host-Rechte sind abgesichert: Jeder Browser hat einen zufälligen Geräteschlüssel (`kr.sk`), der Server kennt nur dessen Hash. Spieler entfernen und Raum schließen darf nur der Host mit seinem Schlüssel; fremde Spielerplätze lassen sich nur übernehmen, wenn der Spieler mindestens 60 s weg ist – der Host-Platz nie. Zuschauer sehen keine Karten außer den aufgedeckten Tischkarten und lesen den Chat nur mit.
 
-**Tisch-Modus:** Ein großer Bildschirm tritt als „nur Tisch“ bei (Startseite „📺 Als Tisch“ oder `…/?tisch=CODE`, Link steht auch unter „Einladen“). Technisch ist das ein Zuschauer ohne Platz und ohne Chat; die Ansicht zeigt Tisch, freie Chips, Tipp, Aufdecken und Ergebnis groß, die Spieler*innen als Plätze rund um den Tisch (Hochformat: darunter), in der Lobby einen großen QR-Code zum Beitreten. Bildschirm bleibt an (Wake Lock), Vollbild per ⤢. Spieler*innen blenden am Handy mit „📺 Tisch aus“ den Tisch aus (`kr.notable`, nur dieses Gerät).
+**Tisch-Modus:** Ein großer Bildschirm tritt als „nur Tisch“ bei (Startseite „📺 Als Tisch“ oder `…/?tisch=CODE`, Link steht auch unter „Einladen“). Technisch ist das ein Zuschauer ohne Platz und ohne Chat; die Ansicht zeigt Tisch, freie Chips, Tipp, Aufdecken und Ergebnis groß, die Spieler*innen als Plätze rund um den Tisch (Hochformat: darunter), in der Lobby einen großen QR-Code zum Beitreten. Bildschirm bleibt an (Wake Lock), Vollbild per ⤢. Spieler*innen blenden am Handy mit dem Knopf „🃏 Tisch an“ den Tisch aus (`kr.notable`, nur dieses Gerät).
 
-Nicht abgesichert ist der Rest: wer den Raumcode kennt, kann beitreten, es gibt keine Anmeldung. Für Runden unter Freunden reicht das. Wer mehr will, legt in Plesk einen Verzeichnisschutz auf den Ordner.
+**Auswertung:** Ist eine Hand fertig, entschlüsselt der Server Tisch und aufgedeckte Karten selbst (`resolve.js`; nach dem Aufdecken liegen alle Schlüssel offen im Raum), wertet mit derselben `hand.js` wie Browser und Bots aus und legt das Ergebnis als `state/result` in den Raum. Die Statistik (`stats`, Konten) kommt aus dieser Auswertung; die Meldung eines Clients (`?a=record`) zählt nur, wenn der Server die Hand nicht entschlüsseln kann. Aufdecken von Tischplätzen oder doppelten Plätzen zählt als „nicht aufgedeckt“.
+
+**Spiel-Bundle für die Apps:** `bundle.json` (von `scripts/bundle.js build` beim Deploy erzeugt, Ed25519-signiert) liegt neben `server.js`; ausgeliefert unter `/app/bundle.json`, die Dateien unter `/app/bundle/<pfad>` – nur, was im Manifest steht, und nur, wenn die Dateien hier dazu passen. `sw.js` bekommt seine `VERSION` beim Ausliefern aus dem Stand von `public/`.
+
+Nicht abgesichert ist der Rest: wer den Raumcode kennt, kann beitreten, es gibt keine Anmeldung. Private Räume stehen nicht in der Liste „Offene Räume“. Für Runden unter Freunden reicht das. Wer mehr will, legt in Plesk einen Verzeichnisschutz auf den Ordner.
 
 Die Spieler-ID liegt im `localStorage` des Browsers. Browser-Speicher gelöscht oder Gerät gewechselt = neuer Spieler, der neu beitreten muss (am besten zwischen zwei Händen).

@@ -8,6 +8,7 @@ const fs = require('fs'), os = require('os'), path = require('path'), crypto = r
 const APP = path.resolve(process.argv[2] || path.join(__dirname, '..', 'app'));
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-acct-'));
 execSync('cp -r "' + APP + '/." "' + TMP + '/"');
+fs.mkdirSync(path.join(TMP, 'data'), { recursive: true });   // frischer Klon: data/ gibt es noch nicht
 for (const f of fs.readdirSync(path.join(TMP, 'data'))) fs.rmSync(path.join(TMP, 'data', f), { recursive: true, force: true });
 const PORT = 3987, BASE = 'http://127.0.0.1:' + PORT + '/', SECRET = 'test-admin-secret-123';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -158,10 +158,13 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .endbar .res{font-weight:700;font-size:17px}.endbar .res.bad{color:#c0392b}.endbar .res.ok{color:var(--accent)}.endbar .res.part{color:var(--gold)}
 .endbar button.primary{font-size:18px;padding:12px 22px;border-radius:12px}
 /* „Nächster Schritt“: gleiche Leiste, Text links (mit Zusatz), Sprung- und Aktionsknopf rechts */
-.endbar.next .res{display:flex;flex-direction:column;gap:1px;min-width:0;font-size:15.5px;font-weight:650}
-.endbar.next .res .note{font-weight:400}.endbar.next .row{flex-wrap:nowrap;flex:none}
+.endbar.next{gap:10px}
+.endbar.next .res{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto;font-size:15.5px;font-weight:650;line-height:1.3}
+.endbar.next .res .note{font-weight:400}.endbar.next .row{flex-wrap:nowrap;flex:none;gap:6px}
 .endbar.next button{font-size:15px;padding:10px 14px;border-radius:12px;white-space:nowrap}
-@media(max-width:480px){.endbar.next{flex-wrap:wrap}.endbar.next .row{width:100%;justify-content:flex-end}}
+@media(max-width:480px){.endbar.next{padding:8px 10px}.endbar.next .res{font-size:14.5px}.endbar.next button{font-size:14px;padding:9px 11px}}
+/* Hinweise (Toast) im Raum über der Leiste unten, nicht darauf */
+#app.inroom~.toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .flash{outline:3px solid var(--gold);outline-offset:3px;border-radius:14px}
 .result .big{font-family:Georgia,serif;font-size:26px;font-weight:700}
 .result.win{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--fg);border:2px solid var(--accent)}
@@ -1708,6 +1711,8 @@ function bundleDialog(){
 function bundleBanner(){
   if(!bundleOn()||!bundle.st)return '';
   var s=bundle.st,av=s.available,out='';
+  if(s.required&&!av)out+='<div class="placebar upd req"><p class="plc"><span>⚠️ <b>Online-Räume brauchen eine neuere Version</b> <span class="sub">· Spiellogik '+num(s.minLogic)+
+    ' – '+(KRA.platform==='android'?'bitte die neue APK installieren':'bitte die App aktualisieren')+'. Singleplayer und WLAN gehen weiter.</span></span></p></div>';
   if(av&&!bundle.dlg)out+='<div class="placebar upd'+(s.required?' req':'')+'"><p class="plc"><span>🔄 <b>'+(s.required?'Update nötig für Online-Räume':'Neue Spiellogik verfügbar')+'</b> <span class="sub">· '+kb(av.bytes)+'</span></span></p>'+
     '<button class="small primary" data-a="bshow">Ansehen</button></div>';
   var apk=s.apk,skip='';try{skip=localStorage.getItem('kr.apk.skip')||'';}catch(e){}
