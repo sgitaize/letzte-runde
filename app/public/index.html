@@ -2517,16 +2517,16 @@ function spCoachEst(r){
   var n=sp.players.length,raw=sp.coach[k],c=(n+1)/2,e=Math.max(1,Math.min(n,c+(raw-c)*1.7));   // gespreizt, aber nie außerhalb 1…n
   /* Was die Chips der anderen verraten, fließt mit ein (gleiche Lesart wie unter „🔎 Was die Chips der anderen verraten“),
      sonst widersprechen sich Empfehlung und Lesart */
-  var rd=[],ks=[];sp.players.forEach(function(p){if(p.id==='me'||!Object.keys(spChipsTo(p.id,r)).length)return;var R=spRead(p.id,r);rd.push(R.list);ks.push(p.id+':'+JSON.stringify(R.ch));});
-  if(rd.length){
+  var ids=[],ks=[];sp.players.forEach(function(p){if(p.id==='me')return;var ch=spChipsTo(p.id,r);if(!Object.keys(ch).length)return;ids.push(p.id);ks.push(p.id+':'+JSON.stringify(ch));});
+  if(ids.length){
     var kk=k+'|'+ks.join('|');
-    if(sp.coach[kk]==null)sp.coach[kk]=estimateRankGiven(sp.hole.me,spVisible(r),n-1,sp.K,rd,400).e;
+    if(sp.coach[kk]==null)sp.coach[kk]=estimateRankGiven(sp.hole.me,spVisible(r),n-1,sp.K,ids.map(function(id){return spRead(id,r).list;}),400).e;
     /* Mit Lesart weniger Unsicherheit über die Gegner → weniger spreizen (1,7 ohne, 1,2 wenn alle gelesen sind) */
-    var f=1.7-0.5*rd.length/(n-1);e=Math.max(1,Math.min(n,c+(sp.coach[kk]-c)*f));
+    var f=1.7-0.5*ids.length/(n-1);e=Math.max(1,Math.min(n,c+(sp.coach[kk]-c)*f));
   }
   var sug=Math.max(1,Math.min(n,Math.round(e))),d=e-sug,alt=null;
   if(Math.abs(d)>=0.3){alt=sug+(d>0?1:-1);if(alt<1||alt>n)alt=null;}   // knapp zwischen zwei Plätzen → beide nennen
-  return {raw:raw,e:e,sug:sug,alt:alt,n:n,read:rd.length>0};
+  return {raw:raw,e:e,sug:sug,alt:alt,n:n,read:ids.length>0};
 }
 function chipPick(c,html){var a='<b'+(html?' class="coachchip"':'')+'>'+c.sug+'</b>';return c.alt?a+' oder die <b'+(html?' class="coachchip"':'')+'>'+c.alt+'</b>':a;}
 function chipFits(c,chip){return chip===c.sug||chip===c.alt;}
@@ -2662,7 +2662,7 @@ function coachRounds(me){
 /* ---------- Raum: Insight + Erklärung zur fertigen Hand mit den Funktionen des Übungsraums ----------
    Baut aus den Raumdaten ein sp-ähnliches Objekt (du = 'me', die anderen wie Bots) und ruft f damit auf. Kein Lernmodus
    während der Hand im Raum – die Erklärung gibt es nur aufgeklappt nach der Auflösung. */
-var mpCoachCache={};
+var mpCoachCache={},mpReadCache={};
 function mpView(tv){   // tv: Tisch-Ansicht – alle wie Mitspieler*innen, eigene Karten des Geräts bleiben verdeckt
   var ph=phase(),h=hand(),ps=parts(),me=!tv&&ps.indexOf(uid)>=0,hist=main().chipHist||{},m=function(id){return id===uid&&!tv?'me':id;};
   if(!(me||tv)||ph==='lobby'||ph==='deal')return null;
@@ -2678,6 +2678,7 @@ function mpView(tv){   // tv: Tisch-Ansicht – alle wie Mitspieler*innen, eigen
   });
   if(res){v.res={by:{}};ps.forEach(function(id){var x=res.by[id];if(x)v.res.by[m(id)]={chip:x.chip,lo:x.lo,hi:x.hi,ok:x.ok,swaps:(x.swaps||[]).map(m)};});}
   v.coach=mpCoachCache[v.hand]=mpCoachCache[v.hand]||{};
+  v.reads=mpReadCache[v.hand]=mpReadCache[v.hand]||{};      // Lesarten (inferHole) sind teuer – je Hand behalten, Schlüssel enthält den Chip-Stand
   return v;
 }
 function mpWith(f,tv){
