@@ -2,7 +2,7 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 import VisionKit
 
-/// „Wo spielen wir?“ – Online (gang.aize.eu), im WLAN hosten (ohne Internet) oder einem Spiel im WLAN beitreten.
+/// „Wo spielen wir?“ – Online (letzterunde.aize-it.de), im WLAN hosten (ohne Internet) oder einem Spiel im WLAN beitreten.
 struct PlaceSheet: View {
     @EnvironmentObject private var host: NodeHost
     @ObservedObject var lan: LanHosting
@@ -22,7 +22,7 @@ struct PlaceSheet: View {
             List {
                 Section {
                     option(.online, icon: "globe", title: "Online",
-                           text: "Räume auf gang.aize.eu – mit allen, die im Browser, in der Web-App oder in der App spielen.")
+                           text: "Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.")
                     option(.lan, icon: "wifi", title: "Im WLAN hosten",
                            text: "Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.")
                 } footer: {

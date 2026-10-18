@@ -5,7 +5,7 @@ import UIKit
 /// Eingebettetes Node (nodejs-mobile) mit `game/app-host.js`.
 ///
 /// Die WebView lädt das Spiel immer von `http://127.0.0.1:<port>` (Secure Context, gleiche Origin in allen Modi).
-/// Der App-Host leitet Räume je nach Modus an gang.aize.eu, an den eingebetteten Spielserver (WLAN-Host)
+/// Der App-Host leitet Räume je nach Modus an letzterunde.aize-it.de, an den eingebetteten Spielserver (WLAN-Host)
 /// oder an ein anderes Gerät im WLAN weiter. Gesteuert wird über `/__app/*` mit einem Token, das nur die App kennt.
 @MainActor
 final class NodeHost: ObservableObject {
@@ -66,7 +66,7 @@ final class NodeHost: ObservableObject {
         setenv("KR_VAR_DIR", varDir.path, 1)
         setenv("KR_PUBLIC", game.appendingPathComponent("public").path, 1)
         setenv("KR_LAN_PORT", String(NodeHost.lanPort), 1)
-        setenv("KR_UPSTREAM", "https://gang.aize.eu", 1)
+        setenv("KR_UPSTREAM", "https://letzterunde.aize-it.de", 1)
         #if DEBUG
         // Tests im Simulator gegen einen lokalen Server: simctl launch mit SIMCTL_CHILD_KR_UPSTREAM_DEBUG=http://…
         if let up = ProcessInfo.processInfo.environment["KR_UPSTREAM_DEBUG"], !up.isEmpty { setenv("KR_UPSTREAM", up, 1) }

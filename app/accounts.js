@@ -10,6 +10,7 @@
  *   POST /api?a=acct.login    {name, pw}            -> {account} + Cookie
  *   POST /api?a=acct.recover  {name, recovery, pw}  -> {recovery, account} + Cookie   (alle Sitzungen beendet)
  *   GET  /api?a=acct.me                             -> {account, stats}            Sitzung im HttpOnly-Cookie kr_acct
+ *   POST /api?a=acct.handoff -> {t} (Einmal-Code, 2 min) | acct.handoffclaim {t} -> {account} + Cookie   (Domainwechsel)
  *   POST /api?a=acct.logout | acct.password {old, pw} | acct.newrecovery {pw} | acct.delete {pw}
  *   POST /api?a=acct.sphands {hands:[…], usage?}    -> Übungsraum-Hände übernehmen (doppelte zählen nicht)
  *   POST /api?a=acct.mphand  {room, hand, day, hr}  -> Raum-Hand aus der Raumstatistik übernehmen (Header x-kr-key)
@@ -140,6 +141,7 @@ module.exports = function (o) {
     return '';
   }
   function dropSessions(a) { for (const s of a.sessions || []) bySess.delete(s.h); a.sessions = []; }
+  const handoffs = new Map();   // sha(Einmal-Code) → {id, exp}, siehe acct.handoff
   function newSession(a) {
     const t = crypto.randomBytes(32).toString('hex'), now = Date.now();
     a.sessions = (a.sessions || []).filter((s) => now - s.seen < SESSION_TTL);
@@ -425,6 +427,19 @@ module.exports = function (o) {
       setCookie(req, res, t);
       return json(res, 200, { ok: true, recovery: rec, account: pub(acc) }), true;
     }
+    /* Domainwechsel gang.aize.eu → letzterunde.aize-it.de: Das Cookie gilt nur für die alte Domain. Die alte Seite holt
+       sich mit acct.handoff einen Einmal-Code (2 Minuten, nur im Arbeitsspeicher), gibt ihn im #-Teil der Adresse an die
+       neue Domain weiter (erreicht keinen Server-Log), dort tauscht acct.handoffclaim ihn gegen eine eigene Sitzung. */
+    if (a === 'acct.handoffclaim') {
+      const b = await body(req, res); if (!b) return true;
+      const k = sha(String(b.t || '')), x = handoffs.get(k);
+      handoffs.delete(k);
+      const acc = x && x.exp > Date.now() && accts.get(x.id);
+      if (!acc) return json(res, 401, { error: 'Übergabe abgelaufen – bitte neu anmelden' }), true;
+      const t = newSession(acc); acc.seen = Date.now(); saveAuth(acc);
+      setCookie(req, res, t);
+      return json(res, 200, { ok: true, account: pub(acc) }), true;
+    }
     if (a === 'acct.login' || a === 'acct.recover') {
       const b = await body(req, res); if (!b) return true;
       const nk = nameKey(cleanName(b.name));
@@ -453,6 +468,15 @@ module.exports = function (o) {
     if (a === 'acct.mphand') return mpHand(req, res, u), true;
     const acc = current(req);
     if (!acc) return json(res, 401, { error: 'Nicht angemeldet' }), true;
+    if (a === 'acct.handoff') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'POST' }), true;
+      const now = Date.now();
+      for (const [k, x] of handoffs) if (x.exp < now) handoffs.delete(k);
+      if (handoffs.size > 5000) return json(res, 503, { error: 'Bitte später noch einmal' }), true;
+      const t = crypto.randomBytes(32).toString('hex');
+      handoffs.set(sha(t), { id: acc.id, exp: now + 120000 });
+      return json(res, 200, { ok: true, t }), true;
+    }
     if (a === 'acct.me') {
       const s = stats(acc.id);
       return json(res, 200, { ok: true, account: pub(acc), stats: { sp: s.sp, mp: s.mp, usage: s.usage } }), true;

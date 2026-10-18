@@ -19,7 +19,7 @@
         android:theme="@style/Theme.LetzteRunde"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="false">
-        <!-- Passwortmanager: Zugangsdaten von gang.aize.eu auch in der App (/.well-known/assetlinks.json) -->
+        <!-- Passwortmanager: Zugangsdaten von letzterunde.aize-it.de (und gang.aize.eu) auch in der App (/.well-known/assetlinks.json) -->
         <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
         <activity
             android:name=".MainActivity"

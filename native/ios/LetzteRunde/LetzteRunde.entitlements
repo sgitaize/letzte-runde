@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists/1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Passwort-AutoFill: gespeicherte Zugangsdaten von gang.aize.eu (/.well-known/apple-app-site-association) -->
+	<!-- Passwort-AutoFill: gespeicherte Zugangsdaten von letzterunde.aize-it.de und der alten Adresse gang.aize.eu (/.well-known/apple-app-site-association) -->
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>webcredentials:letzterunde.aize-it.de</string>
 		<string>webcredentials:gang.aize.eu</string>
 	</array>
 </dict>

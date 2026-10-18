@@ -56,7 +56,7 @@ object NodeHost {
             "KR_VAR_DIR=${varDir.absolutePath}",
             "KR_PUBLIC=${File(game, "public").absolutePath}",
             "KR_LAN_PORT=$LAN_PORT",
-            "KR_UPSTREAM=https://gang.aize.eu",
+            "KR_UPSTREAM=https://letzterunde.aize-it.de",
             "KR_LEADER_SOCK=${File(ctx.cacheDir, "kr.sock").absolutePath}",
             "TMPDIR=${ctx.cacheDir.absolutePath}",
         )

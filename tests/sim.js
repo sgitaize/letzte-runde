@@ -431,7 +431,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   await post('create','ZZTZ2',{startsAt:tzT.getTime(),tz:'Evil/"><script>'});
   ok((await (await fetch(BASE+'r/ZZTZ2')).text()).match(/\(MES?Z\)/),'Ungültige Zeitzone → Europe/Berlin');
   og=await new Promise((res)=>require('http').get({host:'localhost',port:3999,path:'/r/'+pc,headers:{Host:'evil.example"><x'}},(r)=>{let d='';r.on('data',(c)=>d+=c);r.on('end',()=>res(d));}));
-  ok(!og.includes('evil')&&og.includes('https://gang.aize.eu/r/'+pc),'Gefälschter Host-Header landet nicht in der Vorschau');
+  ok(!og.includes('evil')&&og.includes('https://letzterunde.aize-it.de/r/'+pc),'Gefälschter Host-Header landet nicht in der Vorschau');
   og=await (await fetch(BASE+'r/NOPE9')).text();
   ok(/Lass uns eine letzte Runde spielen!/.test(og)&&og.includes('url=/#NOPE9'),'Unbekannter Raum: allgemeine Vorschau, Weiterleitung');
   let inf=await (await fetch(BASE+'api?a=info&room='+pc)).json();

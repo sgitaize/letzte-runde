@@ -194,7 +194,7 @@ struct GameWebView: UIViewRepresentable {
     }
 }
 
-/// Anmelden / Konto erstellen nativ: iOS ordnet die Felder über webcredentials:gang.aize.eu zu und bietet gespeicherte
+/// Anmelden / Konto erstellen nativ: iOS ordnet die Felder über webcredentials:letzterunde.aize-it.de zu und bietet gespeicherte
 /// Passwörter, starke Passwörter und „Passwort sichern?“ an (auf der Seite unter 127.0.0.1 ginge das nicht).
 struct AuthSheet: View {
     @State var kind: String

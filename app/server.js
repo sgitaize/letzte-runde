@@ -5,6 +5,7 @@
  *   GET  /admin.html                -> Adminbereich
  *   GET  /api?a=state|get|config|info
  *   GET  /r/CODE                    -> Einladung mit Vorschau (WhatsApp & Co.), leitet auf /#CODE weiter
+ *   gang.aize.eu (alte Domain): Seitenaufrufe → Umzugsseite nach letzterunde.aize-it.de, alles andere wie gehabt
  *   POST /api?a=create|set|del|chip|rename|record|addbot|replacebot|sphand|voice|signal|signals|react|botify
  *   POST /api?a=acct.*                 -> Benutzerkonten (accounts.js)
  *   POST /admin-api?a=login|config|rooms|delroom|accounts|acctreset|acctdel|reports|repdone   (Header x-admin-secret)
@@ -1186,6 +1187,52 @@ async function adminApi(req, res, u) {
   return json(res, 400, { error: 'Unbekannte Aktion' });
 }
 
+/* ------------------------------------------------ Domainwechsel ---------- */
+/* Seit 2026-10 heißt die Adresse letzterunde.aize-it.de; gang.aize.eu zeigt auf denselben Prozess (gleicher Anwendungsordner).
+   Auf der alten Domain werden nur Seitenaufrufe umgeleitet – API, WebSocket, .well-known, Einladungsvorschau und Dateien
+   laufen dort weiter, denn ältere Apps reden per Proxy mit gang.aize.eu (POST und WebSocket folgen keiner Weiterleitung).
+   Die Umzugsseite nimmt localStorage (Statistik, Name, Raumschlüssel) und die Anmeldung (Einmal-Code, acct.handoff) im
+   #-Teil der Adresse mit; index.html übernimmt das ganz am Anfang. Danach merkt sich die alte Domain „kr.moved“. */
+const CANONICAL = process.env.KR_CANONICAL || 'letzterunde.aize-it.de';
+const LEGACY_HOST = /^(www\.)?gang\.aize\.eu$/i;
+function isLegacy(req) { return LEGACY_HOST.test(String(req.headers.host || '').replace(/:\d+$/, '')); }
+const MOVE_PAGE = Buffer.from('<!doctype html><html lang="de"><head><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">' +
+  '<link rel="canonical" href="https://' + CANONICAL + '/"><title>Letzte Runde ist umgezogen</title>' +
+  '<style>body{font:17px/1.5 system-ui,-apple-system,sans-serif;background:#0f1110;color:#ecebe6;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box;text-align:center}a{color:#3fa574}</style>' +
+  '</head><body><div><p>🃏 <b>Letzte Runde</b> ist umgezogen nach<br><b>' + CANONICAL + '</b></p><p><a id="go" href="https://' + CANONICAL + '/">Weiter …</a></p></div>' +
+  '<script>(function(){' +
+  'var T="https://' + CANONICAL + '"+location.pathname+location.search,h=location.hash.slice(1),sent=false;' +
+  'function go(p){if(sent)return;sent=true;try{localStorage.setItem("kr.moved",String(Date.now()));}catch(e){}' +
+  'location.replace(T+(p?"#kr-move="+encodeURIComponent(JSON.stringify(p)):(h?"#"+h:"")));}' +
+  'try{if(navigator.serviceWorker)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});}catch(e){}' +
+  'var moved=null,ls={},n=0;try{moved=localStorage.getItem("kr.moved");}catch(e){}' +
+  'if(moved)return go(null);' +
+  'try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^kr\\./.test(k)){ls[k]=localStorage.getItem(k);n++;}}}catch(e){}' +
+  'if(!n)return go(null);' +
+  'var p={v:1,ls:ls,h:h};if(!ls["kr.acct"])return go(p);' +
+  'setTimeout(function(){go(p);},4000);' +
+  'fetch("/api?a=acct.handoff",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}",credentials:"same-origin"})' +
+  '.then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.t)p.t=j.t;},function(){}).then(function(){go(p);});' +
+  '})();</script></body></html>');
+/* Alter Service Worker auf gang.aize.eu: der Browser lädt beim nächsten Besuch diese Fassung, sie räumt auf und lädt neu */
+const MOVE_SW = Buffer.from("self.addEventListener('install',function(){self.skipWaiting();});" +
+  "self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));})" +
+  ".then(function(){return self.registration.unregister();}).then(function(){return self.clients.matchAll({type:'window'});})" +
+  ".then(function(cs){cs.forEach(function(c){c.navigate(c.url);});}));});");
+function legacyPage(req, res, u) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+  if (u.pathname === '/sw.js') {
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' });
+    return res.end(req.method === 'HEAD' ? undefined : MOVE_SW), true;
+  }
+  if (u.pathname !== '/' && !/\.html?$/i.test(u.pathname)) return false;
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': MOVE_PAGE.length, 'Cache-Control': 'no-store',
+    'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'" });
+  res.end(req.method === 'HEAD' ? undefined : MOVE_PAGE);
+  return true;
+}
+
 /* ------------------------------------------------ Static ----------------- */
 const APK_URL = 'https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk';
 function serveStatic(req, res, u) {
@@ -1223,7 +1270,7 @@ function invitePage(req, res, codeRaw, prefix) {
   const r = CODE_RE.test(code) ? peek(code) : null;
   const room = (r && r.docs.room) || {};
   const name = cleanRoomName(room.name), t = Number(room.startsAt) || 0;
-  const host = /^[a-z0-9.-]{1,100}(:[0-9]{1,5})?$/i.test(String(req.headers.host || '')) ? req.headers.host : 'gang.aize.eu';
+  const host = /^[a-z0-9.-]{1,100}(:[0-9]{1,5})?$/i.test(String(req.headers.host || '')) ? req.headers.host : CANONICAL;
   const base = (/^(localhost|127\.)/.test(host) ? 'http://' : 'https://') + host + prefix;
   const title = name ? '„' + name + '“ – Letzte Runde' : 'Letzte Runde – Einladung';
   const desc = t && t > Date.now() ? 'Lass uns eine letzte Runde spielen – ' + whenText(t, cleanTz(room.tz)) + '.'
@@ -1258,7 +1305,7 @@ function handleReq(req, res) {
     if (isAdmin || isApi) {
       noteIpSource(req);
       const a = u.searchParams.get('a') || '';
-      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : /^acct\.(login|register|recover|password|newrecovery|delete)$/.test(a) || a === 'report' ? 5 : 1;
+      const cost = isAdmin ? 10 : a === 'rooms' || a === 'create' ? 3 : /^acct\.(login|register|recover|password|newrecovery|delete|handoff|handoffclaim)$/.test(a) || a === 'report' ? 5 : 1;
       if (!rateOk(clientIp(req), cost)) {
         res.setHeader('Retry-After', '5');
         return json(res, 429, { error: 'Zu viele Anfragen – bitte kurz warten' });
@@ -1271,6 +1318,7 @@ function handleReq(req, res) {
       if (!rateOk(clientIp(req), 1)) { res.writeHead(429); return res.end(); }
       return invitePage(req, res, inv[2], inv[1]);
     }
+    if (isLegacy(req) && legacyPage(req, res, u)) return;
     serveStatic(req, res, u);
   } catch (e) { fail(res, e); }
 }

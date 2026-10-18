@@ -39,7 +39,7 @@ class PlaceSheet(private val act: MainActivity) {
 
     fun show() {
         body.addView(title("Wo spielen wir?", 20f))
-        body.addView(option("🌐  Online", "Räume auf gang.aize.eu – mit allen, die im Browser, in der Web-App oder in der App spielen.") { set("online") })
+        body.addView(option("🌐  Online", "Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.") { set("online") })
         body.addView(option("📶  Im WLAN hosten", "Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.") { set("lan") })
         body.addView(note("Der Singleplayer läuft immer, auch ganz ohne Netz."))
         body.addView(hostBox)

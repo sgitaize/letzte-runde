@@ -5,11 +5,11 @@
  * (WebCrypto, WebSocket wie im Web) und bleibt dieselbe Origin, egal wo gespielt wird (Geräteschlüssel,
  * Name, Statistik im localStorage bleiben erhalten). Dieser Host entscheidet, wohin Anfragen gehen:
  *
- *   Modus „online“  Räume auf gang.aize.eu (Web, PWA und App spielen zusammen)
+ *   Modus „online“  Räume auf letzterunde.aize-it.de (Web, PWA und App spielen zusammen)
  *   Modus „lan“     Räume auf dem eingebetteten server.js; WLAN-Geräte erreichen ihn über den LAN-Listener
  *   Modus „join“    Räume auf einem anderen Gerät im WLAN, das hostet
  *
- *   Konten (/api?a=acct.*) gehen immer zu gang.aize.eu. Ohne Internet landen Übungsraum-Hände
+ *   Konten (/api?a=acct.*) gehen immer zum Online-Server (KR_UPSTREAM). Ohne Internet landen Übungsraum-Hände
  *   (acct.sphands) und WLAN-Hände (acct.lanhand, nur mit Opt-in) in einer Warteschlange und werden beim
  *   nächsten Kontakt nachgeschickt – nur mit Konto, denn der Client schickt sie nur angemeldet.
  *
@@ -20,7 +20,7 @@
  *   POST /__app/mode {mode, join?} -> Modus wechseln
  *   POST /__app/lan  {on}          -> WLAN-Host an/aus
  *
- * Umgebung: KR_APP_PORT, KR_APP_TOKEN, KR_VAR_DIR (beschreibbar), KR_UPSTREAM (Standard https://gang.aize.eu),
+ * Umgebung: KR_APP_PORT, KR_APP_TOKEN, KR_VAR_DIR (beschreibbar), KR_UPSTREAM (Standard https://letzterunde.aize-it.de; ältere Apps nutzen gang.aize.eu, das weiter funktioniert),
  *           KR_LAN_PORT (Standard 8380, HTTPS auf +1), KR_PUBLIC (gebündelte Dateien, Standard ./public)
  */
 'use strict';
@@ -36,7 +36,7 @@ const VAR_DIR = process.env.KR_VAR_DIR || path.join(__dirname, 'var');
 const PUBLIC = process.env.KR_PUBLIC || path.join(__dirname, 'public');
 const APP_PORT = Number(process.env.KR_APP_PORT) || 8370;
 const TOKEN = process.env.KR_APP_TOKEN || crypto.randomBytes(16).toString('hex');
-const UPSTREAM = new URL(process.env.KR_UPSTREAM || 'https://gang.aize.eu');
+const UPSTREAM = new URL(process.env.KR_UPSTREAM || 'https://letzterunde.aize-it.de');
 const LAN_PORT = Number(process.env.KR_LAN_PORT) || 8380;
 const INNER_PORT = APP_PORT + 1;          // eingebettetes server.js, nur 127.0.0.1
 const UP_TIMEOUT = 6000;
@@ -80,7 +80,7 @@ function hopHeaders(h, target) {
   if (h.referer) out.referer = target.origin + '/';
   return out;
 }
-/* Konto-Cookie: gang.aize.eu setzt „Secure; SameSite=Strict“. Auf http://127.0.0.1 nimmt die WebView ein
+/* Konto-Cookie: der Online-Server setzt „Secure; SameSite=Strict“. Auf http://127.0.0.1 nimmt die WebView ein
    Secure-Cookie nicht immer an → Secure/Domain entfernen; es bleibt HttpOnly und verlässt das Gerät nur zum Upstream. */
 function localCookies(sc) {
   if (!sc) return sc;
@@ -105,7 +105,7 @@ function proxy(req, res, body, isAcct) {
     if (b.remote) online = false;
     if (isAcct && body && queueable(req, body)) { queue.push({ url: req.url, body: body.toString('utf8'), at: Date.now() }); saveQueue();
       return send(res, 200, { ok: true, queued: true }); }
-    send(res, 503, { error: b.remote ? 'Keine Verbindung zu gang.aize.eu' : 'Keine Verbindung zum Host im WLAN', offline: true });
+    send(res, 503, { error: b.remote ? 'Keine Verbindung zu ' + UPSTREAM.host : 'Keine Verbindung zum Host im WLAN', offline: true });
   });
   if (body) p.end(body); else p.end();
 }

@@ -2,9 +2,22 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://gang.aize.eu; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://letzterunde.aize-it.de wss://gang.aize.eu; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Letzte Runde</title>
+<script>
+/* Umzug von gang.aize.eu: die alte Domain schickt localStorage (+ Einmal-Code für die Anmeldung) im #-Teil mit.
+   Vor allem anderen übernehmen (nur fehlende Einträge, nichts überschreiben) und die Adresse wieder säubern. */
+(function(){
+  var m=/^#kr-move=(.*)$/.exec(location.hash||'');if(!m)return;
+  var p=null;try{p=JSON.parse(decodeURIComponent(m[1]));}catch(e){}
+  try{history.replaceState(null,'',location.pathname+location.search+(p&&/^[A-Za-z0-9]{3,8}$/.test(p.h||'')?'#'+p.h:''));}catch(e){}
+  if(!p||p.v!==1)return;
+  var n=0,ls=p.ls||{};
+  try{for(var k in ls)if(/^kr\./.test(k)&&k!=='kr.moved'&&typeof ls[k]==='string'&&localStorage.getItem(k)==null){localStorage.setItem(k,ls[k]);n++;}}catch(e){}
+  window.KR_MOVE={t:typeof p.t==='string'?p.t:'',n:n};
+})();
+</script>
 <meta name="theme-color" content="#1f5a41">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
@@ -1593,7 +1606,7 @@ function placeBar(){
   if(!KRA||!KRA.app)return '';
   var t=KRA.mode==='lan'?'<b>Du hostest im WLAN</b> <span class="sub">· ohne Internet</span>':
         KRA.mode==='join'?'<b>Im WLAN</b> <span class="sub">· bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,''))+'</span>':
-        '<b>Online</b> <span class="sub">· gang.aize.eu</span>';
+        '<b>Online</b> <span class="sub">· '+esc(String(KRA.acct||'').replace(/^https?:\/\//,''))+'</span>';
   return '<div class="placebar"><p class="plc"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'Spielort · QR':'Spielort')+'</button></div>';
 }
 function vib(p){
@@ -1651,7 +1664,7 @@ function waitingHtml(ids,doneTxt){
 }
 /* ---------- Einladung (Link + QR) ---------- */
 /* Einladungslink …/r/CODE: der Server liefert dort Vorschau-Daten (WhatsApp & Co.) und leitet auf …/#CODE weiter */
-/* In der App läuft die Seite auf http://127.0.0.1 – Links für andere zeigen dann auf gang.aize.eu bzw. den WLAN-Host (window.KR_APP vom App-Host) */
+/* In der App läuft die Seite auf http://127.0.0.1 – Links für andere zeigen dann auf letzterunde.aize-it.de bzw. den WLAN-Host (window.KR_APP vom App-Host) */
 function pubBase(){var a=window.KR_APP;return (a&&a.origin)?a.origin.replace(/\/$/,'')+'/':location.origin+location.pathname.replace(/[^/]*$/,'');}
 function inviteUrl(c){return pubBase()+'r/'+(c||code);}
 var qrCache={};
@@ -2874,7 +2887,7 @@ function acctAuthDo(kind,body){
   });
 }
 /* iOS-App: Anmelden/Registrieren im nativen Formular. Die Seite läuft auf 127.0.0.1 – dafür bietet iOS keine
-   gespeicherten Passwörter an; das native Formular gehört zu gang.aize.eu (webcredentials) und bekommt Vorschläge,
+   gespeicherten Passwörter an; das native Formular gehört zu letzterunde.aize-it.de (webcredentials) und bekommt Vorschläge,
    starke Passwörter und „Passwort sichern?“. Die App ruft danach krAuth auf, das Cookie landet wie gewohnt in der WebView. */
 var NATIVE_AUTH=!!(KRA&&KRA.app&&window.KR_NATIVE&&window.KR_NATIVE.auth);
 function acctShow(m){
@@ -2889,6 +2902,19 @@ window.krAuth=function(kind,name,pw,pw2){
   return acctAuthDo(kind,{name:name,pw:pw}).then(function(){return {ok:true};},function(e){acctBusy=false;render();return {error:(e&&e.message)||String(e)};});
 };
 window.krAcctPage=function(m){acctShow(m==='recover'?'recover':'login');};
+/* Umzug von gang.aize.eu (siehe Anfang der Datei): Einmal-Code gegen eine Sitzung auf der neuen Domain tauschen */
+function acctMoveIn(){
+  var mv=window.KR_MOVE;if(!mv)return Promise.resolve();
+  uiNote='🏠 Letzte Runde ist umgezogen – neue Adresse: '+location.host+'. '+(mv.n?'Deine Statistik und Einstellungen sind mitgekommen. ':'')+
+    (window.matchMedia&&matchMedia('(display-mode: standalone)').matches||navigator.standalone?'Hast du die Web-App auf dem Home-Bildschirm: bitte von hier aus neu hinzufügen.':'Lesezeichen am besten aktualisieren.');
+  render();
+  if(!mv.t)return Promise.resolve();
+  return api('acct.handoffclaim',{},{t:mv.t}).then(function(r){
+    ACC={id:r.account.id,name:r.account.name,reset:r.account.reset};acctSave();render();
+  },function(){
+    if(ACC){ACC=null;acctStats=null;acctSave();uiNote+=' Bitte melde dich hier einmal neu an.';render();}
+  });
+}
 /* App: Die Anmeldung steckt im Cookie (gilt für 127.0.0.1 unabhängig vom Port), Name/ID im localStorage (je Port).
    Fehlt die Anzeige-Info, aber das Cookie ist noch gültig (z. B. anderer Port nach Neustart), still wiederherstellen. */
 function acctRestore(){
@@ -2927,7 +2953,7 @@ function acctPushSp(e){
   if(!ACC)return;var c=toAcct(e);
   api('acct.sphands',{},{hands:[c]}).then(function(){if(acctStats)acctStats.sp.push(c);}).catch(function(){});   // offline: nächster Abgleich holt es nach
 }
-/* Räume im WLAN (App hostet oder ist Gast) liegen nicht auf gang.aize.eu → dort nicht prüfbar.
+/* Räume im WLAN (App hostet oder ist Gast) liegen nicht auf dem Online-Server → dort nicht prüfbar.
    Nur mit Opt-in (kr.lanup) gehen sie über acct.lanhand ins Konto, als „lokal“ markiert, ohne Bestenliste. */
 function inLan(){return !!(KRA&&KRA.app&&(KRA.mode==='lan'||KRA.mode==='join'));}
 function lanUp(){try{return localStorage.getItem('kr.lanup')==='1';}catch(e){return false;}}
@@ -3921,7 +3947,7 @@ if(window.addEventListener){
     loadKeys().then(function(){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
-      acctSync();seatsLoad();
+      acctMoveIn().then(function(){acctSync();seatsLoad();});
       if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';acctShow('login');}render();}
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else if(tvCode&&!code)tvJoin(tvCode);
