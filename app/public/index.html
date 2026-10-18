@@ -2517,7 +2517,9 @@ function spCoachEst(r){
   var n=sp.players.length,raw=sp.coach[k],c=(n+1)/2,e=Math.max(1,Math.min(n,c+(raw-c)*1.7));   // gespreizt, aber nie außerhalb 1…n
   /* Was die Chips der anderen verraten, fließt mit ein (gleiche Lesart wie unter „🔎 Was die Chips der anderen verraten“),
      sonst widersprechen sich Empfehlung und Lesart */
-  var ids=[],ks=[];sp.players.forEach(function(p){if(p.id==='me')return;var ch=spChipsTo(p.id,r);if(!Object.keys(ch).length)return;ids.push(p.id);ks.push(p.id+':'+JSON.stringify(ch));});
+  /* Im Raum (nur Rückblick nach der Hand, kein Live-Lernmodus) bleibt es bei der schnellen Schätzung: die Lesarten aller
+     Mitspieler für alle Runden kosten auf dem Handy zu viel Zeit */
+  var ids=[],ks=[];if(!sp.mp)sp.players.forEach(function(p){if(p.id==='me')return;var ch=spChipsTo(p.id,r);if(!Object.keys(ch).length)return;ids.push(p.id);ks.push(p.id+':'+JSON.stringify(ch));});
   if(ids.length){
     var kk=k+'|'+ks.join('|');
     if(sp.coach[kk]==null)sp.coach[kk]=estimateRankGiven(sp.hole.me,spVisible(r),n-1,sp.K,ids.map(function(id){return spRead(id,r).list;}),400).e;
