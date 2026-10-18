@@ -20,8 +20,20 @@
  *   POST /__app/mode {mode, join?} -> Modus wechseln
  *   POST /__app/lan  {on}          -> WLAN-Host an/aus
  *
+ * Spiellogik nachladen (ohne Store-Release): Spiel (public/), server.js, bots.js … kommen als signiertes Bundle vom
+ * Online-Server (/app/bundle.json, Ed25519, Schlüssel bundle-key.pub). Geladen wird nur auf Wunsch (Hinweis beim Start
+ * auf der Seite), gespeichert in KR_VAR_DIR/bundle/<build> – danach läuft genau diese Logik, auch offline und im WLAN.
+ * Fehlerhafte Bundles (Seite meldet sich nicht, eingebetteter Server stürzt ab) fallen auf das vorige bzw. eingebaute zurück.
+ * Für die Seite (ohne Token, nur 127.0.0.1; Schutz ist die Signatur):
+ *   GET  /__bundle/state   -> { host, active, available, required, minLogic, staged, error, apk }
+ *   POST /__bundle/check   -> beim Server nachsehen
+ *   POST /__bundle/apply   -> laden, prüfen, umschalten (läuft der WLAN-Host schon: ab dem nächsten App-Start)
+ *   POST /__bundle/ok      -> Seite ist gestartet (beendet die Probezeit eines neuen Bundles)
+ *   POST /__bundle/reset   -> zurück zur eingebauten Version
+ *
  * Umgebung: KR_APP_PORT, KR_APP_TOKEN, KR_VAR_DIR (beschreibbar), KR_UPSTREAM (Standard https://letzterunde.aize-it.de; ältere Apps nutzen gang.aize.eu, das weiter funktioniert),
- *           KR_LAN_PORT (Standard 8380, HTTPS auf +1), KR_PUBLIC (gebündelte Dateien, Standard ./public)
+ *           KR_LAN_PORT (Standard 8380, HTTPS auf +1), KR_PUBLIC (gebündelte Dateien, Standard ./public),
+ *           KR_PLATFORM (ios|android), KR_APP_VERSION (z. B. 1.0.3; Android: Hinweis auf neue APK)
  */
 'use strict';
 const http = require('http');
@@ -54,6 +66,64 @@ let online = null;                                 // null = unbekannt
 function saveState() { try { fs.writeFileSync(STATE_FILE, JSON.stringify({ mode: st.mode, join: st.join })); } catch (e) { /* egal */ } }
 function saveQueue() { try { fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue.slice(-500))); } catch (e) { /* egal */ } }
 
+/* ------------------------------------------------ Spiel-Bundle ---------- */
+/* Was dieser Host kann (Brücke zur App, window.KR_APP, /__bundle). Bundles mit höherem minHost brauchen ein App-Update. */
+const HOST_API = 1;
+const PLATFORM = process.env.KR_PLATFORM || '';
+const APP_VERSION = process.env.KR_APP_VERSION || '';
+const mf = require('./bundle-manifest.js');
+const BUNDLE_DIR = path.join(VAR_DIR, 'bundle');
+const BSTATE_FILE = path.join(BUNDLE_DIR, 'state.json');
+let PUBKEY = '';
+try { PUBKEY = fs.readFileSync(path.join(__dirname, 'bundle-key.pub'), 'utf8'); } catch (e) { /* ohne Schlüssel kein Nachladen */ }
+const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; } };
+/* Eingebaut: Build-Stempel vom App-Build (game/bundle.json, Unix-Sekunden), Spiellogik aus hand.js */
+const BUILTIN = { build: Number((readJson(path.join(__dirname, 'bundle.json')) || {}).build) || 0, logic: 0, files: null };
+try { BUILTIN.logic = Number(require(path.join(PUBLIC, 'hand.js')).LOGIC_VERSION) || 1; } catch (e) { BUILTIN.logic = 1; }
+fs.mkdirSync(BUNDLE_DIR, { recursive: true });
+let bs = Object.assign({ active: 0, prev: 0, pending: 0, bad: [], trial: 0, boots: 0, innerTrial: 0, builtin: 0 }, readJson(BSTATE_FILE) || {});
+function saveBs() { try { fs.writeFileSync(BSTATE_FILE + '.tmp', JSON.stringify(bs)); fs.renameSync(BSTATE_FILE + '.tmp', BSTATE_FILE); } catch (e) { /* egal */ } }
+const bdir = (b) => path.join(BUNDLE_DIR, String(b));
+const bmani = (b) => (b ? readJson(path.join(bdir(b), 'bundle.json')) : null);
+const usable = (b) => !!b && bs.bad.indexOf(b) < 0 && b > BUILTIN.build && fs.existsSync(path.join(bdir(b), 'public', 'index.html')) && !!bmani(b);
+function markBad(b, why) {
+  if (!b) return;
+  console.warn('Bundle ' + b + ' verworfen: ' + why);
+  if (bs.bad.indexOf(b) < 0) bs.bad = bs.bad.concat([b]).slice(-20);
+  if (bs.active === b) { bs.active = usable(bs.prev) ? bs.prev : 0; bs.prev = 0; }
+  if (bs.pending === b) bs.pending = 0;
+  if (bs.trial === b) { bs.trial = 0; bs.boots = 0; }
+  if (bs.innerTrial === b) bs.innerTrial = 0;
+  saveBs();
+}
+(function bootBundles() {
+  /* Neue App-Version (Store/APK): ihr eingebautes Spiel ist mindestens so neu wie ältere Downloads → die fallen weg */
+  if (bs.builtin !== BUILTIN.build) { bs.builtin = BUILTIN.build; ['active', 'prev', 'pending'].forEach((k) => { if (bs[k] && bs[k] <= BUILTIN.build) bs[k] = 0; }); }
+  if (bs.innerTrial) markBad(bs.innerTrial, 'eingebetteter Server ist abgestürzt');   // gesetzt beim Absturz (exit ≠ 0, siehe ensureInner)
+  if (bs.pending && usable(bs.pending)) { bs.prev = bs.active; bs.active = bs.pending; bs.trial = bs.pending; bs.boots = 0; }
+  bs.pending = 0;
+  if (!usable(bs.active)) { bs.active = 0; bs.trial = 0; }
+  if (!usable(bs.prev)) bs.prev = 0;
+  saveBs();
+  for (const d of fs.readdirSync(BUNDLE_DIR)) {             // Aufräumen: nur aktives und voriges Bundle bleiben
+    if (/^\d+$/.test(d) && Number(d) !== bs.active && Number(d) !== bs.prev) fs.rmSync(path.join(BUNDLE_DIR, d), { recursive: true, force: true });
+    if (/^tmp-/.test(d)) fs.rmSync(path.join(BUNDLE_DIR, d), { recursive: true, force: true });
+  }
+  if (bs.active) console.log('Spiel-Bundle ' + bs.active + ' aktiv (eingebaut: ' + BUILTIN.build + ')');
+})();
+function gameDir() { return bs.active ? bdir(bs.active) : __dirname; }
+function pubDir() { return bs.active ? path.join(bdir(bs.active), 'public') : PUBLIC; }
+function activeInfo() {
+  const m = bmani(bs.active);
+  return m ? { build: m.build, logic: m.logic, src: 'download', trial: bs.trial === bs.active } : { build: BUILTIN.build, logic: BUILTIN.logic, src: 'builtin' };
+}
+function activeFiles() {
+  const m = bmani(bs.active);
+  if (m) return m.files;
+  if (!BUILTIN.files) { try { BUILTIN.files = mf.hashes(__dirname); } catch (e) { BUILTIN.files = {}; } }
+  return BUILTIN.files;
+}
+
 /* ------------------------------------------- eingebettetes server.js ---- */
 process.env.PORT = String(INNER_PORT);
 process.env.KR_LISTEN_HOST = '127.0.0.1';
@@ -61,7 +131,24 @@ process.env.KR_VAR_DIR = VAR_DIR;
 process.env.KR_LEADER_SOCK = process.env.KR_LEADER_SOCK || path.join(os.tmpdir(), 'kr-' + APP_PORT + '.sock');
 process.env.KR_MEM_MB = process.env.KR_MEM_MB || '120';
 process.env.KR_MEM_METRIC = 'heap';           // RSS wäre die ganze App (UIKit, WebView)
-const inner = require('./server.js');   // { server } – für Selbstheilung (siehe unten)
+/* Erst beim WLAN-Hosten gestartet – dann aus dem aktiven Bundle, damit Seite, Server und Bots dieselbe Logik haben.
+   Stürzt ein nachgeladener Server ab (server.js beendet den Prozess bei einem unerwarteten Fehler mit exit 1), merkt sich
+   der Host das; der nächste App-Start nimmt dann das vorige bzw. eingebaute Spiel. Wegwischen der App zählt nicht. */
+let inner = null;              // { server } – für Selbstheilung (siehe unten)
+function ensureInner(cb) {
+  if (!inner) {
+    const dir = gameDir();
+    if (dir !== __dirname) { const b = bs.active; process.on('exit', (rc) => { if (rc) { bs.innerTrial = b; saveBs(); } }); }
+    try { inner = require(path.join(dir, 'server.js')); }
+    catch (e) {
+      if (dir === __dirname) throw e;
+      markBad(bs.active, 'server.js startet nicht (' + e.message + ')');
+      inner = require('./server.js');
+    }
+  }
+  let n = 0;
+  (function wait() { alive(INNER_PORT, (ok) => (ok || ++n > 40 ? cb() : setTimeout(wait, 75))); })();
+}
 
 /* ------------------------------------------------------------- Proxy --- */
 function backend(isAcct) {
@@ -149,27 +236,150 @@ function proxyUpgrade(req, sock, head) {
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 function serveStatic(req, res, u, lanGuest) {
-  let rel = decodeURIComponent(u.pathname).replace(/^\/+/, '') || 'index.html';
+  let rel = '';
+  try { rel = decodeURIComponent(u.pathname).replace(/^\/+/, '') || 'index.html'; } catch (e) { return send(res, 400, { error: 'Pfad' }); }
   if (rel.endsWith('/')) rel += 'index.html';
-  const f = path.join(PUBLIC, rel);
-  if (!f.startsWith(PUBLIC + path.sep)) return send(res, 404, { error: 'nicht gefunden' });
-  fs.readFile(f, (err, data) => {
-    if (err) return send(res, 404, { error: 'nicht gefunden' });
-    const ext = path.extname(f);
-    if (rel === 'index.html') data = Buffer.from(injectApp(data.toString('utf8'), lanGuest));
+  /* eingebaute Dateien, die ein (älteres) Bundle nicht hat, z. B. kr-subtle.js → aus dem App-Paket */
+  const base = pubDir(), cand = [path.join(base, rel)].concat(base !== PUBLIC ? [path.join(PUBLIC, rel)] : []);
+  if (!cand.every((f, i) => f.startsWith((i ? PUBLIC : base) + path.sep))) return send(res, 404, { error: 'nicht gefunden' });
+  const tryRead = (i) => fs.readFile(cand[i], (err, data) => {
+    if (err) return i + 1 < cand.length ? tryRead(i + 1) : send(res, 404, { error: 'nicht gefunden' });
+    const ext = path.extname(cand[i]);
+    if (rel === 'index.html') { if (!lanGuest) trialBoot(); data = Buffer.from(injectApp(data.toString('utf8'), lanGuest)); }
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(data);
   });
+  tryRead(0);
 }
-/* App-Infos für den Client: Herkunft für Einladungen (statt 127.0.0.1) und ob Web-Crypto fehlt (WLAN-Gast über http) */
+/* App-Infos für den Client: Herkunft für Einladungen (statt 127.0.0.1) und ob Web-Crypto fehlt (WLAN-Gast über http).
+   Probezeit eines neuen Bundles: meldet sich die Seite nicht binnen 12 s (/__bundle/ok), lädt dieser Wächter neu – der Host
+   ist dann schon auf das vorige bzw. eingebaute Spiel zurückgefallen. Der Wächter gehört zum Host, nicht zum Bundle. */
 function injectApp(html, lanGuest) {
+  const a = activeInfo();
   const info = lanGuest
     ? { lanGuest: true }
-    : { app: true, acct: UPSTREAM.origin, mode: st.mode, origin: st.mode === 'online' ? UPSTREAM.origin : (st.mode === 'lan' ? lanUrl() : st.join) };
+    : { app: true, acct: UPSTREAM.origin, mode: st.mode, origin: st.mode === 'online' ? UPSTREAM.origin : (st.mode === 'lan' ? lanUrl() : st.join),
+      host: HOST_API, build: a.build, logic: a.logic, bundle: a.src, platform: PLATFORM, version: APP_VERSION };
   const tag = '<script>window.KR_APP=' + JSON.stringify(info).replace(/</g, '\\u003c') + ';</script>' +
+    (!lanGuest && a.trial ? '<script>setTimeout(function(){if(!window.KR_BOOTED)location.reload();},12000);</script>' : '') +
     (lanGuest ? '<script src="kr-subtle.js"></script>' : '');
   return html.replace('<head>', '<head>' + tag);
 }
+let trialTimer = null;
+function trialBoot() {
+  if (!bs.trial || bs.trial !== bs.active) return;
+  bs.boots++; saveBs();
+  if (bs.boots > 3) return markBad(bs.trial, 'Seite startet nicht (3 Versuche)');
+  clearTimeout(trialTimer);
+  const b = bs.trial, at = Date.now();
+  /* App im Hintergrund (iOS hält Node an): dann lief auch die Seite nicht – nicht als Fehler werten, sondern weiter warten */
+  const watch = (due) => { trialTimer = setTimeout(() => { if (bs.trial !== b) return; if (Date.now() - due > 5000) return watch(Date.now() + 10000); markBad(b, 'Seite hat sich nicht gemeldet'); }, Math.max(0, due - Date.now())); };
+  watch(at + 10000);
+}
+
+/* ------------------------------------------------ Bundle laden ----------- */
+let upd = { available: null, minLogic: 0, checkedAt: 0, checking: null, error: '', apk: null, apkAt: 0 };
+function fetchBuf(url, max, timeout) {
+  return new Promise((resolve, reject) => {
+    const t = new URL(url, UPSTREAM);
+    const lib = t.protocol === 'https:' ? https : http;
+    const rq = lib.get(t, { timeout: timeout || 10000, headers: { 'user-agent': 'LetzteRundeApp/' + (APP_VERSION || HOST_API), accept: '*/*' } }, (r) => {
+      if (r.statusCode !== 200) { r.resume(); return reject(new Error('HTTP ' + r.statusCode)); }
+      const parts = []; let n = 0;
+      r.on('data', (c) => { n += c.length; if (n > max) { rq.destroy(new Error('zu groß')); return; } parts.push(c); });
+      r.on('end', () => resolve(Buffer.concat(parts)));
+      r.on('error', reject);
+    });
+    rq.on('timeout', () => rq.destroy(new Error('Zeitüberschreitung')));
+    rq.on('error', reject);
+  });
+}
+/* Beim Server nachsehen: gibt es ein neueres, gültig signiertes Bundle, das sich vom aktiven unterscheidet? */
+function checkUpdate() {
+  if (upd.checking) return upd.checking;
+  upd.checking = (async () => {
+    try {
+      try { upd.minLogic = Number((JSON.parse(await fetchBuf('/api?a=config', 65536, 6000)).config || {}).minLogic) || 0; } catch (e) { /* alter Server */ }
+      if (!PUBKEY) { upd.error = 'Kein Schlüssel für Bundles in dieser App'; upd.available = null; return; }
+      let m;
+      try { m = JSON.parse(await fetchBuf('/app/bundle.json', 262144, 8000)); }
+      catch (e) { upd.available = null; upd.error = /HTTP 404/.test(e.message) ? '' : 'Keine Verbindung zu ' + UPSTREAM.host; return; }
+      if (!mf.verify(m, PUBKEY)) { upd.available = null; upd.error = 'Bundle-Signatur ungültig'; return; }
+      upd.error = '';
+      const cur = activeInfo(), files = activeFiles();
+      const diff = Object.keys(m.files).filter((rel) => !files[rel] || files[rel].h !== m.files[rel].h);
+      if (m.build <= cur.build || !diff.length || bs.bad.indexOf(m.build) >= 0 || m.build === bs.pending) { upd.available = null; return; }
+      upd.available = { build: m.build, logic: m.logic, files: diff.length, bytes: diff.reduce((a, rel) => a + m.files[rel].n, 0), needsApp: m.minHost > HOST_API, m };
+    } finally { upd.checkedAt = Date.now(); upd.checking = null; }
+  })();
+  return upd.checking;
+}
+/* Laden: geänderte Dateien vom Server, unveränderte aus dem aktiven Spiel kopieren; jede Datei gegen das Manifest prüfen */
+let applying = null;
+function applyUpdate() {
+  if (applying) return applying;
+  applying = (async () => {
+    try {
+      if (!upd.available) await checkUpdate();
+      const a = upd.available;
+      if (!a) throw new Error(upd.error || 'Kein Update verfügbar');
+      if (a.needsApp) throw new Error('Diese Version braucht ein App-Update');
+      const m = a.m, tmp = path.join(BUNDLE_DIR, 'tmp-' + m.build), have = activeFiles(), from = gameDir();
+      fs.rmSync(tmp, { recursive: true, force: true });
+      for (const rel of Object.keys(m.files)) {
+        const want = m.files[rel], dst = path.join(tmp, rel);
+        if (!mf.safeRel(rel) || !dst.startsWith(tmp + path.sep)) throw new Error('Pfad ' + rel);
+        let buf = null;
+        if (have[rel] && have[rel].h === want.h) { try { buf = fs.readFileSync(path.join(from, rel)); } catch (e) { buf = null; } }
+        if (!buf || crypto.createHash('sha256').update(buf).digest('hex') !== want.h) buf = await fetchBuf('/app/bundle/' + rel.split('/').map(encodeURIComponent).join('/') + '?b=' + m.build, 4 * 1048576, 20000);
+        if (buf.length !== want.n || crypto.createHash('sha256').update(buf).digest('hex') !== want.h) throw new Error('Prüfsumme falsch: ' + rel);
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        fs.writeFileSync(dst, buf);
+      }
+      fs.writeFileSync(path.join(tmp, 'bundle.json'), JSON.stringify(m));
+      fs.rmSync(bdir(m.build), { recursive: true, force: true });
+      fs.renameSync(tmp, bdir(m.build));
+      upd.available = null;
+      /* Läuft der WLAN-Host schon, behält er bis zum nächsten Start seine Logik – dann wechseln Seite und Server gemeinsam */
+      if (inner) { bs.pending = m.build; saveBs(); console.log('Bundle ' + m.build + ' geladen, aktiv ab dem nächsten App-Start'); return { ok: true, staged: true }; }
+      bs.prev = bs.active; bs.active = m.build; bs.trial = m.build; bs.boots = 0; saveBs();
+      console.log('Bundle ' + m.build + ' geladen und aktiv (Spiellogik ' + m.logic + ')');
+      return { ok: true, reload: true };
+    } finally { applying = null; }
+  })();
+  return applying;
+}
+/* Android: neue APK auf GitHub? (Releases „latest“, Tag vX.Y.Z) – nur ein Hinweis mit Link, kein Selbst-Update */
+function checkApk() {
+  if (PLATFORM !== 'android' || !APP_VERSION || Date.now() - upd.apkAt < 6 * 3600000) return;
+  upd.apkAt = Date.now();
+  fetchBuf('https://api.github.com/repos/sgitaize/letzte-runde/releases/latest', 1048576, 8000).then((b) => {
+    const tag = String(JSON.parse(b.toString('utf8')).tag_name || '').replace(/^v/, '');
+    const n = (v) => v.split('.').map((x) => parseInt(x, 10) || 0), a = n(tag), c = n(APP_VERSION);
+    let newer = false; for (let i = 0; i < 3; i++) { if ((a[i] || 0) !== (c[i] || 0)) { newer = (a[i] || 0) > (c[i] || 0); break; } }
+    upd.apk = newer ? { latest: tag, current: APP_VERSION, url: 'https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk' } : null;
+  }).catch(() => { upd.apkAt = 0; });
+}
+function bundleState() {
+  const a = activeInfo(), av = upd.available;
+  return { host: HOST_API, active: a, builtin: { build: BUILTIN.build, logic: BUILTIN.logic },
+    available: av ? { build: av.build, logic: av.logic, files: av.files, bytes: av.bytes, needsApp: av.needsApp } : null,
+    minLogic: upd.minLogic, required: upd.minLogic > a.logic, staged: bs.pending || 0, checkedAt: upd.checkedAt, error: upd.error, apk: upd.apk, key: !!PUBKEY };
+}
+function bundleApi(req, res, u) {
+  const p = u.pathname.slice('/__bundle/'.length);
+  if (p === 'state' && req.method === 'GET') return send(res, 200, bundleState());
+  if (req.method !== 'POST') return send(res, 405, { error: 'POST' });
+  readBody(req, () => {
+    if (p === 'ok') { if (bs.trial && bs.trial === bs.active) { bs.trial = 0; bs.boots = 0; clearTimeout(trialTimer); saveBs(); } return send(res, 200, bundleState()); }
+    if (p === 'check') return checkUpdate().then(() => send(res, 200, bundleState()), () => send(res, 200, bundleState()));
+    if (p === 'apply') return applyUpdate().then((r) => send(res, 200, Object.assign(bundleState(), r)), (e) => send(res, 409, Object.assign(bundleState(), { error: e.message })));
+    if (p === 'reset') { bs.pending = 0; bs.prev = 0; bs.active = 0; bs.trial = 0; saveBs(); upd.available = null; return send(res, 200, Object.assign(bundleState(), { reload: true })); }
+    send(res, 404, { error: 'nicht gefunden' });
+  });
+}
+setTimeout(() => { checkUpdate().catch(() => {}); checkApk(); }, 1500).unref();
+setInterval(() => { checkUpdate().catch(() => {}); checkApk(); }, 6 * 3600000).unref();
 function send(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
@@ -195,7 +405,7 @@ function lanUrl() { const ip = lanAddr(); return ip ? 'http://' + ip + ':' + LAN
 /* WLAN-Gäste sehen nur Spiel + Räume des eingebetteten Servers: kein Admin, keine Konten, keine App-Steuerung */
 function lanHandler(req, res) {
   let u; try { u = new URL(req.url, 'http://x'); } catch (e) { res.writeHead(400); return res.end(); }
-  if (u.pathname.startsWith('/__app') || /admin/.test(u.pathname)) return send(res, 404, { error: 'nicht gefunden' });
+  if (u.pathname.startsWith('/__app') || u.pathname.startsWith('/__bundle') || /admin/.test(u.pathname)) return send(res, 404, { error: 'nicht gefunden' });
   if (u.pathname === '/api' && /^acct\./.test(u.searchParams.get('a') || '')) return send(res, 503, { error: 'Konten gibt es im WLAN-Spiel nicht', offline: true });
   if (u.pathname === '/kr-subtle.js' || u.pathname === '/' || u.pathname === '/index.html') return serveStatic(req, res, u, true);
   if (u.pathname === '/api' || /\/r\/[A-Za-z0-9]{1,8}\/?$/.test(u.pathname)) {
@@ -227,6 +437,7 @@ function lanUpgrade(req, sock, head) {
 }
 function lanStart(cb) {
   if (lanHttp) return cb();
+  if (!inner) return ensureInner(() => lanStart(cb));
   lanHttp = http.createServer(lanHandler);
   lanHttp.on('upgrade', lanUpgrade);
   lanHttp.on('error', (e) => console.error('WLAN-Host', e.message));
@@ -279,6 +490,7 @@ function control(req, res, u) {
 const app = http.createServer((req, res) => {
   let u; try { u = new URL(req.url, 'http://x'); } catch (e) { res.writeHead(400); return res.end(); }
   if (u.pathname.startsWith('/__app/')) return control(req, res, u);
+  if (u.pathname.startsWith('/__bundle/')) return bundleApi(req, res, u);
   const isApi = u.pathname === '/api';
   const isAcct = isApi && /^acct\./.test(u.searchParams.get('a') || '');
   if (isApi || /\/r\/[A-Za-z0-9]{1,8}\/?$/.test(u.pathname) || u.pathname === '/admin-api') {

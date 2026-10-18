@@ -53,7 +53,7 @@ window.onerror=function(m,src,line){var el=document.getElementById('app');if(el)
 (function(){
 "use strict";
 var API='admin-api';
-var secret='',cfg=null,defs=null,msg='',err='';
+var secret='',cfg=null,defs=null,msg='',err='',logic=0,bundle=null;
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function call(a,body){
@@ -70,7 +70,7 @@ function call(a,body){
 function login(s){
   secret=s;
   return call('login').then(function(r){
-    cfg=r.config;defs=r.defaults;
+    cfg=r.config;defs=r.defaults;logic=r.logic||0;bundle=r.bundle||null;
     try{sessionStorage.setItem('kr.admin',s);}catch(e){}
     err='';return rooms().then(accounts).then(reports);
   });
@@ -105,7 +105,7 @@ function render(){
       '<div class="sw"><input type="checkbox" id="f_'+k+'"'+(cfg[k]?' checked':'')+'></div>';
   };
   var rows=roomList.map(function(r){
-    return '<tr><td><code>'+esc(r.code)+'</code>'+(r.name?'<br><span class="note">'+esc(r.name)+'</span>':'')+'</td><td>'+esc(r.players)+'</td><td>'+esc(r.online)+'</td>'+
+    return '<tr><td><code>'+esc(r.code)+'</code>'+(r.priv?' 🔒':'')+(r.name?'<br><span class="note">'+esc(r.name)+'</span>':'')+'</td><td>'+esc(r.players)+'</td><td>'+esc(r.online)+'</td>'+
       '<td>'+esc(r.phase)+'</td><td>'+esc(r.hand)+'</td>'+
       '<td class="note">'+(r.updated?new Date(r.updated).toLocaleString('de-DE'):'')+'</td>'+
       '<td><button class="small danger" data-del="'+esc(r.code)+'">löschen</button></td></tr>';
@@ -122,7 +122,10 @@ function render(){
       sw('guessEnabled','Gemeinsamer Tipp vor dem Aufdecken','')+
       sw('revealHighestFirst','Höchster Chip deckt zuerst auf','sonst ab Chip 1 aufwärts')+
       sw('voiceEnabled','Voice-Chat','Spieler können per Mikrofon sprechen (direkt zwischen den Geräten, ohne TURN – in manchen Mobilfunk-/Firmennetzen klappt die Verbindung nicht)')+
-      '</div><div class="bar"><button class="primary" id="save">Speichern</button>'+
+      num('minLogic','Mindest-Spiellogik für Online-Räume','0 = aus. Ältere Apps/Browser können dann keinen Raum mehr anlegen oder neu beitreten und bekommen den Update-Hinweis; Übungsraum und WLAN gehen weiter.')+
+      '</div><p class="note">Spiellogik auf dem Server: <b>'+esc(logic)+'</b> · App-Bundle: '+(bundle?'Build <b>'+esc(bundle.build)+'</b> ('+esc(new Date(bundle.build*1000).toLocaleString('de-DE'))+', Spiellogik '+esc(bundle.logic)+')':'<b>keins</b> (deploy.sh mit KR_BUNDLE_KEY erzeugt es)')+
+      ' <button class="small" id="force">Update für Online-Räume erzwingen ('+esc(logic)+')</button>'+(cfg.minLogic?' <button class="small" id="unforce">nicht mehr erzwingen</button>':'')+'</p>'+
+      '<div class="bar"><button class="primary" id="save">Speichern</button>'+
       '<button id="reset">Standard</button>'+
       (msg?'<span class="ok">'+esc(msg)+'</span>':'')+
       (err?'<span class="err">'+esc(err)+'</span>':'')+'</div></div>'+
@@ -153,12 +156,18 @@ function render(){
 
   $('save').onclick=function(){
     var body={};
-    ['minPlayers','maxPlayers','holeCards','roomTtlHours'].forEach(function(k){body[k]=Number($('f_'+k).value);});
+    ['minPlayers','maxPlayers','holeCards','roomTtlHours','minLogic'].forEach(function(k){body[k]=Number($('f_'+k).value);});
     ['allowSteal','guessEnabled','revealHighestFirst','voiceEnabled'].forEach(function(k){body[k]=$('f_'+k).checked;});
     call('config',body).then(function(r){cfg=r.config;msg='Gespeichert.';err='';render();
       setTimeout(function(){msg='';render();},2500);
     }).catch(function(e){err=e.message;render();});
   };
+  var setMin=function(v,txt){
+    if(v&&!confirm('Online-Räume nur noch mit Spiellogik '+v+'? Ältere Apps müssen dann erst das Update laden (alte App-Versionen ohne Updater: Store/APK).'))return;
+    call('config',{minLogic:v}).then(function(r){cfg=r.config;msg=txt;err='';render();}).catch(function(e){err=e.message;render();});
+  };
+  $('force').onclick=function(){setMin(logic,'Update für Online-Räume erzwungen.');};
+  if($('unforce'))$('unforce').onclick=function(){setMin(0,'Update nicht mehr erzwungen.');};
   $('reset').onclick=function(){
     if(!defs)return;
     call('config',defs).then(function(r){cfg=r.config;msg='Auf Standard zurückgesetzt.';err='';render();}).catch(function(e){err=e.message;render();});

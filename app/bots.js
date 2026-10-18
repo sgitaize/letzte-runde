@@ -388,7 +388,7 @@ module.exports = function createBots(ctx) {
       if (!R.confirmAt[id]) { R.confirmAt[id] = now + (800 + Math.random() * 1600) * TEMPO; continue; }
       if (now >= R.confirmAt[id]) {
         const cur = r.docs['state/guess'];
-        set(code, r, 'state/guess', { hand: h, cards: cur.cards.slice(), confirmed: Object.assign({}, cur.confirmed || {}, { [id]: true }) });
+        set(code, r, 'state/guess', Object.assign({}, cur, { cards: cur.cards.slice(), confirmed: Object.assign({}, cur.confirmed || {}, { [id]: true }) }));
       }
     }
   }
@@ -420,6 +420,8 @@ module.exports = function createBots(ctx) {
   /* Nach der Hand: Ergebnis selbst ausrechnen (aufgedeckte Karten + Tisch + Chips aus Runde 4 + Tipp) und gelegentlich reagieren */
   function doneReactions(code, r, m, R, h, bots) {
     try {
+      const sr = r.docs['state/result'];
+      if (sr && Number(sr.hand) === h) return cheer(code, r, h, bots, !!sr.win);    // verbindliche Auswertung des Servers
       const ps = partsOf(m), h4 = ((m.chipHist || {})['4']) || {}, board = R.board.filter((c) => c != null);
       if (board.length < 5) return;
       const hands = {};
@@ -432,13 +434,15 @@ module.exports = function createBots(ctx) {
         const left = r.docs['reveal/' + t].cards.map((c) => c % 13);
         guessOk = g.cards.every((v) => { const i = left.indexOf(v); if (i < 0) return false; left.splice(i, 1); return true; });
       }
-      const win = orderOk && guessOk;
-      bots.forEach((id, k) => {
-        if (Math.random() >= 0.5) return;
-        setTimeout(() => { if (rooms.get(code) === r && Number(mainOf(r).hand) === h) react(code, r, id, win ? (Math.random() < 0.5 ? 0 : 4) : [1, 2, 3][Math.floor(Math.random() * 3)]); },
-          (400 + k * 500 + Math.random() * 800) * TEMPO);
-      });
+      cheer(code, r, h, bots, orderOk && guessOk);
     } catch (e) { /* nur Deko */ }
+  }
+  function cheer(code, r, h, bots, win) {
+    bots.forEach((id, k) => {
+      if (Math.random() >= 0.5) return;
+      setTimeout(() => { if (rooms.get(code) === r && Number(mainOf(r).hand) === h) react(code, r, id, win ? (Math.random() < 0.5 ? 0 : 4) : [1, 2, 3][Math.floor(Math.random() * 3)]); },
+        (400 + k * 500 + Math.random() * 800) * TEMPO);
+    });
   }
 
   /* ------------------------------------------------ Takt ------------------- */

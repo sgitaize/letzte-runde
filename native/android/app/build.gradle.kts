@@ -20,8 +20,8 @@ android {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.1.0"
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared") } }
     }
 
@@ -61,14 +61,20 @@ android {
     buildFeatures { buildConfig = true }
 }
 
-// Spiel und Server aus app/ ins APK (assets/game) – wie Scripts/bundle-game.sh bei iOS
+// Spiel und Server aus app/ ins APK (assets/game) – wie Scripts/bundle-game.sh bei iOS. game/bundle.json stempelt den Build
+// (Unix-Sekunden): vom Server nachgeladene Spiel-Bundles zählen nur, wenn sie neuer sind (app-host.js „Spiel-Bundle“).
 val bundleGame by tasks.registering(Sync::class) {
     from("../../../app") {
-        include("server.js", "bots.js", "accounts.js", "moderation.js", "app-host.js", "selfsigned.js", "package.json")
+        include("server.js", "bots.js", "accounts.js", "moderation.js", "resolve.js", "bundle-manifest.js", "app-host.js", "selfsigned.js",
+            "package.json", "bundle-key.pub")
         include("public/**")
         exclude("public/sw.js", "public/admin.html")
     }
     into("src/main/assets/game")
+    doLast {
+        file("src/main/assets/game/bundle.json").writeText("{\"build\":${System.currentTimeMillis() / 1000}}")
+        if (!file("../../../app/bundle-key.pub").exists()) logger.warn("app/bundle-key.pub fehlt – die App kann keine Spiel-Updates laden (node app/scripts/bundle.js keygen)")
+    }
 }
 tasks.named("preBuild") { dependsOn(bundleGame) }
 

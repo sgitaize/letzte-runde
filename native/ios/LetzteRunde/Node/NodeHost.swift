@@ -67,6 +67,8 @@ final class NodeHost: ObservableObject {
         setenv("KR_PUBLIC", game.appendingPathComponent("public").path, 1)
         setenv("KR_LAN_PORT", String(NodeHost.lanPort), 1)
         setenv("KR_UPSTREAM", "https://letzterunde.aize-it.de", 1)
+        setenv("KR_PLATFORM", "ios", 1)
+        setenv("KR_APP_VERSION", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "", 1)
         #if DEBUG
         // Tests im Simulator gegen einen lokalen Server: simctl launch mit SIMCTL_CHILD_KR_UPSTREAM_DEBUG=http://…
         if let up = ProcessInfo.processInfo.environment["KR_UPSTREAM_DEBUG"], !up.isEmpty { setenv("KR_UPSTREAM", up, 1) }

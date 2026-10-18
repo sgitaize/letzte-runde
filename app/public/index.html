@@ -76,6 +76,11 @@ html.kr-app .installhelp,html.kr-lan .installhelp,html.kr-app .apkdl,html.kr-lan
 .placebar .plc{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
 .placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
 .placebar .sub{color:var(--muted)}
+.placebar.upd{border-color:color-mix(in srgb,var(--gold) 60%,var(--line));background:color-mix(in srgb,var(--gold) 10%,var(--panel))}
+.placebar.upd.req{border-color:var(--red);background:color-mix(in srgb,var(--red) 9%,var(--panel))}
+a.btn{display:inline-block;padding:5px 9px;border-radius:9px;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-size:13px;font-weight:560}
+.chk{display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13.5px;color:var(--muted);cursor:pointer}
+.chk input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--accent)}
 .optin{display:flex;gap:10px;align-items:flex-start;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
 .optin input,.acctbox .optin input{margin:3px 0 0;padding:0;flex:none;width:18px;height:18px;min-width:18px;accent-color:var(--accent)}
 /* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
@@ -125,6 +130,8 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .mchip.none{background:transparent;color:var(--muted);border-color:var(--line)}
 .pl.me{background:color-mix(in srgb,var(--gold) 16%,transparent);border-radius:10px;box-shadow:inset 4px 0 0 var(--gold);padding-left:10px}
 .pl.me .nm{font-weight:700}
+.pl.here{background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:10px;box-shadow:inset 4px 0 0 var(--gold);padding-left:14px}
+.tag.here{background:var(--gold);border-color:var(--gold);color:#1b1407;font-weight:650}
 .pl.res-ok{box-shadow:inset 4px 0 0 var(--accent)}
 /* Farbige Zeilen: Chip-Ringe (bis 5 px) dürfen weder den Balken noch den Kastenrand überdecken */
 .pl.me,.pl.res-ok,.pl.res-bad{padding-left:14px;padding-right:8px}
@@ -142,6 +149,12 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   border:2px solid var(--accent);box-shadow:0 8px 28px rgba(0,0,0,.35)}
 .endbar .res{font-weight:700;font-size:17px}.endbar .res.bad{color:#c0392b}.endbar .res.ok{color:var(--accent)}.endbar .res.part{color:var(--gold)}
 .endbar button.primary{font-size:18px;padding:12px 22px;border-radius:12px}
+/* „Nächster Schritt“: gleiche Leiste, Text links (mit Zusatz), Sprung- und Aktionsknopf rechts */
+.endbar.next .res{display:flex;flex-direction:column;gap:1px;min-width:0;font-size:15.5px;font-weight:650}
+.endbar.next .res .note{font-weight:400}.endbar.next .row{flex-wrap:nowrap;flex:none}
+.endbar.next button{font-size:15px;padding:10px 14px;border-radius:12px;white-space:nowrap}
+@media(max-width:480px){.endbar.next{flex-wrap:wrap}.endbar.next .row{width:100%;justify-content:flex-end}}
+.flash{outline:3px solid var(--gold);outline-offset:3px;border-radius:14px}
 .result .big{font-family:Georgia,serif;font-size:26px;font-weight:700}
 .result.win{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--fg);border:2px solid var(--accent)}
 .result.part{background:color-mix(in srgb,var(--gold) 18%,transparent);border:2px solid var(--gold)}
@@ -305,6 +318,11 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .gcard{padding:2px;border:2px solid transparent;border-radius:9px;background:none;display:flex;justify-content:center;min-width:0}.gcard.on{border-color:var(--accent)}
 .gcard .card.sm{width:100%;max-width:44px;height:auto;aspect-ratio:38/54}
 .gcard .card,.gslot .card{margin:0}
+.sugs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:8px 0 2px;flex:1 1 100%}
+.sug{display:flex;align-items:center;gap:6px;padding:3px 6px 3px 9px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.sug.same{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.sug .who{font-size:13px;font-weight:600;color:var(--fg)}.sug .cards{gap:3px}
+.tv-mid .sugs{justify-content:center;flex:0 1 auto}.tv-mid .sug{padding:calc(var(--u)*.4) calc(var(--u)*.9)}.tv-mid .sug .who{font-size:calc(var(--u)*1.9)}
+.tv-mid .sug .card{width:calc(var(--u)*3.2);height:calc(var(--u)*4.4)}.tv-mid .sug .card .r{font-size:calc(var(--u)*1.7)}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
 .pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
@@ -673,7 +691,7 @@ var docs={},ver=-1,pollTimer=null,pollBusy=false,offline=false;
 function api(a,params,body,ms){
   var qs='?a='+encodeURIComponent(a);
   for(var k in params)qs+='&'+k+'='+encodeURIComponent(params[k]);
-  var opt={method:body?'POST':'GET',cache:'no-store',headers:{'x-kr-key':SK}};
+  var opt={method:body?'POST':'GET',cache:'no-store',headers:{'x-kr-key':SK,'x-kr-logic':String(typeof LOGIC_VERSION==='number'?LOGIC_VERSION:1)}};
   if(body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}
   /* Zeitlimit: ohne Netz (z. B. Flugzeug-WLAN) hängen Anfragen sonst minutenlang, statt zu scheitern */
   var ctl=typeof AbortController!=='undefined'?new AbortController():null,tm=null;
@@ -682,7 +700,7 @@ function api(a,params,body,ms){
     if(tm)clearTimeout(tm);
     return r.text().then(function(t){
       var j=null;try{j=JSON.parse(t);}catch(e){}
-      if(!r.ok){var er=new Error((j&&j.error)||('Server '+r.status));er.status=r.status;throw er;}
+      if(!r.ok){var er=new Error((j&&j.error)||('Server '+r.status));er.status=r.status;er.update=!!(j&&j.update);throw er;}
       return j||{};
     });
   });
@@ -1235,34 +1253,24 @@ function finalChip(id){
   var h4=(main().chipHist||{})['4'];
   return (h4&&h4[id]!=null)?h4[id]:chipOf(id);
 }
-/* Passt die Chip-Reihenfolge zur Stärke? Chip 1 = schwächste Hand. Gleich starke Hände dürfen beliebig liegen. */
+/* Passt die Chip-Reihenfolge zur Stärke? Rechnet hand.js (resolve, dieselbe Fassung wie Server und Bots).
+   Verbindlich ist das Ergebnis des Servers (state/result, aus den aufgedeckten Karten entschlüsselt): liegt es vor,
+   zählen dessen Plätze und Gewonnen/Verloren – so zeigen alle Geräte im Raum dasselbe, auch mit älterer Spiellogik. */
 function resolveHand(){
-  if(phase()!=='done')return null;
-  var board=visibleBoard();if(board.length<5)return null;
-  var list=parts().map(function(id){
-    var rv=revealedCards(id);
-    return {id:id,chip:finalChip(id),hand:rv?bestHand(rv.concat(board),rv):null};
-  });
-  var known=list.filter(function(x){return x.hand&&x.chip!=null;});
-  known.forEach(function(x){
-    x.swaps=known.filter(function(y){
-      if(y===x)return false;
-      var d=cmpHand(y.hand,x.hand);
-      return (y.chip<x.chip&&d>0)||(y.chip>x.chip&&d<0);
-    }).map(function(y){return y.id;});
-    var weaker=0,equal=0;
-    known.forEach(function(y){if(y!==x){var d=cmpHand(y.hand,x.hand);if(d<0)weaker++;else if(d===0)equal++;}});
-    x.lo=weaker+1;x.hi=weaker+equal+1;
-    x.ok=!x.swaps.length;
-  });
-  var bad=known.filter(function(x){return !x.ok;}).length;
-  var missing=list.length-known.length;
-  var by={};list.forEach(function(x){by[x.id]=x;});
-  var gr=guessResult(),orderOk=!bad&&!missing,guessOk=!gr||gr.hits===gr.of;
-  return {by:by,bad:bad,missing:missing,orderOk:orderOk,guessOk:guessOk,gr:gr,win:orderOk&&guessOk,part:orderOk&&!guessOk&&!!gr&&gr.hits>0};
+  if(phase()!=='done'||typeof resolve!=='function')return null;
+  var g=S.guess,res=resolve({board:visibleBoard(),guess:g&&g.hand===hand()?{target:main().target,cards:g.cards}:null,
+    players:parts().map(function(id){return {id:id,chip:finalChip(id),cards:revealedCards(id)};})});
+  var sr=srvResult();
+  if(!res||!sr)return res;
+  for(var id in res.by){var x=res.by[id],y=sr.by&&sr.by[id];if(x.hand&&y&&y.lo){x.lo=y.lo;x.hi=y.hi;x.ok=!!y.ok;x.swaps=(Array.isArray(y.swaps)?y.swaps:[]).filter(function(o){return res.by[o]&&res.by[o].hand;});}}
+  ['bad','missing','orderOk','guessOk','win','part'].forEach(function(k){if(sr[k]!==undefined)res[k]=sr[k];});
+  if(!res.gr&&sr.guess)res.gr={hits:num(sr.guess.hits)||0,of:num(sr.guess.of)||0,target:sr.guess.target,marks:[],cards:[],real:[]};
+  return res;
 }
+function srvResult(){var r=docs['state/result'];return r&&num(r.hand)===hand()&&r.by?r:null;}
 /* Ergebnis-Kasten: gewonnen nur mit richtiger Reihenfolge UND komplett richtigem Tipp */
 function resultBox(res,gr){
+  gr=gr||res.gr;
   var g=gr?'Tipp '+gr.hits+' von '+gr.of:'';
   if(res.win)return '<div class="result win"><div class="big">\u2713 Alles richtig!</div><div>Reihenfolge getroffen'+(gr?' und Tipp komplett richtig':'')+'.</div></div>';
   /* Reihenfolge richtig und mindestens eine Karte getroffen: zählt als „fast richtig“ (gut bewertet, aber ohne Feier) */
@@ -1316,7 +1324,9 @@ function setGuessCard(i,val){
   var g=S.guess||{},K=HC(),c=[];
   for(var z=0;z<K;z++)c.push((g.cards&&g.cards[z]!=null)?g.cards[z]:null);
   c[i]=val;
-  docs['state/guess']={hand:hand(),cards:c,confirmed:{}};applyDocs();   // Vorschau, Server bestätigt
+  var sg=JSON.parse(JSON.stringify(g.sug||{})),mine=Array.isArray(sg[uid])&&sg[uid].length===K?sg[uid]:c.map(function(){return null;});
+  mine[i]=val;sg[uid]=mine;
+  docs['state/guess']={hand:hand(),cards:c,confirmed:{},sug:sg};applyDocs();   // Vorschau, Server bestätigt
   api('guess',{room:code},{uid:uid,i:i,val:val}).catch(function(e){showErr(e);pollOnce(true);});
 }
 function confirmGuess(){
@@ -1445,6 +1455,13 @@ function renameRoom(n){
   }
   api('rename',{room:code},{uid:uid,name:String(n).trim().slice(0,30)}).then(function(){showToast('Raumname gespeichert');}).catch(showErr);
 }
+/* Privat: nicht unter „Offene Räume“, Beitritt nur mit Code oder Link (#10) */
+var newPriv=false;try{newPriv=localStorage.getItem('kr.rpriv')==='1';}catch(e){}
+function roomPrivate(){return !!(S.room&&S.room.private);}
+function setRoomPrivate(on){
+  if(!isHost()||watching)return;
+  api('roomopt',{room:code},{uid:uid,private:!!on}).then(function(){showToast(on?'Raum ist jetzt privat':'Raum steht jetzt unter „Offene Räume“');}).catch(showErr);
+}
 function closeRoom(){
   if(!isHost()||watching)return;
   if(typeof confirm==='function'&&!confirm(roomLabel(code,roomName())+' für alle schließen?'))return;
@@ -1568,7 +1585,12 @@ function toggleTheme(){
   try{localStorage.setItem('kr.theme',dark?'light':'dark');}catch(e){}
 }
 function abortHand(){ if(!isHost())return; busy={}; setMain({phase:'lobby',stage:0}).catch(showErr); }
-function showErr(e){if(e&&e.status===409){resync('Spielstand war veraltet \u2013 neu geladen.');return;}uiErr=(e&&e.message)||String(e);console.error(e);render();}
+function showErr(e){
+  if(e&&e.status===409){resync('Spielstand war veraltet \u2013 neu geladen.');return;}
+  /* Server verlangt neuere Spiellogik: in der App gleich den Update-Hinweis zeigen */
+  if(e&&e.status===426&&bundleOn()){bundleCall('check',true).then(function(s){bundle.st=s;if(s.available)bundle.dlg=true;render();}).catch(function(){});}
+  uiErr=(e&&e.message)||String(e);console.error(e);render();
+}
 
 /* ---------- Kurzhinweise (Toast) ---------- */
 var toastTimer=null;
@@ -1608,6 +1630,71 @@ function placeBar(){
         KRA.mode==='join'?'<b>Im WLAN</b> <span class="sub">· bei '+esc(String(KRA.origin||'').replace(/^https?:\/\//,''))+'</span>':
         '<b>Online</b> <span class="sub">· '+esc(String(KRA.acct||'').replace(/^https?:\/\//,''))+'</span>';
   return '<div class="placebar"><p class="plc"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?'Spielort · QR':'Spielort')+'</button></div>';
+}
+/* ---------- Spiellogik nachladen (nur App): der App-Host fragt beim Online-Server nach einem signierten Bundle ----------
+   Beim Start: gibt es eins, kommt ein Hinweis; „Jetzt laden“ lädt nur die geänderten Dateien, danach startet die Seite neu
+   und spielt mit der neuen Logik – auch offline und im WLAN. Verlangt der Server eine neuere Spiellogik (Admin: minLogic),
+   ist das Update für Online-Räume Pflicht; Übungsraum und WLAN gehen weiter. */
+var bundle={st:null,dlg:false,busy:false,err:'',shown:0};
+function bundleOn(){return !!(KRA&&KRA.app&&!KRA.lanGuest);}
+function bundleCall(p,post){
+  return fetch('__bundle/'+p,{method:post?'POST':'GET',cache:'no-store',body:post?'{}':undefined}).then(function(r){return r.json();});
+}
+function bundleBoot(){
+  window.KR_BOOTED=true;                    // Start-Wächter des App-Hosts (Probezeit eines neuen Bundles)
+  if(!bundleOn())return;
+  bundleCall('ok',true).catch(function(){}).then(function(){return bundleCall('check',true);}).then(function(s){
+    bundle.st=s;
+    var av=s&&s.available;
+    if(av&&bundle.shown!==av.build&&(s.required||!code)){bundle.shown=av.build;bundle.dlg=true;}
+    render();
+  }).catch(function(){});
+}
+function bundleApply(){
+  if(bundle.busy)return;bundle.busy=true;bundle.err='';render();
+  bundleCall('apply',true).then(function(s){
+    bundle.busy=false;bundle.st=s;
+    if(s.reload){bundle.dlg=false;showToast('Neue Spiellogik geladen – startet neu …');setTimeout(function(){try{location.reload();}catch(e){}},600);return;}
+    if(s.staged){bundle.dlg=false;showToast('Geladen – aktiv ab dem nächsten App-Start');}
+    else bundle.err=s.error||'Update ging nicht';
+    render();
+  }).catch(function(e){bundle.busy=false;bundle.err='Update ging nicht – keine Verbindung?';render();});
+}
+function bundleReset(){
+  if(typeof confirm==='function'&&!confirm('Zurück zur Spiellogik, die mit der App ausgeliefert wurde?'))return;
+  bundleCall('reset',true).then(function(){try{location.reload();}catch(e){}}).catch(function(){});
+}
+function kb(n){return Math.max(1,Math.round((num(n)||0)/1024))+' KB';}
+function bundleDialog(){
+  var s=bundle.st,av=s&&s.available;
+  if(!bundle.dlg||!av)return '';
+  var req=s.required,dis=bundle.busy?' disabled':'';
+  return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="bdlgh"><div class="cd-box vbox">'+
+    '<h2 id="bdlgh">🔄 '+(req?'Update nötig':'Neue Spiellogik')+'</h2>'+
+    (av.needsApp?'<p>Die neue Version braucht eine neuere App. Bitte '+(KRA.platform==='android'?'die neue APK installieren':'im App Store aktualisieren')+'.</p>':
+      '<p>'+(req?'Für <b>Online-Räume</b> brauchst du die neue Spiellogik (Version '+num(av.logic)+'). Übungsraum und Spiele im WLAN gehen auch ohne.':
+        'Es gibt eine neue Version der Spiellogik (Version '+num(av.logic)+'): Wertung, Bots und Lernmodus wie auf dem Server.')+'</p>'+
+      '<p class="note">Download: '+kb(av.bytes)+' ('+num(av.files)+' Datei'+(av.files===1?'':'en')+'). Danach spielst du damit auch ohne Internet.</p>')+
+    (bundle.err?'<p class="err">'+esc(bundle.err)+'</p>':'')+
+    '<div class="bar">'+(av.needsApp?'':'<button class="primary" data-a="bapply"'+dis+'>'+(bundle.busy?'Lädt …':'⬇ Jetzt laden')+'</button>')+
+      '<button class="ghost" data-a="blater"'+dis+'>'+(req?'Offline weiterspielen':'Später')+'</button></div></div></div>';
+}
+/* Hinweise auf der Startseite: Spiellogik-Update (wenn der Dialog weggeklickt wurde) und – Android – neue APK */
+function bundleBanner(){
+  if(!bundleOn()||!bundle.st)return '';
+  var s=bundle.st,av=s.available,out='';
+  if(av&&!bundle.dlg)out+='<div class="placebar upd'+(s.required?' req':'')+'"><p class="plc"><span>🔄 <b>'+(s.required?'Update nötig für Online-Räume':'Neue Spiellogik verfügbar')+'</b> <span class="sub">· '+kb(av.bytes)+'</span></span></p>'+
+    '<button class="small primary" data-a="bshow">Ansehen</button></div>';
+  var apk=s.apk,skip='';try{skip=localStorage.getItem('kr.apk.skip')||'';}catch(e){}
+  if(apk&&apk.latest&&skip!==apk.latest)out+='<div class="placebar upd"><p class="plc"><span>📲 <b>Neue App-Version '+esc(apk.latest)+'</b> <span class="sub">· du hast '+esc(apk.current)+'</span></span></p>'+
+    '<span class="row"><a class="btn" href="'+esc(apk.url)+'" target="_blank" rel="noopener">APK laden</a><button class="small ghost" data-a="apkskip" data-v="'+esc(apk.latest)+'" aria-label="Hinweis ausblenden">✕</button></span></div>';
+  return out;
+}
+function bundleFoot(){
+  if(!bundleOn())return '';
+  var a=bundle.st&&bundle.st.active;
+  return '<span class="note">Spiellogik '+num(KRA.logic||LOGIC_VERSION)+(KRA.bundle==='download'?' (nachgeladen · <button class="linkbtn" data-a="breset">zurücksetzen</button>)':'')+
+    (a&&a.build?' · Build '+num(a.build):'')+'</span>';
 }
 function vib(p){
   if(KRA&&KRA.app){appMsg({a:'haptic',k:(p&&p.length>1)||p>=60?'success':p>=35?'medium':'light'});return;}
@@ -1681,6 +1768,8 @@ function invitePanel(c,n,t){
     '<div class="invite-body">'+(qr?'<div class="qr" aria-label="QR-Code zum Beitreten">'+qr+'</div>':'')+
     '<div class="invite-txt"><p class="note">QR-Code scannen oder Link schicken \u2013 wer ihn öffnet, landet direkt in <b>'+esc(roomLabel(c,n))+'</b>.</p>'+
     '<div class="linkbox">'+esc(url)+'</div>'+
+    (c===code?'<p class="note">'+(roomPrivate()?'🔒 <b>Privat</b> – steht nicht unter „Offene Räume“, nur mit Code oder Link.':'🌐 Steht unter „Offene Räume“ – alle können beitreten oder zuschauen.')+
+      (isHost()&&!watching?' <button class="small ghost" data-a="rpriv" data-v="'+(roomPrivate()?'0':'1')+'">'+(roomPrivate()?'Öffentlich machen':'🔒 Privat machen')+'</button>':'')+'</p>':'')+
     '<div class="bar"><button class="primary" data-a="copylink" data-code="'+esc(c)+'">Link kopieren</button>'+
       (navigator.share?'<button data-a="sharelink" data-code="'+esc(c)+'">Teilen \u2026</button>':'')+
       (t?'<button class="ghost" data-a="ics" data-code="'+esc(c)+'">📅 In den Kalender</button>':'')+'</div>'+
@@ -1725,7 +1814,7 @@ function planRoom(){
   if(t<=Date.now()){uiErr='Die Startzeit muss in der Zukunft liegen.';render();return;}
   var c=newCode();
   var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
-  api('create',{room:c},{startsAt:t,name:n,tz:tz}).then(function(r){
+  api('create',{room:c},{startsAt:t,name:n,tz:tz,private:newPriv}).then(function(r){
     if(r.exists)return planRoom();
     planned.push({code:c,name:n,startsAt:t});savePlanned();
     planShow=c;planOpen=false;render();
@@ -2074,25 +2163,11 @@ function spBotGuess(){
 function spGuessSet(i,v){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&i>=0&&i<sp.K){sp.guess[i]=(v>=0&&v<=12)?v:null;render();}}
 function spGuessConfirm(){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&sp.guess.every(function(x){return x!=null;}))spFinish();}
 function spFinish(){
-  var board=sp.board,h4=sp.hist[4]||{};
-  var list=sp.players.map(function(p){var hl=sp.hole[p.id];return {id:p.id,chip:h4[p.id],hand:bestHand(hl.concat(board),hl)};});
-  list.forEach(function(x){
-    x.swaps=list.filter(function(y){if(y===x)return false;var d=cmpHand(y.hand,x.hand);return (y.chip<x.chip&&d>0)||(y.chip>x.chip&&d<0);})
-      .map(function(y){return y.id;});
-    var weaker=0,equal=0;
-    list.forEach(function(y){if(y!==x){var d=cmpHand(y.hand,x.hand);if(d<0)weaker++;else if(d===0)equal++;}});
-    x.lo=weaker+1;x.hi=weaker+equal+1;x.ok=!x.swaps.length;
-  });
-  var by={};list.forEach(function(x){by[x.id]=x;});
-  var bad=list.filter(function(x){return !x.ok;}).length;
-  var g=sp.target==='me'?sp.botGuess:sp.guess;sp.gr=null;
-  if(CFG.guessEnabled&&sp.target&&g){
-    var left=sp.hole[sp.target].map(function(c){return c%13;}),marks=[],hits=0;
-    g.forEach(function(r){var i=left.indexOf(r);if(i>=0){left.splice(i,1);hits++;marks.push(true);}else marks.push(false);});
-    sp.gr={hits:hits,of:g.length,marks:marks,cards:g,real:sp.hole[sp.target],target:sp.target};
-  }
-  var guessOk=!sp.gr||sp.gr.hits===sp.gr.of;
-  sp.res={by:by,bad:bad,missing:0,orderOk:!bad,guessOk:guessOk,win:!bad&&guessOk,part:!bad&&!guessOk&&sp.gr.hits>0};
+  var h4=sp.hist[4]||{},g=sp.target==='me'?sp.botGuess:sp.guess;
+  sp.res=resolve({board:sp.board,guess:CFG.guessEnabled&&sp.target&&g?{target:sp.target,cards:g}:null,
+    players:sp.players.map(function(p){return {id:p.id,chip:h4[p.id],cards:sp.hole[p.id]};})});
+  sp.gr=sp.res.gr;
+  var by=sp.res.by;
   sp.phase='done';
   var sid=function(id){return id==='me'?uid:'bot:'+spPl(id).name;};
   sp.stats.push({hand:sp.hand,ts:Date.now(),win:sp.res.win,
@@ -2116,6 +2191,71 @@ function endBar(res,action,wait){
   var r=!res?'<span class="res">Hand fertig</span>':res.win?'<span class="res ok">\u2713 Alles richtig!</span>':res.part?'<span class="res part">\u25d0 Fast richtig!</span>':
     res.orderOk?'<span class="res bad">\u2717 Tipp daneben</span>':'<span class="res bad">\u2717 Nicht ganz</span>';
   return '<div class="endbar">'+r+(action?'<button class="primary" data-a="'+action+'">Neue Hand \u25b6</button>':'<span class="note">'+esc(wait)+'</span>')+'</div>';
+}
+/* „Nächster Schritt“ (#6): Leiste unten wie „Neue Hand“, sagt, was gerade zu tun ist. Der Knopf springt zur Stelle
+   (Chips, Tipp, Aufdecken …) und hebt sie kurz hervor; einfache Schritte (Bereit, Aufdecken, Hand geben) gehen direkt. */
+var flash={sel:null,until:0};
+function jumpTo(sel){
+  var e=document.querySelector&&document.querySelector(sel);if(!e)return;
+  try{e.scrollIntoView({behavior:'smooth',block:'center'});}catch(x){e.scrollIntoView();}
+  flash={sel:sel,until:Date.now()+1600};e.classList.add('flash');
+  setTimeout(function(){var f=document.querySelector(sel);if(f&&Date.now()>=flash.until)f.classList.remove('flash');},1650);
+}
+/* step = {t: Text, sub: Zusatz, go: Selektor zum Hinspringen, goTxt, act: data-a für den Hauptknopf, actTxt} */
+function stepBar(step){
+  if(!step)return '';
+  return '<div class="endbar next" role="status"><div class="res"><span>'+step.t+'</span>'+(step.sub?'<span class="note">'+step.sub+'</span>':'')+'</div>'+
+    '<div class="row">'+(step.go?'<button class="'+(step.act?'ghost':'primary')+'" data-a="jumpto" data-sel="'+esc(step.go)+'">↑ '+esc(step.goTxt||'Hin')+'</button>':'')+
+      (step.act?'<button class="primary" data-a="'+step.act+'">'+esc(step.actTxt)+'</button>':'')+'</div></div>';
+}
+function names(ids){return ids.map(function(id){return id===uid?'dich':esc(pname(id));}).join(', ');}
+function mpStep(){
+  if(watching||!code)return null;
+  var ph=phase(),ps=parts(),m=pmap(),me=ps.indexOf(uid)>=0,n=S.players.length,need=CFG.minPlayers||3;
+  if(ph==='lobby'){
+    if(preStart())return {t:'⏳ Wartebereich',sub:'Los geht’s '+esc(fmtWhen(num(S.room.startsAt)))};
+    if(!isHost())return {t:'Warten, bis '+esc(pname(hostId()))+' die Hand gibt',sub:n+' Spieler*innen im Raum'};
+    if(n<need)return {t:'Noch '+(need-n)+' Mitspieler*in'+(need-n>1?'nen':'')+' nötig',sub:'Link schicken oder Bots dazuholen',act:'invite',actTxt:'🔗 Einladen'};
+    return {t:'Alle da? Dann geben',sub:n+' Spieler*innen',act:'start',actTxt:'Hand geben ▶'};
+  }
+  if(ph==='deal')return {t:'Karten werden gegeben …'};
+  if(!me)return {t:'Du bist in dieser Hand nicht dabei',sub:'ab der nächsten Hand'};
+  if(ph==='play'){
+    var c=chipOf(uid),wait=ps.filter(function(id){return !isReady(m[id]);});
+    if(!c)return {t:'Runde '+stage()+': Nimm einen Chip',sub:'1 = schwächste, '+ps.length+' = stärkste Hand',go:'.p-chips',goTxt:'Zu den Chips'};
+    if(!isReady(m[uid]))return {t:'Chip '+c+' passt? Dann klopfen',sub:'du kannst ihn noch tauschen',go:'.p-mine',goTxt:'Deine Karten',act:'ready',actTxt:'👊 Bereit'};
+    return {t:'✓ Bereit – warten auf '+names(wait),sub:'Chip '+c+' · zurücknehmen geht noch',go:'.p-players',goTxt:'Spieler'};
+  }
+  if(ph==='guess'){
+    var t=main().target,g=S.guess||{},conf=g.confirmed||{},gw=guessers().filter(function(id){return !conf[id];});
+    if(t===uid)return {t:'Die anderen tippen deine Karten',sub:gw.length?'warten auf '+names(gw):'gleich wird aufgedeckt'};
+    if(!conf[uid]&&guessFilled())return {t:'Tipp auf '+esc(pname(t))+' bestätigen',sub:'oder noch ändern',go:'.p-guess',goTxt:'Zum Tipp',act:'confirm',actTxt:'Tipp bestätigen'};
+    if(!conf[uid])return {t:'Tippt gemeinsam die Karten von '+esc(pname(t)),sub:'nur der Wert zählt',go:'.p-guess',goTxt:'Zum Tipp'};
+    return {t:'✓ Tipp bestätigt – warten auf '+names(gw),go:'.p-guess',goTxt:'Zum Tipp'};
+  }
+  if(ph==='reveal'){
+    var cur=(main().revealOrder||[])[num(main().revealIdx)||0];
+    if(cur===uid&&myHand&&myHand.hand===hand())return {t:'Du bist dran: Karten aufdecken',sub:'sonst automatisch nach dem Countdown',go:'.p-reveal',goTxt:'Aufdecken',act:'reveal',actTxt:'Aufdecken'};
+    return {t:'Aufdecken: '+esc(pname(cur))+' ist dran',go:'.p-reveal',goTxt:'Ansehen'};
+  }
+  return null;
+}
+function spStep(){
+  if(!sp)return null;
+  if(sp.phase==='play'){
+    if(sp.cd)return null;
+    var wait=sp.players.filter(function(p){return !(sp.chips[p.id]&&sp.ready[p.id]);}).map(function(p){return p.id==='me'?'dich':esc(p.name);});
+    if(!sp.chips.me)return {t:'Runde '+sp.stage+': Nimm einen Chip',sub:'1 = schwächste, '+sp.players.length+' = stärkste Hand',go:'.p-chips',goTxt:'Zu den Chips'};
+    if(!sp.ready.me)return {t:'Chip '+sp.chips.me+' passt? Dann klopfen',sub:'du kannst ihn noch tauschen',go:'.p-mine',goTxt:'Deine Karten',act:'ready',actTxt:'👊 Bereit'};
+    return {t:'✓ Bereit – warten auf '+wait.join(', '),go:'.p-players',goTxt:'Spieler'};
+  }
+  if(sp.phase==='guess'){
+    if(sp.target==='me')return {t:'Die Bots tippen deine Karten …'};
+    var full=sp.guess.every(function(x){return x!=null;});
+    return full?{t:'Tipp auf '+esc(spPl(sp.target).name)+' bestätigen',go:'.p-guess',goTxt:'Zum Tipp',act:'confirm',actTxt:'Tipp bestätigen'}
+      :{t:'Tippe die Karten von '+esc(spPl(sp.target).name),sub:'nur der Wert zählt',go:'.p-guess',goTxt:'Zum Tipp'};
+  }
+  return null;
 }
 function spBotBtns(){
   var o='';for(var b=2;b<=5;b++)o+='<button class="small'+(b===spBots?' primary':' ghost')+'" data-a="spbots" data-n="'+b+'" title="'+(b+1)+' Spieler">'+b+' Bots</button>';
@@ -2212,7 +2352,7 @@ function spView(){
     rp+='<div class="hr"></div><div class="bar"><button class="primary" data-a="spnext">Neue Hand</button></div>'+statsLine(sp.stats)+'</div>';
     out=out.slice(0,afterBoard)+rp+(coach?coach.l:'')+out.slice(afterBoard);
     out+=endBar(res,'spnext','');
-  }
+  }else out+=stepBar(spStep());
   return head+'<div class="cols'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+out+'</div><div class="col-r">'+(coach?coach.r:'')+Rt+'</div></div>';
 }
 
@@ -2740,6 +2880,13 @@ function roomsHtml(){
   if(!openRooms.length)return pin+'<p class="note">Gerade keine offenen Räume.</p>';
   return pin+'<div class="plist">'+openRooms.map(function(r){
     var full=CFG.maxPlayers&&r.players>=CFG.maxPlayers;
+    /* Eigener Platz in diesem Raum (#3): hervorheben und „Weiterspielen“ statt „Beitreten“ – nicht mit anderen Räumen verwechseln */
+    var seat=mySeats.filter(function(x){return x.code===r.code;})[0];
+    if(seat)return '<div class="pl here"><span class="code">'+esc(r.code)+'</span>'+
+      '<div class="nm"><span class="tag here">📍 Du bist hier</span> '+(r.name?'<b>'+esc(r.name)+'</b><br>':'')+esc((r.names||[]).join(', '))+
+        '<div class="note">als '+esc(seat.name)+' \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+(seat.local?'':' \u00b7 auf anderem Gerät')+'</div></div>'+
+      (seat.local?'<button class="small primary" data-a="seatgo" data-code="'+esc(r.code)+'">Weiterspielen</button>'
+        :'<button class="small primary" data-a="seatgrab" data-code="'+esc(r.code)+'" data-id="'+esc(seat.id)+'" title="Dein Platz wechselt auf dieses Gerät">Hierher holen</button>')+'</div>';
     return '<div class="pl"><span class="code">'+esc(r.code)+'</span>'+
       '<div class="nm">'+(r.name?'<b>'+esc(r.name)+'</b><br>':'')+esc((r.names||[]).join(', '))+
         '<div class="note">'+(num(r.startsAt)>srvNow()?'\u23f3 Start '+esc(fmtWhen(num(r.startsAt)))+' \u00b7 ':'')+(num(r.players)||0)+' Spieler \u00b7 '+esc(PHASE_SHORT[r.phase]||r.phase)+(num(r.hand)?' \u00b7 Hand '+num(r.hand):'')+'</div></div>'+
@@ -2773,7 +2920,7 @@ function createRoom(){
   myName=name.trim();
   var rn=(($('rname')||{}).value||'').trim().slice(0,30);
   var c=newCode();
-  api('create',{room:c},{hostId:uid,name:rn}).then(function(r){
+  api('create',{room:c},{hostId:uid,name:rn,private:newPriv}).then(function(r){
     if(r.exists)return createRoom();
     enter(c);
   }).catch(showErr);
@@ -3320,8 +3467,9 @@ function render(){
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
-  el.innerHTML = sp?spView():code?(tvMode?tvView():roomView()+modDialog()):startView()+acctDialog();
+  el.innerHTML = (sp?spView():code?(tvMode?tvView():roomView()+modDialog()):startView()+acctDialog())+(tvMode?'':bundleDialog());
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
+  if(flash.sel&&Date.now()<flash.until){var fl=qs(flash.sel);if(fl)fl.classList.add('flash');}
   ['.col-l','.col-r','.acctbox'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
@@ -3332,13 +3480,14 @@ function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
   return '<div class="panel hero">'+
     '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+fxBtn()+themeBtn()+'</div></div>'+
-    placeBar()+offlineBanner()+(inviteCode?inviteHint():'')+
+    placeBar()+bundleBanner()+offlineBanner()+(inviteCode?inviteHint():'')+
     '<div class="hr"></div>'+
     '<div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
       '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+acctBar()+
     '<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Raumname (optional)</label>'+
       '<input id="rname" maxlength="30" placeholder="z.B. Freitagsrunde"></div>'+
       '<button class="primary" data-a="create">Raum erstellen</button></div>'+
+    '<label class="chk"><input type="checkbox" id="rpriv"'+(newPriv?' checked':'')+'> 🔒 Privat – nicht unter „Offene Räume“, Beitritt nur mit Code oder Link</label>'+
     planHtml()+
     '<div class="hr"></div>'+
     '<div class="row"><div class="field"><label class="lbl">Raumcode</label>'+
@@ -3370,7 +3519,7 @@ function startView(){
   '<p class="sitefoot"><a href="impressum.html">Impressum</a> \u00b7 <a href="impressum.html#datenschutz">Datenschutz</a> \u00b7 '+
     '<a class="apkdl" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">\ud83e\udd16 Android-App (APK)</a><span class="apkdl"> \u00b7 </span>'+
     '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">GitHub (Open Source)</a> \u00b7 '+
-    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">Mehr von Simon</a></p>';
+    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">Mehr von Simon</a>'+(bundleOn()?'<br>'+bundleFoot():'')+'</p>';
 }
 
 function roomView(){
@@ -3379,10 +3528,10 @@ function roomView(){
   out+='<div class="panel"><div class="spread">'+
     '<div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span>'+
       (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="Raum umbenennen">✎</button>':'')+'</h1>'+
-    '<div class="note">'+esc(phaseLabel())+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
+    '<div class="note">'+esc(phaseLabel())+(roomPrivate()?' \u00b7 🔒 privat':'')+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
       '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
-      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt">'+(hideTable?'🃏 Tisch an':'📺 Tisch aus')+'</button>':'')+
+      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?'Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden':'Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt')+'">'+(hideTable?'📺 Tisch aus':'🃏 Tisch an')+'</button>':'')+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
       '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
@@ -3410,7 +3559,7 @@ function roomView(){
       (isHost()?'<button class="primary" data-a="start"'+(S.players.length<(CFG.minPlayers||3)||preStart()?' disabled':'')+'>Hand geben</button>'+addBotBtn():
         '<span class="note">Warten auf '+esc(pname(hostId()))+' \u2026</span>')+
       (S.players.length<(CFG.minPlayers||3)?'<span class="note">Mindestens '+(CFG.minPlayers||3)+' Spieler nötig.</span>':'')+
-      '</div></div>';
+      '</div></div>'+stepBar(mpStep());
     return cols();
   }
   if(ph==='deal'){
@@ -3418,7 +3567,7 @@ function roomView(){
       '<p class="note">Mischen: '+esc(pname(roleId(0)))+' \u00b7 Verteilen: '+esc(pname(roleId(1)))+' + '+esc(pname(roleId(2)))+'</p>'+
       '<div class="hr"></div><div class="bar">'+
       ((S.aB&&S.aB.hand===h)?'<button class="small" data-a="force">Weiter</button>':'')+
-      (isHost()?'<button class="small ghost" data-a="abort">Hand abbrechen</button>':'')+'</div></div>';
+      (isHost()?'<button class="small ghost" data-a="abort">Hand abbrechen</button>':'')+'</div></div>'+stepBar(mpStep());
     return cols();
   }
 
@@ -3474,6 +3623,7 @@ function roomView(){
   if(ph==='guess')L=L.slice(0,afterBoard)+'<div class="p-guess">'+guessPanel()+'</div>'+L.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
   if(ph==='reveal'||ph==='done')L=L.slice(0,afterBoard)+'<div class="p-reveal">'+revealPanel()+(ph==='done'?mpCoachHtml():'')+'</div>'+L.slice(afterBoard);
   if(ph==='done')L+=endBar(resolveHand(),isHost()?'start':null,isHost()?'':'Warten auf '+pname(hostId())+' \u2026');
+  else L+=stepBar(mpStep());
   return cols();
 }
 
@@ -3537,7 +3687,7 @@ function tvView(){
     return out+'<div class="tv-lobby felt">'+(qr?'<div class="qr">'+qr+'</div>':'')+
       '<div><h2>'+(ph==='deal'?'Karten werden gegeben …':preStart()?'⏳ Start '+esc(fmtWhen(num(S.room.startsAt))):'Mitspielen: QR-Code scannen')+'</h2>'+
       '<div class="linkbox">'+esc(inviteUrl(code))+'</div>'+
-      '<p class="note">Am Handy: Tisch über „📺 Tisch ausblenden“ weglassen – dann nur Hand, Chips und Insight.</p>'+
+      '<p class="note">Am Handy: Knopf „🃏 Tisch an“ antippen blendet den Tisch aus – dann nur Hand, Chips und Insight.</p>'+
       '<div class="tv-names">'+S.players.map(function(p){return '<span class="tag">'+esc(p.name||'Spieler')+(p.bot?' 🤖':'')+reactHtml(p.id)+'</span>';}).join('')+'</div>'+
       '<p class="note">'+S.players.length+' Spieler*innen'+(S.players.length<(CFG.minPlayers||3)?' · mindestens '+(CFG.minPlayers||3)+' nötig':' · warten auf '+esc(pname(hostId())))+'</p></div></div>';
   }
@@ -3550,7 +3700,7 @@ function tvView(){
     mid='<div class="tv-mid">'+(free||'<span class="note">alle Chips vergeben</span>')+'</div>';
   }else if(ph==='guess'){
     var g=S.guess||{},K=HC(),v='';for(var k=0;k<K;k++)v+=rankHtml(g.cards&&g.cards[k]!=null?g.cards[k]:null);
-    mid='<div class="tv-mid"><span>Tipp auf <b>'+esc(pname(main().target))+'</b></span><div class="cards">'+v+'</div></div>';
+    mid='<div class="tv-mid"><span>Tipp auf <b>'+esc(pname(main().target))+'</b></span><div class="cards">'+v+'</div>'+sugHtml(false)+'</div>';
   }else if(ph==='reveal'){
     var ord=main().revealOrder||[],cur=ord[num(main().revealIdx)||0];
     mid='<div class="tv-mid"><span>Aufdecken: <b>'+esc(pname(cur))+'</b> · <span id="revleft">'+revLeft()+'</span> s</span></div>';
@@ -3647,6 +3797,27 @@ function guessPicker(vals,edit){
   return '<div class="gslots">'+slots+'</div>'+grid;
 }
 function pickRank(k){var i=gActive;setGuessCard(i,k);gActive=(i+1)%HC();render();}
+/* Vorschläge je Spieler*in (#4): jede*r tippt Werte an, alle sehen live, wer was vorschlägt (auch der Tisch);
+   ein vollständiger Vorschlag lässt sich mit einem Tipp als gemeinsamer Tipp übernehmen */
+function sugList(){
+  var g=S.guess||{},sg=(g.hand===hand()&&g.sug)||{},conf=g.confirmed||{};
+  return guessers().filter(function(id){return Array.isArray(sg[id])&&sg[id].some(function(v){return v!=null;});})
+    .map(function(id){return {id:id,vals:sg[id],conf:!!conf[id]};});
+}
+function sugHtml(me){
+  var l=sugList();if(!l.length)return '';
+  var K=HC(),cur=JSON.stringify(((S.guess||{}).cards||[]).slice(0,K));
+  return '<div class="sugs"><span class="note">Vorschläge:</span>'+l.map(function(x){
+    var v=x.vals.slice(0,K),full=v.length===K&&v.every(function(y){return y!=null;}),same=JSON.stringify(v)===cur;
+    return '<div class="sug'+(same?' same':'')+'" title="'+(same?'entspricht dem gemeinsamen Tipp':'')+'"><span class="who">'+(x.id===uid?'du':esc(pname(x.id)))+(x.conf?' \u2713':'')+'</span>'+
+      '<div class="cards">'+v.map(function(y){return rankHtml(y,'xs');}).join('')+'</div>'+
+      (me&&full&&!same&&x.id!==uid?'<button class="small ghost" data-a="gtake" data-id="'+esc(x.id)+'">übernehmen</button>':'')+'</div>';
+  }).join('')+'</div>';
+}
+function takeSuggestion(id){
+  if(!canGuess())return;
+  api('guess',{room:code},{uid:uid,take:id}).then(function(){pollOnce(true);}).catch(function(e){showErr(e);pollOnce(true);});
+}
 function guessPanel(){
   var g=S.guess||{cards:[null,null],confirmed:{}},t=main().target,gs=guessers();
   var conf=g.confirmed||{},n=0;gs.forEach(function(i){if(conf[i])n++;});
@@ -3656,7 +3827,7 @@ function guessPanel(){
   return '<div class="panel"><h2>Gemeinsamer Tipp</h2>'+
     (uid===t?'<p>Du hast den höchsten Chip \u2013 die anderen tippen jetzt deine '+K+' Karten. Du tippst nicht mit.</p>':
       '<p>Welche '+K+' Karten hat <b>'+esc(pname(t))+'</b> (höchster Chip)? Nur der Wert zählt, die Farbe nicht.</p>')+
-    '<div class="row" style="gap:14px">'+pick+'</div>'+
+    '<div class="row" style="gap:14px">'+pick+'</div>'+sugHtml(me)+
     '<div class="hr"></div><div class="bar">'+
     (me?'<button class="'+(conf[uid]?'':'primary')+'" data-a="confirm"'+(guessFilled()?'':' disabled')+'>'+
       (conf[uid]?'Tipp zurücknehmen':'Tipp bestätigen')+'</button>':'')+
@@ -3812,6 +3983,11 @@ document.addEventListener('click',function(ev){
   else if(a==='join')joinRoom();
   else if(a==='tvjoin')tvJoin(el.getAttribute('data-code'));
   else if(a==='place')appMsg({a:'place'});
+  else if(a==='bapply')bundleApply();
+  else if(a==='blater'){bundle.dlg=false;render();}
+  else if(a==='bshow'){bundle.dlg=true;bundle.err='';render();}
+  else if(a==='breset')bundleReset();
+  else if(a==='apkskip'){try{localStorage.setItem('kr.apk.skip',el.getAttribute('data-v')||'');}catch(e){}render();}
   else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
   else if(a==='tvfs')tvFullscreen();
   else if(a==='joincode')joinRoom(el.getAttribute('data-code'));
@@ -3825,6 +4001,9 @@ document.addEventListener('click',function(ev){
   else if(a==='skinset')setSkin(el.getAttribute('data-v'));
   else if(a==='noteok'){uiNote='';render();}
   else if(a==='invite'){inviteOpen=!inviteOpen;render();}
+  else if(a==='rpriv')setRoomPrivate(el.getAttribute('data-v')==='1');
+  else if(a==='gtake')takeSuggestion(el.getAttribute('data-id'));
+  else if(a==='jumpto')jumpTo(el.getAttribute('data-sel'));
   else if(a==='copylink')copyLink(el.getAttribute('data-code'));
   else if(a==='sharelink')shareLink(el.getAttribute('data-code'));
   else if(a==='ics')icsDownload(el.getAttribute('data-code'));
@@ -3906,6 +4085,7 @@ document.addEventListener('keydown',function(ev){
 document.addEventListener('change',function(ev){
   var el=ev.target;
   if(el.id==='acc_lanup'){try{localStorage.setItem('kr.lanup',el.checked?'1':'0');}catch(e){}return;}
+  if(el.id==='rpriv'){newPriv=!!el.checked;try{localStorage.setItem('kr.rpriv',newPriv?'1':'0');}catch(e){}return;}
   if(!el.hasAttribute||!el.hasAttribute('data-g'))return;
   var i=parseInt(el.getAttribute('data-g').slice(1),10);
   setGuessCard(i,el.value===''?null:parseInt(el.value,10));
@@ -3928,6 +4108,7 @@ function rejoin(){
   }).catch(function(e){if(e&&/nicht gefunden/.test(e.message)){try{localStorage.removeItem('kr.room');}catch(x){}}});
 }
 render();
+bundleBoot();
 /* Service Worker: hält die App auf dem Gerät vor (Übungsraum offline, z. B. im Flugzeug) */
 try{if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
 if(window.addEventListener){

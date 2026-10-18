@@ -57,6 +57,8 @@ object NodeHost {
             "KR_PUBLIC=${File(game, "public").absolutePath}",
             "KR_LAN_PORT=$LAN_PORT",
             "KR_UPSTREAM=https://letzterunde.aize-it.de",
+            "KR_PLATFORM=android",
+            "KR_APP_VERSION=${BuildConfig.VERSION_NAME}",
             "KR_LEADER_SOCK=${File(ctx.cacheDir, "kr.sock").absolutePath}",
             "TMPDIR=${ctx.cacheDir.absolutePath}",
         )

@@ -83,7 +83,7 @@ async function scenario(send, dev) {
   const insist = async (n) => { for (let k = 0; k < 12; k++) { await js('__kr.spTake(' + n + ');1'); await sleep(400); await until(settled, 15000); if (await js('__kr.sp().chips.me===' + n)) return true; } return false; };
   const rankMe = '(function(){var s=__kr.sp(),st=function(id){return __kr.bestHand(s.hole[id].concat(s.board),s.hole[id]);},ids=s.players.map(function(p){return p.id;});' +
     'return 1+ids.filter(function(o){return o!=="me"&&__kr.cmpHand(st(o),st("me"))<0;}).length;})()';
-  const finish = async () => { await js('__kr.spReady();1'); await until('!!document.querySelector(".p-reveal .result,.endbar")', 40000); await sleep(1200); return js('!!document.querySelector(".result.win")'); };
+  const finish = async () => { await js('__kr.spReady();1'); await until('!!document.querySelector(".p-reveal .result,.endbar:not(.next)")', 40000); await sleep(1200); return js('!!document.querySelector(".result.win")'); };
   const SHOT = { me: ['Qd', '3h'].map(cd), b: [['Ks', '6s'], ['9h', '7h'], ['3s', '8c']].map((h) => h.map(cd)), board: ['Qc', 'Qs', '7c', 'Kd', '2d'].map(cd) };
   await deal(SHOT.me, SHOT.b, SHOT.board, 3);
   await insist(4); await sleep(1500);

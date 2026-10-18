@@ -226,8 +226,47 @@ function valueOdds(list){
   return Object.keys(m).map(function(k){return {vals:k.split(',').map(Number),w:m[k]};}).sort(function(a,b){return b.w-a.w;});
 }
 
+/* Auflösung einer fertigen Hand – eine Fassung für Browser, Übungsraum, Bots und Server (server.js wertet damit
+   verbindlich aus, damit alle Geräte im Raum dieselbe Statistik bekommen, egal welche Version sie haben).
+   o = {players:[{id, chip, cards|null}], board:[5 Karten], guess:{target, cards:[Werte]}|null}
+   Passt die Chip-Reihenfolge zur Stärke? Chip 1 = schwächste Hand, gleich starke Hände dürfen beliebig liegen. */
+function resolve(o){
+  var board=(o.board||[]).filter(function(c){return c!=null;});
+  if(board.length<5)return null;
+  var list=(o.players||[]).map(function(p){
+    var cs=Array.isArray(p.cards)&&p.cards.length?p.cards:null;
+    return {id:p.id,chip:p.chip==null?null:p.chip,hand:cs?bestHand(cs.concat(board),cs):null,cards:cs};
+  });
+  var known=list.filter(function(x){return x.hand&&x.chip!=null;});
+  known.forEach(function(x){
+    x.swaps=known.filter(function(y){
+      if(y===x)return false;
+      var d=cmpHand(y.hand,x.hand);
+      return (y.chip<x.chip&&d>0)||(y.chip>x.chip&&d<0);
+    }).map(function(y){return y.id;});
+    var weaker=0,equal=0;
+    known.forEach(function(y){if(y!==x){var d=cmpHand(y.hand,x.hand);if(d<0)weaker++;else if(d===0)equal++;}});
+    x.lo=weaker+1;x.hi=weaker+equal+1;x.ok=!x.swaps.length;
+  });
+  var by={};list.forEach(function(x){by[x.id]=x;});
+  var bad=known.filter(function(x){return !x.ok;}).length,missing=list.length-known.length;
+  /* Tipp: wie viele getippte Werte stecken in den echten Karten (Reihenfolge egal) */
+  var gr=null,g=o.guess,t=g&&by[g.target];
+  if(g&&t&&t.cards&&Array.isArray(g.cards)&&g.cards[0]!=null){
+    var left=t.cards.map(function(c){return c%13;}),marks=[],hits=0;
+    g.cards.slice(0,t.cards.length).forEach(function(r){var i=left.indexOf(r);if(i>=0){left.splice(i,1);hits++;marks.push(true);}else marks.push(false);});
+    gr={hits:hits,of:t.cards.length,marks:marks,cards:g.cards.slice(0,t.cards.length),real:t.cards,target:g.target};
+  }
+  var orderOk=!bad&&!missing,guessOk=!gr||gr.hits===gr.of;
+  return {by:by,bad:bad,missing:missing,orderOk:orderOk,guessOk:guessOk,gr:gr,win:orderOk&&guessOk,part:orderOk&&!guessOk&&!!gr&&gr.hits>0};
+}
+/* Version der Spielregeln/Wertung: bei jeder Änderung an bestHand/resolve erhöhen. Der Admin kann für Online-Räume eine
+   Mindestversion verlangen (ältere Apps müssen dann erst die neue Spiellogik laden). 1 = bis 1.0.1, 2 = eigene Kombination
+   zählt auch, wenn der Tisch allein mehr hat (c615829). */
+var LOGIC_VERSION=2;
+
 var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,estimateRankGiven:estimateRankGiven,preKey:preKey,
-  inferHole:inferHole,rankOdds:rankOdds,valueOdds:valueOdds};
+  inferHole:inferHole,rankOdds:rankOdds,valueOdds:valueOdds,resolve:resolve,LOGIC_VERSION:LOGIC_VERSION};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else for(var k in api)root[k]=api[k];
 })(typeof globalThis!=='undefined'?globalThis:this);

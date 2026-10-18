@@ -139,7 +139,8 @@ const DEFAULTS = {
   guessEnabled: true,       // gemeinsamer Tipp vor dem Aufdecken
   revealHighestFirst: true, // sonst von Chip 1 aufwärts
   voiceEnabled: false,      // Voice-Chat (WebRTC, Geräte direkt verbunden); im Admin einschaltbar
-  roomTtlHours: 48
+  roomTtlHours: 48,
+  minLogic: 0               // Online-Räume nur mit Spiellogik ab dieser Version (hand.js LOGIC_VERSION); 0 = alle
 };
 const CONF_FILE = path.join(DATA, 'config.json');
 let config = Object.assign({}, DEFAULTS);
@@ -158,6 +159,7 @@ function sanitizeConfig(inp) {
   if (inp.maxPlayers !== undefined) c.maxPlayers = num(inp.maxPlayers, 2, 12, c.maxPlayers);
   if (inp.holeCards !== undefined) c.holeCards = num(inp.holeCards, 1, 5, c.holeCards);
   if (inp.roomTtlHours !== undefined) c.roomTtlHours = num(inp.roomTtlHours, 1, 720, c.roomTtlHours);
+  if (inp.minLogic !== undefined) c.minLogic = num(inp.minLogic, 0, 1000, c.minLogic || 0);
   for (const k of ['chipsResetEachStage', 'allowSteal', 'guessEnabled', 'revealHighestFirst', 'voiceEnabled'])
     if (inp[k] !== undefined) c[k] = !!inp[k];
   if (c.maxPlayers < c.minPlayers) c.maxPlayers = c.minPlayers;
@@ -311,7 +313,43 @@ function commit(code, changed) {         // changed: [pfad, ...]
     type: 'docs', version: r.version,
     changes: changed.map((p) => ({ path: p, doc: r.docs[p] === undefined ? null : r.docs[p] }))
   });
+  if (changed.indexOf('state/main') >= 0 && (r.docs['state/main'] || {}).phase === 'done') setImmediate(guard(() => autoResult(code), 'Auswertung'));
   return r.version;
+}
+/* Hand fertig → Server wertet selbst aus (resolve.js) und legt das Ergebnis als state/result in den Raum; die Statistik
+   kommt aus dieser Auswertung, nicht aus den Meldungen der Clients (die können verschiedene Spiellogik-Versionen haben).
+   Liefert das Ergebnis oder null (nicht auswertbar → Fallback: erste Client-Meldung über ?a=record). */
+function autoResult(code) {
+  const r = rooms.get(code); if (!r) return null;
+  const m = r.docs['state/main'] || {}, hand = Number(m.hand) || 0;
+  const have = r.docs['state/result'];
+  if (have && Number(have.hand) === hand) return have;
+  let x = null;
+  try { x = resolver.resolveRoom(r); } catch (e) { console.warn('Auswertung ' + code + ' Hand ' + hand + ' nicht möglich: ' + e.message); }
+  if (!x) return null;
+  const doc = resolver.resultDoc(x), changed = ['state/result'];
+  r.docs['state/result'] = doc;
+  if (!x.res.missing && statsAdd(r, statsEntry(r, m, hand, x.res.by, doc.win, doc.guess, 'server'))) changed.push('stats');
+  commit(code, changed);
+  return doc;
+}
+/* Statistik-Eintrag: Namen nimmt der Server selbst; rounds = lag der Chip in Runde 1..4 schon passend zur endgültigen Stärke */
+function statsEntry(r, m, hand, by, win, guess, src) {
+  const parts = Array.isArray(m.participants) ? m.participants.map(String) : [], hist = m.chipHist || {};
+  const pl = parts.filter((id) => by[id]).slice(0, 12).map((id) => {
+    const b = by[id], rounds = [1, 2, 3, 4].map((s) => {
+      const c = Number((hist[String(s)] || {})[id]);
+      return !Number.isFinite(c) || !c || b.lo == null ? null : c >= b.lo && c <= b.hi;
+    });
+    return { id, name: cleanName((r.docs['players/' + id] || {}).name).slice(0, 18), ok: !!b.ok, rounds };
+  });
+  return { hand, ts: Date.now(), win: !!win && pl.every((x) => x.ok), players: pl, guess: guess || null, logic: LOGIC, src };
+}
+function statsAdd(r, entry) {
+  const st = (r.docs.stats && Array.isArray(r.docs.stats.hands)) ? r.docs.stats : { hands: [] };
+  if (!entry.players.length || st.hands.some((h) => h.hand === entry.hand)) return false;
+  r.docs.stats = { hands: st.hands.concat([entry]).slice(-150) };
+  return true;
 }
 /* Schutz gegen unterschiedliche Karten bei verschiedenen Spieler*innen:
    - deal/deck, assignA, assignB: je Hand genau einmal (gleicher Inhalt nochmal = ok, anderer = 409)
@@ -694,6 +732,8 @@ setInterval(guard(() => {                 // Keepalive gegen Proxy-Timeouts; stu
 
 /* ------------------------------------------------ Bots ------------------- */
 const bots = require('./bots')({ rooms, commit, chipMove });
+const resolver = require('./resolve');
+const LOGIC = require('./public/hand.js').LOGIC_VERSION;
 const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
 const moderation = require('./moderation')({ dataDir: DATA, json, readBody, cleanName });
 function filterWords(s) { return require('./moderation').filter(s); }
@@ -779,7 +819,7 @@ function roomList(maxAge) {
     let mtime = 0;
     try { mtime = fs.statSync(path.join(DATA, f)).mtimeMs; } catch (e) { /* egal */ }
     const PH = ['lobby', 'deal', 'play', 'guess', 'reveal', 'done'];
-    list.push({ code: codeName, name: cleanRoomName(r.docs.room && r.docs.room.name), startsAt: Number(r.docs.room && r.docs.room.startsAt) || 0, players: names.length, names: names, phase: PH.indexOf(m.phase) >= 0 ? m.phase : '-',
+    list.push({ code: codeName, name: cleanRoomName(r.docs.room && r.docs.room.name), priv: !!(r.docs.room && r.docs.room.private), startsAt: Number(r.docs.room && r.docs.room.startsAt) || 0, players: names.length, names: names, phase: PH.indexOf(m.phase) >= 0 ? m.phase : '-',
       hand: Math.max(0, parseInt(m.hand, 10) || 0),
       online: (subs.get(codeName) || { size: 0 }).size, updated: mtime });
   }
@@ -792,7 +832,7 @@ let openRoomsCache = null, openRoomsAt = 0;
 function openRooms() {
   const now = Date.now();
   if (openRoomsCache && now - openRoomsAt < 3000) return openRoomsCache;
-  openRoomsCache = roomList(OPEN_ROOM_MS).filter((x) => x.players > 0)
+  openRoomsCache = roomList(OPEN_ROOM_MS).filter((x) => x.players > 0 && !x.priv)
     .map((x) => {
       const r = peek(x.code);
       const free = r ? idleList(x.code, r).map((id) => ({ id: id, name: cleanName((r.docs['players/' + id] || {}).name).slice(0, 18) })) : [];
@@ -806,7 +846,7 @@ function openRooms() {
 
 async function api(req, res, u) {
   const a = u.searchParams.get('a') || '';
-  if (a === 'config') return json(res, 200, { config: config });
+  if (a === 'config') return json(res, 200, { config: config, logic: LOGIC, bundle: bundleInfo() });
   if (a === 'rooms') return json(res, 200, { rooms: openRooms(), counts: { mp: counters.mp, sp: counters.sp } });
   if (a === 'sphand') {                   // Übungsraum meldet neue Hand(en); offline gespielte werden nachgereicht (max. 20)
     let body = {}; try { body = await readBody(req); } catch (e) { /* egal */ }
@@ -819,6 +859,7 @@ async function api(req, res, u) {
   const p = u.searchParams.get('path') || '';
   if (!CODE_RE.test(code)) return json(res, 400, { error: 'Raumcode ungueltig' });
 
+  if (a === 'create' && tooOld(req)) return tooOldRes(res);
   if (a === 'create') {
     if (!rooms.has(code) && !fs.existsSync(file(code))) {
       if (memoryTight() || roomCount() >= MAX_ROOMS) return json(res, 503, { error: 'Zu viele offene Räume – bitte später' });
@@ -838,8 +879,8 @@ async function api(req, res, u) {
     if (startsAt && scheduledOpen() >= MAX_SCHEDULED) return json(res, 503, { error: 'Zu viele geplante Räume – bitte später' });
     if (startsAt) scheduled.set(code, startsAt);
     rooms.set(code, { version: 1, docs: {
-      room: startsAt ? { code: code, hostId: null, createdAt: Date.now(), name: cleanRoomName(body.name), startsAt: startsAt, tz: cleanTz(body.tz) }
-        : { code: code, hostId: host, createdAt: Date.now(), name: cleanRoomName(body.name) },
+      room: Object.assign(startsAt ? { code: code, hostId: null, createdAt: Date.now(), name: cleanRoomName(body.name), startsAt: startsAt, tz: cleanTz(body.tz) }
+        : { code: code, hostId: host, createdAt: Date.now(), name: cleanRoomName(body.name) }, body.private ? { private: true } : {}),
       'state/main': { phase: 'lobby', hand: 0, stage: 0, participants: [] }
     } });
     save(code);
@@ -848,6 +889,8 @@ async function api(req, res, u) {
 
   const r = load(code);
   if (!r) return json(res, 404, { error: 'Raum nicht gefunden' });
+  /* neuer Platz (Beitritt, Bot-Platz übernehmen) nur mit aktueller Spiellogik; wer schon sitzt, spielt weiter */
+  if ((a === 'replacebot' || (a === 'set' && p.indexOf('players/') === 0 && !r.docs[p])) && tooOld(req)) return tooOldRes(res);
 
   if (a === 'info') {
     /* Kurzinfo für Einladungslinks (auch vor dem Start): Name, Startzeit, Spielerzahl, Serverzeit */
@@ -876,15 +919,23 @@ async function api(req, res, u) {
     if (!authPlayer(r, who, req)) return json(res, 403, { error: 'Nicht dein Platz' });
     if (!who || m.phase !== 'guess' || !g || g.hand !== m.hand) return json(res, 409, { error: 'Gerade kein Tipp' });
     if (who === m.target || (m.participants || []).indexOf(who) < 0) return json(res, 403, { error: 'Du tippst nicht mit' });
-    const ng = { hand: g.hand, cards: (g.cards || []).slice(), confirmed: Object.assign({}, g.confirmed || {}) };
+    /* sug: Vorschlag je Spieler*in (zuletzt selbst gesetzte Werte) – sehen alle live, auch der Tisch; der gemeinsame Tipp
+       (cards) ist immer der zuletzt geänderte Stand. take = Vorschlag einer anderen Person als gemeinsamen Tipp übernehmen. */
+    const ng = { hand: g.hand, cards: (g.cards || []).slice(), confirmed: Object.assign({}, g.confirmed || {}), sug: Object.assign({}, g.sug || {}) };
     if (body.confirm !== undefined) {
       if (body.confirm) ng.confirmed[who] = true; else delete ng.confirmed[who];
+    } else if (body.take !== undefined) {
+      const from = ng.sug[String(body.take)];
+      if (!Array.isArray(from) || from.length !== ng.cards.length || from.some((v) => v == null)) return json(res, 400, { error: 'Kein vollständiger Vorschlag' });
+      ng.cards = from.slice(); ng.confirmed = {}; ng.sug[who] = from.slice();
     } else {
       const i = Number(body.i);
       const val = body.val === null ? null : Number(body.val);
       if (!Number.isInteger(i) || i < 0 || i >= ng.cards.length) return json(res, 400, { error: 'Karte ungueltig' });
       if (val !== null && !(Number.isInteger(val) && val >= 0 && val <= 12)) return json(res, 400, { error: 'Wert ungueltig' });
       ng.cards[i] = val; ng.confirmed = {};
+      const mine = Array.isArray(ng.sug[who]) && ng.sug[who].length === ng.cards.length ? ng.sug[who].slice() : ng.cards.map(() => null);
+      mine[i] = val; ng.sug[who] = mine;
     }
     r.docs['state/guess'] = ng;
     return json(res, 200, { ok: true, version: commit(code, ['state/guess']) });
@@ -995,31 +1046,45 @@ async function api(req, res, u) {
     return json(res, 200, { ok: true, version: commit(code, ['react/' + who]) });
   }
   if (a === 'record') {
-    /* Ergebnis einer fertigen Hand für die Statistik. Jeder Spieler meldet, der Server nimmt je Hand nur die erste
-       Meldung, prüft Phase/Hand/Teilnehmer und übernimmt Namen selbst. Letzte 150 Hände. */
+    /* Ergebnis einer fertigen Hand für die Statistik. Verbindlich ist die Auswertung des Servers (autoResult); die Meldung
+       des Clients zählt nur, wenn der Server die Hand nicht selbst entschlüsseln kann (z. B. alte Raumdaten). Letzte 150 Hände. */
     let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
     if (!memberId(r, keyHash(req))) return json(res, 403, { error: 'Nur Spieler dieses Raums' });
     const m = r.docs['state/main'] || {}, hand = Number(body.hand);
     if (m.phase !== 'done' || !Number.isInteger(hand) || hand !== Number(m.hand)) return json(res, 409, { error: 'Hand nicht fertig' });
     const st = (r.docs.stats && Array.isArray(r.docs.stats.hands)) ? r.docs.stats : { hands: [] };
     if (st.hands.some((h) => h.hand === hand)) return json(res, 200, { ok: true, dup: true, version: r.version });
+    const srv = autoResult(code);
+    if (srv) return json(res, 200, { ok: true, server: true, missing: !!srv.missing, version: r.version });
     const parts = Array.isArray(m.participants) ? m.participants.map(String) : [];
-    /* rounds: lag der Chip in Runde 1..4 schon passend zur endgültigen Stärke? (true/false/null) */
-    const rounds = (x) => (Array.isArray(x && x.rounds) ? [0, 1, 2, 3].map((i) => (x.rounds[i] === true ? true : x.rounds[i] === false ? false : null)) : null);
-    const pl = (Array.isArray(body.players) ? body.players : []).slice(0, 12)
-      .map((x) => ({ id: String((x && x.id) || '').replace(ID_RE, '').slice(0, 40), ok: !!(x && x.ok), rounds: rounds(x) }))
-      .filter((x, i, a) => parts.indexOf(x.id) >= 0 && a.findIndex((y) => y.id === x.id) === i)
-      .map((x) => Object.assign({ id: x.id, name: cleanName((r.docs['players/' + x.id] || {}).name).slice(0, 18), ok: x.ok }, x.rounds ? { rounds: x.rounds } : {}));
-    if (!pl.length) return json(res, 400, { error: 'Keine Spieler' });
+    const by = {};
+    for (const x of (Array.isArray(body.players) ? body.players : []).slice(0, 12)) {
+      const id = String((x && x.id) || '').replace(ID_RE, '').slice(0, 40);
+      if (parts.indexOf(id) < 0 || by[id]) continue;
+      /* rounds aus der Meldung in lo/hi zurückzurechnen geht nicht – Fallback übernimmt sie so, wie der Client sie schickt */
+      by[id] = { ok: !!(x && x.ok), rounds: Array.isArray(x && x.rounds) ? [0, 1, 2, 3].map((i) => (x.rounds[i] === true ? true : x.rounds[i] === false ? false : null)) : null };
+    }
     let guess = null;
     const g = body.guess;
     if (g && typeof g === 'object' && parts.indexOf(String(g.target)) >= 0) {
       const of = Number(g.of), hits = Number(g.hits);
       if (Number.isInteger(of) && of >= 1 && of <= 5 && Number.isInteger(hits) && hits >= 0 && hits <= of) guess = { target: String(g.target), hits: hits, of: of };
     }
-    const entry = { hand: hand, ts: Date.now(), win: !!body.win && pl.every((x) => x.ok), players: pl, guess: guess };
-    r.docs.stats = { hands: st.hands.concat([entry]).slice(-150) };
+    const entry = statsEntry(r, m, hand, by, !!body.win, guess, 'client');
+    entry.players.forEach((p) => { if (by[p.id].rounds) p.rounds = by[p.id].rounds; else delete p.rounds; });
+    if (!statsAdd(r, entry)) return json(res, 400, { error: 'Keine Spieler' });
     return json(res, 200, { ok: true, version: commit(code, ['stats']) });
+  }
+  if (a === 'roomopt') {
+    /* Raum privat (nicht in der Liste „Offene Räume“, Beitritt nur mit Code/Link) oder öffentlich: nur der Host */
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: 'Body' }); }
+    const who = String(body.uid || '').replace(ID_RE, '').slice(0, 40);
+    if (!who || who !== roomHost(r) || !keyOk(r, who, keyHash(req), false)) return json(res, 403, { error: 'Nur der Host darf das ändern' });
+    const room = Object.assign({}, r.docs.room);
+    if (body.private) room.private = true; else delete room.private;
+    r.docs.room = room;
+    openRoomsCache = null;
+    return json(res, 200, { ok: true, private: !!room.private, version: commit(code, ['room']) });
   }
   if (a === 'rename') {
     /* Raum umbenennen: nur der Host (Geräteschlüssel); `room` ist sonst nicht schreibbar */
@@ -1144,6 +1209,17 @@ async function api(req, res, u) {
   return json(res, 400, { error: 'Unbekannte Aktion' });
 }
 
+/* Mindest-Spiellogik (Admin): ältere Clients (Header x-kr-logic fehlt oder zu klein) dürfen keinen Raum anlegen und
+   keinem beitreten. Laufende Plätze spielen die Hand zu Ende; beim nächsten Beitritt kommt der Update-Hinweis. */
+function tooOld(req) {
+  const min = Number(config.minLogic) || 0;
+  return min > 0 && (parseInt(req.headers['x-kr-logic'], 10) || 0) < min;
+}
+function tooOldRes(res) {
+  return json(res, 426, { error: 'Für Online-Räume ist eine neuere Spiellogik nötig (Version ' + config.minLogic + '). Bitte das Update laden – in der App beim Start, im Browser durch Neuladen. Alte App-Versionen: bitte im App Store bzw. als APK aktualisieren.',
+    update: true, minLogic: config.minLogic });
+}
+
 /* ------------------------------------------------ Admin ------------------ */
 async function adminApi(req, res, u) {
   let given = req.headers['x-admin-secret'] || '';
@@ -1155,7 +1231,7 @@ async function adminApi(req, res, u) {
   }
   const a = u.searchParams.get('a') || '';
 
-  if (a === 'login') return json(res, 200, { ok: true, config: config, defaults: DEFAULTS });
+  if (a === 'login') return json(res, 200, { ok: true, config: config, defaults: DEFAULTS, logic: LOGIC, bundle: bundleInfo() });
 
   if (a === 'config') {
     if (req.method === 'POST') {
@@ -1233,6 +1309,57 @@ function legacyPage(req, res, u) {
   return true;
 }
 
+/* ------------------------------------------------ Spiel-Bundle für die Apps -- */
+/* bundle.json (von scripts/bundle.js beim Deploy erzeugt und signiert) liegt neben server.js. Die Apps holen
+   /app/bundle.json und danach jede geänderte Datei unter /app/bundle/<pfad>. Ausgeliefert wird nur, was im Manifest steht,
+   und nur, wenn die Dateien hier wirklich dazu passen (sonst halber Deploy → lieber kein Update anbieten). */
+const bundleMf = require('./bundle-manifest.js');
+const BUNDLE_FILE = path.join(ROOT, 'bundle.json');
+let bundle = null, bundleStamp = '', bundleCheckedAt = 0;
+function loadBundle() {
+  const now = Date.now();
+  if (now - bundleCheckedAt < 10000) return bundle;
+  bundleCheckedAt = now;
+  let st = null; try { st = fs.statSync(BUNDLE_FILE); } catch (e) { bundle = null; bundleStamp = ''; return null; }
+  const stamp = st.mtimeMs + ':' + st.size;
+  if (stamp === bundleStamp) return bundle;
+  bundleStamp = stamp; bundle = null;
+  try {
+    const m = JSON.parse(fs.readFileSync(BUNDLE_FILE, 'utf8'));
+    const bad = Object.keys(m.files || {}).filter((rel) => !bundleMf.safeRel(rel) || bundleMf.hashFile(path.join(ROOT, rel)) !== m.files[rel].h);
+    if (bad.length) console.warn('bundle.json passt nicht zu den Dateien (' + bad.slice(0, 5).join(', ') + ') – kein App-Update angeboten');
+    else { bundle = { m, body: Buffer.from(JSON.stringify(m)) }; console.log('App-Bundle ' + m.build + ' (Spiellogik ' + m.logic + ') bereit'); }
+  } catch (e) { console.warn('bundle.json unlesbar: ' + e.message); }
+  return bundle;
+}
+function bundleInfo() { const b = loadBundle(); return b ? { build: b.m.build, logic: b.m.logic, minHost: b.m.minHost } : null; }
+function serveBundle(req, res, u) {
+  const b = loadBundle();
+  const no = () => { res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end('{"error":"kein Bundle"}'); };
+  if (!b) return no();
+  if (u.pathname === '/app/bundle.json') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Length': b.body.length });
+    return res.end(b.body);
+  }
+  let rel = ''; try { rel = decodeURIComponent(u.pathname.slice('/app/bundle/'.length)); } catch (e) { return no(); }
+  if (!bundleMf.safeRel(rel) || !b.m.files[rel]) return no();
+  fs.readFile(path.join(ROOT, rel), (err, buf) => {
+    if (err) return no();
+    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-cache', 'Content-Length': buf.length });
+    res.end(buf);
+  });
+}
+/* Service Worker: VERSION aus dem Stand der Dateien in public/ – ändert sich eine Datei, holt der Browser alles neu
+   (früher musste VERSION in sw.js von Hand erhöht werden) */
+let pwaStamp = '', pwaStampAt = 0;
+function pwaVersion() {
+  if (Date.now() - pwaStampAt < 10000) return pwaStamp;
+  pwaStampAt = Date.now();
+  const h = crypto.createHash('sha256');
+  try { for (const rel of bundleMf.fileList(ROOT).filter((f) => f.indexOf('public/') === 0)) { const st = fs.statSync(path.join(ROOT, rel)); h.update(rel + ':' + st.size + ':' + st.mtimeMs + ';'); } } catch (e) { /* flache Ablage ohne public/ */ }
+  return (pwaStamp = 'lr-' + h.digest('hex').slice(0, 10));
+}
+
 /* ------------------------------------------------ Static ----------------- */
 const APK_URL = 'https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk';
 function serveStatic(req, res, u) {
@@ -1244,8 +1371,10 @@ function serveStatic(req, res, u) {
   if (!f.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
   /* Android-APK liegt in den GitHub-Releases (schnelles CDN, versioniert); alte Links leiten dorthin weiter */
   if (rel === '/app/letzte-runde.apk') { res.writeHead(302, { Location: APK_URL, 'Cache-Control': 'no-cache' }); return res.end(); }
+  if (rel === '/app/bundle.json' || rel.indexOf('/app/bundle/') === 0) return serveBundle(req, res, u);
   fs.readFile(f, (err, buf) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Nicht gefunden'); }
+    if (rel === '/sw.js') buf = Buffer.from(buf.toString('utf8').replace(/const VERSION = '[^']*';/, "const VERSION = '" + pwaVersion() + "';"));
     // Passwort-Verknüpfung der Apps (iOS webcredentials, Android Asset Links) muss als JSON kommen
     const aasa = path.basename(f) === 'apple-app-site-association';
     res.writeHead(200, { 'Content-Type': aasa ? 'application/json' : (MIME[path.extname(f)] || 'application/octet-stream'),

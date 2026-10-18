@@ -15,3 +15,6 @@ backups/
 node_modules/
 *.log
 .DS_Store
+
+# Spiel-Bundle (wird beim Deploy erzeugt und signiert)
+app/bundle.json

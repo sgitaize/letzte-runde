@@ -257,6 +257,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(t===T.__kr.uid(),'Ziel = Spieler mit höchstem Chip');
   ok(A.__kr.guessers().length===2&&A.__kr.guessers().indexOf(t)<0,'Ziel-Spieler tippt nicht mit');
   await until(()=>T.els.app.innerHTML.includes('Du tippst nicht mit'),'Hinweis beim Ziel');
+  await until(()=>GU.every(x=>x.els.app.innerHTML.includes('p-guess')),'Tipp bei allen Tippenden');
   { const g=GU[0].els.app.innerHTML; ok(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine'),'Tipp steht oben unter dem Tisch (wie die Auflösung), über der eigenen Hand'+(g.indexOf('p-board')<g.indexOf('p-guess')&&g.indexOf('p-guess')<g.indexOf('p-mine')?'':' '+[g.indexOf('p-board'),g.indexOf('p-guess'),g.indexOf('p-mine')]+g.slice(0,300))); }
   ok(!T.els.app.innerHTML.includes('data-grank=')&&/data-grank=/.test(GU[0].els.app.innerHTML),'Tipp als Karten zum Antippen; Ziel-Spieler hat keine Auswahl');
   const real=T.__kr.myHand().cards.map(c=>c%13);
@@ -285,6 +286,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(/statsline">[^<]*fast/.test(A.els.app.innerHTML)||!A.els.app.innerHTML.includes('statsline'),'Statistik-Zeile zählt „fast“');
   { const h=A.els.app.innerHTML,a=h.indexOf('p-board'),b=h.indexOf('p-reveal'),c=h.indexOf('p-mine');
     ok(a>=0&&a<b&&b<c,'Raum: Auflösung unter dem Tisch und über der eigenen Hand'); }
+  await until(()=>B.__kr.phase()==='done'&&/class="endbar"/.test(B.els.app.innerHTML),'Mitspieler sieht das Handende');
   ok(/class="endbar".*data-a="start"/.test(A.els.app.innerHTML)&&/class="endbar".*Warten auf/.test(B.els.app.innerHTML)&&!/class="endbar".*data-a="start"/.test(B.els.app.innerHTML),
     'Leiste nach der Hand: Host hat „Neue Hand ▶“, Mitspieler „Warten auf …“');
   await until(()=>A.__kr.S().stats.length===1,'Statistik nach Hand 1');
