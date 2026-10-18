@@ -27,4 +27,4 @@ curl -sS --max-time 30 --ssl-reqd -k --ftp-create-dirs --user "$FTP_USER:$FTP_PA
 echo "Neustart angestoßen (tmp/restart.txt)"
 
 sleep 3
-echo "API-Check: $(curl -sS -o /dev/null -w '%{http_code}' "https://gang.aize.eu/api?a=config")"
+for h in letzterunde.aize-it.de gang.aize.eu; do echo "API-Check $h: $(curl -sS -o /dev/null -w '%{http_code}' "https://$h/api?a=config")"; done

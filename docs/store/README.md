@@ -8,7 +8,7 @@
 | Kopfzeile (Produktseite) 5244 × 2950 und 3840 × 1646 | [header/](header/) – Quelle [header.html](header.html), rendern: `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=2622,1475 --screenshot=$PWD/docs/store/header/kopfzeile-5244x2950.png file://$PWD/docs/store/header.html` (bzw. `--window-size=1920,823` für 3840 × 1646); Upload per Hand (Drag & Drop) |
 | Screenshots neu erzeugen | `CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node --experimental-websocket docs/store/storeshots.js` |
 | Hochladen (Texte, Kategorie, Review, Screenshots) | `python3 native/ios/Scripts/asc_metadata.py [--no-screenshots]` (pyjwt, cryptography, requests; Schlüssel in `~/.appstoreconnect/`) |
-| Datenschutzerklärung | https://gang.aize.eu/impressum.html#datenschutz |
+| Datenschutzerklärung | https://letzterunde.aize-it.de/impressum.html#datenschutz |
 | Support | https://github.com/sgitaize/letzte-runde/issues |
 | ASC-App | „Letzte Runde - Kartenspiel“, Apple-ID 6823285737, Bundle `de.sgitaize.letzterunde`, SKU `letzterunde` |
 

@@ -153,7 +153,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.ki
   const send = await connect(list.find((t) => t.type === 'page').webSocketDebuggerUrl);
   await send('Page.enable');
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });   // ohne Gewinn-Animation
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://gang.aize.eu"};' });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de"};' });
   for (const dev of DEVICES) await scenario(send, dev);
 
   /* Motive setzen */

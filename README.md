@@ -2,7 +2,7 @@
 
 Kooperatives Pokerkarten-Spiel für den Browser – inspiriert von „The Gang“. Alle spielen **zusammen**: Jede Runde nimmt sich jeder einen Chip von 1 (schwächste Hand) bis n (stärkste Hand). Am Ende wird aufgedeckt – stimmt die Reihenfolge, hat die Gruppe gewonnen.
 
-Live: **[gang.aize.eu](https://gang.aize.eu)** · Spielen ohne Anmeldung, auf Handy, Tablet und PC, als App installierbar.
+Live: **[letzterunde.aize-it.de](https://letzterunde.aize-it.de)** (früher gang.aize.eu, leitet weiter) · Spielen ohne Anmeldung, auf Handy, Tablet und PC, als App installierbar.
 
 <p>
   <img src="docs/uebungsraum-ipad.png" alt="Singleplayer im Querformat auf dem iPad" width="620">

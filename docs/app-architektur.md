@@ -3,7 +3,7 @@
 Stand: 15.10.2026. Vorgaben von Simon:
 
 - Das Spiel läuft vollständig lokal auf dem Gerät.
-- gang.aize.eu ist nur für Online-Multiplayer (Web, PWA und App gemischt) und für Konten/Statistik da.
+- letzterunde.aize-it.de (früher gang.aize.eu, beide auf demselben Server) ist nur für Online-Multiplayer (Web, PWA und App gemischt) und für Konten/Statistik da.
 - Nur die App kann einen Server im WLAN hosten, für Orte ohne Internet. Mitspieler im Browser ohne App müssen dort mitspielen können.
 - Statistik aus Offline- und LAN-Spielen wird später hochgeladen, nur mit Login und Opt-in.
 - Oberfläche: „Variante B“. Die Spieloberfläche ist der vorhandene Web-Code, offline in der App. Alles drumherum ist nativ. Kein Kompromiss bei der App-Qualität.
@@ -19,7 +19,7 @@ Stand: 15.10.2026. Vorgaben von Simon:
 │   server.js unverändert + app-host.js                 │
 │     · Übungsraum / Bots lokal                         │
 │     · LAN-Host: Räume für WLAN-Geräte (0.0.0.0)       │
-│     · Online: /api, /ws → Proxy zu gang.aize.eu       │
+│     · Online: /api, /ws → Proxy zu letzterunde.aize…      │
 │ Nativ: Bonjour (_letzterunde._tcp), QR, Teilen,       │
 │   Haptik, Wake Lock, Hintergrund-Hinweis, Konto-Sync, │
 │   Spendenknopf, Mitteilungen bei Raum-Start           │
@@ -40,7 +40,7 @@ Stand: 15.10.2026. Vorgaben von Simon:
 | Modus | Wer spielt | Server |
 |---|---|---|
 | Übungsraum | allein + Bots | keiner (läuft im Client, wie offline-PWA) |
-| Online | App, Web, PWA gemischt | gang.aize.eu; der lokale Node leitet `/api`, `/ws` und `/r/` weiter. Das Konto-Cookie liegt auf localhost, der Proxy setzt es serverseitig weiter. Einladungslinks zeigen auf gang.aize.eu |
+| Online | App, Web, PWA gemischt | letzterunde.aize-it.de (ältere Apps: gang.aize.eu); der lokale Node leitet `/api`, `/ws` und `/r/` weiter. Das Konto-Cookie liegt auf localhost, der Proxy setzt es serverseitig weiter. Einladungslinks zeigen auf gang.aize.eu |
 | LAN-Host | App hostet, Gäste per QR (Browser oder App) | eingebettetes server.js auf `0.0.0.0:<port>`, Daten im App-Speicher |
 | LAN-Gast (App) | App tritt einem LAN-Host bei | Bonjour-Suche oder QR, WebView lädt vom Host |
 
