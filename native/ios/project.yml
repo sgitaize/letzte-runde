@@ -16,6 +16,7 @@ targets:
       - framework: Vendor/NodeMobile.xcframework
         embed: true
         codeSign: true
+      - sdk: StoreKit.framework
     configFiles:
       Debug: Config/Base.xcconfig
       Release: Config/Base.xcconfig
@@ -63,3 +64,13 @@ targets:
       - name: Spiel und Server bündeln (app/ → game/)
         script: "\"${SRCROOT}/Scripts/bundle-game.sh\""
         basedOnDependencyAnalysis: false
+schemes:
+  LetzteRunde:
+    build:
+      targets:
+        LetzteRunde: all
+    run:
+      config: Debug
+      storeKitConfiguration: LetzteRunde/Store/LetzteRunde.storekit   # Trinkgeld im Simulator/Xcode testen
+    archive:
+      config: Release

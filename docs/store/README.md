@@ -25,6 +25,16 @@ ExportOptions: `method app-store-connect`, `destination upload`, `teamID V7GQKCH
 
 **Preis und Verfügbarkeit:** Kostenlos, alle Länder.
 
+**In-App-Käufe (Trinkgeld)** – drei *Verbrauchsartikel*, IDs = Bundle-ID + `.tip.small|medium|large` (siehe `native/ios/LetzteRunde/Store/TipJar.swift`, zum Testen `LetzteRunde.storekit` im Schema):
+
+| Produkt-ID | Referenzname | Preis (Vorschlag) | Anzeigename | Beschreibung |
+|---|---|---|---|---|
+| `de.sgitaize.letzterunde.tip.small` | Trinkgeld klein | 1,99 € | Ein Kaffee | Danke! Schaltet nichts frei, hilft einfach. |
+| `de.sgitaize.letzterunde.tip.medium` | Trinkgeld mittel | 4,99 € | Ein Kartendeck | Danke! Schaltet nichts frei, hilft einfach. |
+| `de.sgitaize.letzterunde.tip.large` | Trinkgeld groß | 9,99 € | Eine letzte Runde für alle | Danke! Schaltet nichts frei, hilft einfach. |
+
+Je Produkt verlangt Apple einen Review-Screenshot (Startseite → „💛 Unterstützen“; im Simulator ohne Produkte mit `-tipPreview YES`). Beim **ersten** Einreichen die Käufe auf der Versionsseite unter „In-App-Käufe“ mit auswählen. Im Browser und in der Android-App führt „Unterstützen“ zum Spendenlink aus dem Admin (`donateUrl`); in der iOS-App gibt es keinen externen Link. Der Kauf läuft nur über Apple, der Server sieht nichts davon.
+
 **App-Datenschutz** („Datenerfassung: Ja“; kein Tracking):
 
 | Datentyp | Erfasst wofür | Mit Identität verknüpft | Tracking |
@@ -43,4 +53,5 @@ Nicht erfasst: Kontaktdaten (keine E-Mail), Standort, Fotos/Kamera (QR-Code wird
 - **4.2 Mindestfunktion / Web-Wrapper:** Spiel, Bots und verschlüsseltes Geben laufen im Gerät (eingebettetes Node.js), Singleplayer offline, WLAN-Host ohne Internet, Bonjour, QR-Scanner, Haptik.
 - **1.2 Nutzerinhalte:** Wortfilter (Server), Melden (⋯ → Melden, landet im Admin unter „Meldungen“), Stummschalten (dauerhaft auf dem Gerät), Host entfernt Spieler, Kontakt kontakt@simongutjahr.de. Zusage im Review-Text: Meldungen werden **innerhalb von 24 Stunden** bearbeitet → Admin-Seite regelmäßig ansehen.
 - **5.1.1(v) Konto löschen:** Konto & Statistik → Konto verwalten → Konto löschen.
-- **Glücksspiel:** keine Einsätze, kein Echtgeld, keine Käufe (steht in Beschreibung und Review-Notizen).
+- **Glücksspiel:** keine Einsätze, kein Echtgeld; Käufe nur als freiwilliges Trinkgeld (steht in Beschreibung und Review-Notizen).
+- **2.5.2 / 3.3.1 nachgeladener Code:** Spieloberfläche und Regeln sind Web-Inhalt in der WKWebView; neue Fassungen kommen signiert vom eigenen Server, nur nach Bestätigung, ohne den Zweck der App zu ändern. Das eingebaute Spiel läuft immer ohne Netz (steht in den Review-Notizen).

@@ -66,6 +66,12 @@ class MainActivity : AppCompatActivity() {
             settings.mediaPlaybackRequiresUserGesture = false
             settings.setSupportMultipleWindows(true)
             settings.userAgentString = settings.userAgentString + " LetzteRundeApp/1"
+            // Wie eine App, nicht wie eine Webseite: kein Zoomen, kein Überscroll-Leuchten
+            settings.setSupportZoom(false)
+            settings.builtInZoomControls = false
+            settings.displayZoomControls = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            isHapticFeedbackEnabled = false
             addJavascriptInterface(WebBridge(this@MainActivity), "KRAndroid")
             webViewClient = Client()
             webChromeClient = Chrome()

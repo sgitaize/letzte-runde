@@ -24,6 +24,7 @@ struct RootView: View {
     @State private var showPlace = false
     @StateObject private var bridge = WebBridge()
     @State private var auth: AuthRequest?
+    @State private var showTip = false
     @State private var reload = 0
     @State private var pageColor = Color("LaunchBackground")
 
@@ -57,6 +58,7 @@ struct RootView: View {
                 Task { _ = await bridge.call("window.krAcctPage('recover'); return {}", [:]) }
             })
         }
+        .sheet(isPresented: $showTip) { SupportView() }
         .onChange(of: phase) { _, p in
             switch p {
             case .active:
@@ -81,6 +83,8 @@ struct RootView: View {
             if let c = Color(hex: hex) { pageColor = c }
         case .auth(let kind, let name):
             auth = AuthRequest(kind: kind, name: name)
+        case .tip:
+            showTip = true
         }
     }
 }

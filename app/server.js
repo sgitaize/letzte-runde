@@ -140,7 +140,8 @@ const DEFAULTS = {
   revealHighestFirst: true, // sonst von Chip 1 aufwärts
   voiceEnabled: false,      // Voice-Chat (WebRTC, Geräte direkt verbunden); im Admin einschaltbar
   roomTtlHours: 48,
-  minLogic: 0               // Online-Räume nur mit Spiellogik ab dieser Version (hand.js LOGIC_VERSION); 0 = alle
+  minLogic: 0,              // Online-Räume nur mit Spiellogik ab dieser Version (hand.js LOGIC_VERSION); 0 = alle
+  donateUrl: ''             // „Unterstützen“ im Web/Android (iOS: In-App-Trinkgeld); {betrag} wird durch 2/5/10 ersetzt; leer = aus
 };
 const CONF_FILE = path.join(DATA, 'config.json');
 let config = Object.assign({}, DEFAULTS);
@@ -160,6 +161,7 @@ function sanitizeConfig(inp) {
   if (inp.holeCards !== undefined) c.holeCards = num(inp.holeCards, 1, 5, c.holeCards);
   if (inp.roomTtlHours !== undefined) c.roomTtlHours = num(inp.roomTtlHours, 1, 720, c.roomTtlHours);
   if (inp.minLogic !== undefined) c.minLogic = num(inp.minLogic, 0, 1000, c.minLogic || 0);
+  if (inp.donateUrl !== undefined) { const d = String(inp.donateUrl || '').trim(); c.donateUrl = /^https:\/\/[^\s"'<>]{4,300}$/.test(d) ? d : ''; }
   for (const k of ['chipsResetEachStage', 'allowSteal', 'guessEnabled', 'revealHighestFirst', 'voiceEnabled'])
     if (inp[k] !== undefined) c[k] = !!inp[k];
   if (c.maxPlayers < c.minPlayers) c.maxPlayers = c.minPlayers;

@@ -9,6 +9,7 @@ enum WebMessage {
     case awake(Bool)                   // Bildschirm anlassen (im Raum)
     case theme(String)                 // Hintergrundfarbe der Seite (#rrggbb) für Ränder/Statusleiste
     case auth(kind: String, name: String) // natives Anmelde-/Registrierformular (Passwort-AutoFill)
+    case tip                           // „Unterstützen“: Trinkgeld per In-App-Kauf
 
     init?(_ body: Any) {
         guard let d = body as? [String: Any], let a = d["a"] as? String else { return nil }
@@ -18,6 +19,7 @@ enum WebMessage {
         case "awake": self = .awake(d["on"] as? Bool ?? false)
         case "theme": self = .theme(d["c"] as? String ?? "")
         case "auth": self = .auth(kind: d["k"] as? String == "register" ? "register" : "login", name: d["name"] as? String ?? "")
+        case "tip": self = .tip
         default: return nil
         }
     }
@@ -51,7 +53,7 @@ struct GameWebView: UIViewRepresentable {
         cfg.websiteDataStore = .default()        // localStorage (Geräteschlüssel, Name, Statistik) bleibt erhalten
         cfg.userContentController.add(context.coordinator, name: "kr")
         // Die Seite fragt hiermit, ob die App das native Anmeldeformular anbietet (nur iOS)
-        cfg.userContentController.addUserScript(WKUserScript(source: "window.KR_NATIVE={auth:1};",
+        cfg.userContentController.addUserScript(WKUserScript(source: "window.KR_NATIVE={auth:1,tip:1};",
                                                              injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.applicationNameForUserAgent = "LetzteRundeApp/1"
         let web = WKWebView(frame: .zero, configuration: cfg)
@@ -59,6 +61,13 @@ struct GameWebView: UIViewRepresentable {
         web.uiDelegate = context.coordinator
         web.allowsBackForwardNavigationGestures = false
         web.scrollView.contentInsetAdjustmentBehavior = .never   // die Seite nutzt env(safe-area-inset-*)
+        // Wie eine App, nicht wie eine Webseite: kein Zoomen (Pinch/Doppeltipp), keine Link-Vorschau beim langen Drücken
+        web.scrollView.pinchGestureRecognizer?.isEnabled = false
+        web.scrollView.minimumZoomScale = 1
+        web.scrollView.maximumZoomScale = 1
+        web.scrollView.delegate = context.coordinator
+        web.scrollView.keyboardDismissMode = .interactive
+        web.allowsLinkPreview = false
         web.isOpaque = false
         web.backgroundColor = UIColor(named: "LaunchBackground")
         web.scrollView.backgroundColor = UIColor(named: "LaunchBackground")
@@ -84,13 +93,16 @@ struct GameWebView: UIViewRepresentable {
         web.configuration.userContentController.removeScriptMessageHandler(forName: "kr")
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, UIScrollViewDelegate {
         var parent: GameWebView
         weak var web: WKWebView?
         var lastToken = 0
         private var retries = 0
 
         init(_ parent: GameWebView) { self.parent = parent }
+
+        // Kein Zoom: nichts zum Vergrößern anbieten (greift auch, wenn WebKit die Pinch-Geste neu anlegt)
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? { nil }
 
         func userContentController(_ ucc: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.frameInfo.isMainFrame, isLocal(message.frameInfo.request.url),

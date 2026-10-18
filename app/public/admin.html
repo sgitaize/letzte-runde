@@ -122,6 +122,8 @@ function render(){
       sw('guessEnabled','Gemeinsamer Tipp vor dem Aufdecken','')+
       sw('revealHighestFirst','Höchster Chip deckt zuerst auf','sonst ab Chip 1 aufwärts')+
       sw('voiceEnabled','Voice-Chat','Spieler können per Mikrofon sprechen (direkt zwischen den Geräten, ohne TURN – in manchen Mobilfunk-/Firmennetzen klappt die Verbindung nicht)')+
+      '<label for="f_donateUrl">Spendenlink<br><span class="note">„💛 Unterstützen“ im Browser und in der Android-App (iOS: Trinkgeld per In-App-Kauf). Nur https://; <code>{betrag}</code> wird durch 2, 5 bzw. 10 ersetzt, z. B. https://paypal.me/NAME/{betrag}EUR. Leer = aus.</span></label>'+
+      '<input type="url" id="f_donateUrl" value="'+esc(cfg.donateUrl||'')+'" placeholder="https://paypal.me/NAME/{betrag}EUR">'+
       num('minLogic','Mindest-Spiellogik für Online-Räume','0 = aus. Ältere Apps/Browser können dann keinen Raum mehr anlegen oder neu beitreten und bekommen den Update-Hinweis; Übungsraum und WLAN gehen weiter.')+
       '</div><p class="note">Spiellogik auf dem Server: <b>'+esc(logic)+'</b> · App-Bundle: '+(bundle?'Build <b>'+esc(bundle.build)+'</b> ('+esc(new Date(bundle.build*1000).toLocaleString('de-DE'))+', Spiellogik '+esc(bundle.logic)+')':'<b>keins</b> (deploy.sh mit KR_BUNDLE_KEY erzeugt es)')+
       ' <button class="small" id="force">Update für Online-Räume erzwingen ('+esc(logic)+')</button>'+(cfg.minLogic?' <button class="small" id="unforce">nicht mehr erzwingen</button>':'')+'</p>'+
@@ -158,6 +160,7 @@ function render(){
     var body={};
     ['minPlayers','maxPlayers','holeCards','roomTtlHours','minLogic'].forEach(function(k){body[k]=Number($('f_'+k).value);});
     ['allowSteal','guessEnabled','revealHighestFirst','voiceEnabled'].forEach(function(k){body[k]=$('f_'+k).checked;});
+    body.donateUrl=$('f_donateUrl').value.trim();
     call('config',body).then(function(r){cfg=r.config;msg='Gespeichert.';err='';render();
       setTimeout(function(){msg='';render();},2500);
     }).catch(function(e){err=e.message;render();});
