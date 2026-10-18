@@ -49,8 +49,8 @@ function bestHand(cards,hole){
     var own=hole.filter(function(c){return c!=null;});
     var board=cards.filter(function(c){return own.indexOf(c)<0;});
     /* Hausregel: Eine Kombination zählt nur, wenn die eigenen Karten sie verbessern (höhere Kategorie als der Tisch
-       allein oder höherer Kern). Wer nur Beikarten zum Tisch-Paar/-Flush beisteuert, hat „Höchste Karte“ aus der Hand. */
-    if(best.cat>0&&board.length&&!ownImproves(best,bestHand(board)))best={cat:0,tb:[],groups:[],straight:-1};
+       allein oder höherer Kern). Sonst zählt die beste eigene Kombination (bestOwn), und gibt es keine, „Höchste Karte“ aus der Hand. */
+    if(best.cat>0&&board.length&&!ownImproves(best,bestHand(board)))best=bestOwn(cards,board)||{cat:0,tb:[],groups:[],straight:-1};
     if(best.cat===0)best.tb=own.map(function(c){return c%13;}).sort(function(x,y){return y-x;});
     if(best.cat===5){
       /* Flush: es zählt die eigene höchste Karte in der Flush-Farbe (der König vom Tisch haben alle) */
@@ -66,6 +66,29 @@ function bestHand(cards,hole){
       if(pos>=0)best.ownHigh=seq[pos],best.ownLowAce=(top===3&&pos===0);
     }
   }
+  return best;
+}
+/* Die beste Hand ist eine reine Tisch-Kombination (z. B. Straße A-5 auf dem Tisch): dann zählt die beste Kombination, zu der
+   die eigenen Karten etwas beitragen – auch wenn sie schwächer ist als der Tisch (eigene 3 und 4 zu 3-4 auf dem Tisch = zwei
+   Paare). „Beitragen“ = besser als alles, was der Tisch allein in dieser Kategorie hat. null = nichts Eigenes → Höchste Karte. */
+var boardCats={},boardCatsN=0;
+function boardByCat(board){
+  var key=board.slice().sort(function(a,b){return a-b;}).join(),bc=boardCats[key];
+  if(bc)return bc;
+  bc={};
+  for(var m=1;m<(1<<board.length);m++){
+    var sub=[];for(var i=0;i<board.length;i++)if(m&(1<<i))sub.push(board[i]);
+    if(sub.length>5)continue;
+    var h=eval5(sub);if(!bc[h.cat]||cmpHand(h,bc[h.cat])>0)bc[h.cat]=h;
+  }
+  if(++boardCatsN>2000){boardCats={};boardCatsN=0;}
+  return (boardCats[key]=bc);
+}
+function bestOwn(cards,board){
+  var bc=boardByCat(board),n=cards.length,best=null;
+  var consider=function(cs){var h=eval5(cs);if(h.cat>0&&(!bc[h.cat]||ownImproves(h,bc[h.cat]))&&(!best||cmpHand(h,best)>0))best=h;};
+  if(n<=5)consider(cards);
+  else for(var a=0;a<n;a++)for(var b=a+1;b<n;b++)for(var c=b+1;c<n;c++)for(var d=c+1;d<n;d++)for(var e=d+1;e<n;e++)consider([cards[a],cards[b],cards[c],cards[d],cards[e]]);
   return best;
 }
 /* Kern einer Hand: bei Paar/Drilling/Vierling/Full House die Werte der Gruppen, sonst alle Werte (Straße, Flush) */

@@ -2594,6 +2594,7 @@ function coachPlay(){
   out+='<p>Du hast: <b>'+esc(handName(my))+'</b>.';
   var bd=vis.length?bestHand(vis):null;
   if(bd&&bd.cat>0&&my.cat===0)out+=' Das '+esc(HAND_NAMES[bd.cat])+' auf dem Tisch haben alle – nach eurer Hausregel zählt es für dich nicht, nur deine höchste Karte.';
+  else if(bd&&bd.cat>my.cat)out+=' '+esc(HAND_NAMES[bd.cat])+' liegt auf dem Tisch und gehört allen – für dich zählt, was deine eigenen Karten bilden.';
   out+='</p>';
   var fs=flushSuit(vis);
   if(fs&&fs.n<5&&my.cat<5){var need=5-fs.n,have=mine.filter(function(c){return Math.floor(c/13)===fs.s;}).length;

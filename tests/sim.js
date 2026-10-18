@@ -98,6 +98,13 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   ok(A.__kr.cmpHand(HH(['9s','Ac'],tbl3),HH(['Ah','8h'],tbl3))>0,'Nina (A-9) vor Max (A-8)');
   ok(HN(['Kc','6h'],tbl3)==='Zwei Paare: Könige und Buben'&&HN(['Qh','Qs'],tbl3)==='Zwei Paare: Damen und Buben','Eigenes Paar + Tisch-Paar → zwei Paare (Tom, Paul)');
   ok(HN(['Jc','Td'],tbl3)==='Flush, 10 hoch'&&HN(['7d','5c'],tbl3)==='Flush, 7 hoch'&&A.__kr.cmpHand(HH(['Jc','Td'],tbl3),HH(['7d','5c'],tbl3))>0,'Flush: eigene höchste Flush-Karte zählt und wird angezeigt (10 hoch vor 7 hoch)');
+  // Hausregel: Tisch-Kombination höher als die eigene → die eigene zählt trotzdem (Screenshot 2026-10-18, Tisch 3-2-A-4-5)
+  const st5=['3s','2h','Ad','4c','5s'];
+  ok(HN(['3c','4d'],st5)==='Zwei Paare: Vieren und Dreien','Straße A-5 auf dem Tisch, eigene 3+4 → zwei Paare statt Höchste Karte');
+  ok(HN(['2c','Jc'],st5)==='Ein Paar: Zweien'&&HN(['Jh','Kd'],st5)==='Höchste Karte: König','Eigene 2 → Paar; nichts Eigenes → Höchste Karte');
+  ok(HN(['5d','6c'],st5)==='Straße, 6 hoch','Eigene 6 verlängert die Tisch-Straße');
+  const rk=[['5d','6c'],['3c','4d'],['2d','3h'],['2c','Jc'],['Jh','Kd']].map(h=>HH(h,st5));
+  ok(rk.every((h,i)=>i===0||A.__kr.cmpHand(rk[i-1],h)>0),'Reihenfolge: Straße > zwei Paare 4/3 > zwei Paare 3/2 > Paar 2 > König hoch');
   const fl=['2h','5h','7h','9h','Jh'];
   ok(HN(['As','Kc'],fl)==='Höchste Karte: Ass'&&HN(['Qh','3c'],fl)==='Flush, Dame hoch','Flush nur auf dem Tisch zählt nicht, eigene höhere Herz-Karte schon');
   ok(HN(['Qd','2d'],['Ad','Kd','3d','9c','8s'])==='Flush, Dame hoch'&&A.__kr.cmpHand(HH(['Qd','2d'],['Ad','Kd','3d','9c','8s']),HH(['Jd','Td'],['Ad','Kd','3d','9c','8s']))>0,'Flush mit zwei eigenen Karten: höchste eigene (Dame vor Bube)');
