@@ -354,9 +354,10 @@ module.exports = function createBots(ctx) {
   /* Wie im Übungsraum (spBotGuess): Ausschlussverfahren (hand.js inferHole). Die Bots kennen ihre eigenen Karten, gehen davon
      aus, dass der Spieler mit dem höchsten Chip alle schlägt, und gewichten nach seinem Chip-Verlauf. Meist die
      wahrscheinlichste Wert-Kombination, ab und zu die zweit-/drittbeste. */
-  function botGuess(m, R, t, K) {
+  function botGuess(m, R, t, K, only) {
     if (R.board.some((c) => c == null)) return null;
-    const own = Object.keys(R.bots).filter((id) => id !== t && R.bots[id].hole).map((id) => R.bots[id].hole.cards);
+    /* only: Vorschlag eines einzelnen Bots – er kennt nur seine eigenen Karten (sonst wüssten alle Bots dasselbe) */
+    const own = Object.keys(R.bots).filter((id) => id !== t && R.bots[id].hole && (!only || id === only)).map((id) => R.bots[id].hole.cards);
     const ch = {}, hist = m.chipHist || {};
     for (let s = 1; s <= 4; s++) { const c = Number((hist[String(s)] || {})[t]); if (c) ch[s] = c; }
     let top = [];
@@ -372,12 +373,26 @@ module.exports = function createBots(ctx) {
     if (!g || g.hand !== h) return;
     const t = String(m.target || ''), humans = partsOf(m).filter((id) => !isBot(r, id) && id !== t), now = Date.now();
     const filled = Array.isArray(g.cards) && g.cards.length && g.cards.every((x) => x != null);
+    /* Jeder Bot, der mittippt, macht nach kurzem Überlegen einen eigenen Vorschlag (state/guess.sug) – die Menschen sehen ihn
+       live und können ihn übernehmen; den gemeinsamen Tipp ändert er nicht */
+    R.sugAt = R.sugAt || {};
+    for (const id of bots) {
+      if (id === t || !R.bots[id] || !R.bots[id].hole || R.sugAt[id] === true) continue;
+      if (!R.sugAt[id]) { R.sugAt[id] = now + (1500 + Math.random() * 3000) * TEMPO; continue; }
+      if (now < R.sugAt[id]) continue;
+      const vals = botGuess(m, R, t, g.cards.length, id);
+      if (!vals) continue;
+      R.sugAt[id] = true;
+      const cur = r.docs['state/guess'];
+      set(code, r, 'state/guess', Object.assign({}, cur, { sug: Object.assign({}, cur.sug || {}, { [id]: vals }) }));
+      if (humans.length && Math.random() < 0.7) say(code, r, id, 'Mein Tipp: ' + vals.map((v) => RANK_SAY[v]).join(' + '));
+    }
     if (!humans.length && !filled) {                            // niemand außer Bots tippt → Bots tippen selbst
       if (!R.guessAt) { R.guessAt = now + 2500 * TEMPO; return; }
       if (now < R.guessAt) return;
       const cards = botGuess(m, R, t, g.cards.length);
       if (!cards) return;                                        // Tisch/Karten noch nicht entschlüsselt → nächster Takt
-      set(code, r, 'state/guess', { hand: h, cards, confirmed: {} });
+      set(code, r, 'state/guess', { hand: h, cards, confirmed: {}, sug: Object.assign({}, (r.docs['state/guess'] || {}).sug || {}) });
       return;
     }
     if (!filled) { R.confirmSig = null; return; }
@@ -406,6 +421,7 @@ module.exports = function createBots(ctx) {
 
   /* ------------------------------------------------ Sprechblasen + Reaktionen (wie im Übungsraum) -- */
   /* Nur der Server schreibt say/<bot> und react/<bot>; Browser zeigen sie gut 4 s neben dem Namen */
+  const RANK_SAY = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Bube', 'Dame', 'König', 'Ass'];
   function say(code, r, id, text) { set(code, r, 'say/' + id, { t: String(text).slice(0, 80), ts: Date.now() }); }
   /* „🔄 offen“ im Browser: open/<bot> = {hand, stage, chip}; nur schreiben, wenn sich die Anzeige ändert */
   function markOpen(code, r, h, st, id, on, chip) {

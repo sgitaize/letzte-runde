@@ -3,6 +3,7 @@
    (Mensch+Bots) inkl. Geben, Tipp und Aufdecken durch Bots, und dass der Server-Log fehlerfrei bleibt.
    Nutzung: node tests/mpbots.js <app-verzeichnis> */
 'use strict';
+let sawSug = false;   // Bot-Vorschlag beim Tipp einmal prüfen
 const vm = require('vm'), fs = require('fs'), os = require('os'), path = require('path'), { spawn, execSync } = require('child_process');
 const APP = path.resolve(process.argv[2] || path.join(__dirname, '..', 'app'));
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-bots-'));
@@ -16,7 +17,7 @@ const hook = `globalThis.__kr={S:function(){return S;},main:main,hand:hand,phase
  takeChip:takeChip,toggleReady:toggleReady,startHand:startHand,setGuessCard:setGuessCard,confirmGuess:confirmGuess,canGuess:canGuess,
  revealMine:revealMine,createRoom:createRoom,joinRoom:joinRoom,uid:function(){return uid;},code:function(){return code;},
  myHand:function(){return myHand;},kickPlayer:kickPlayer,err:function(){return uiErr;},pmap:pmap,isHost:isHost,isReady:isReady,
- resolveHand:resolveHand,revealedCards:revealedCards,visibleBoard:visibleBoard,addBot:addBot,roleOrder:roleOrder,isBotP:isBotP,
+ resolveHand:resolveHand,revealedCards:revealedCards,visibleBoard:visibleBoard,addBot:addBot,roleOrder:roleOrder,isBotP:isBotP,guessers:guessers,
  online:function(){return online;},driverId:driverId,hostId:hostId,watchRoom:watchRoom,jumpIn:jumpIn,replaceBot:replaceBot,
  watching:function(){return watching;},botifyStart:botifyStart,botNext:function(){if(botifyDlg){botifyDlg.step=2;render();}},botifyConfirm:botifyConfirm,note:function(){return uiNote;},isOnline:isOnline};\n`;
 const cut = src.lastIndexOf('})();'); src = src.slice(0, cut) + hook + src.slice(cut);
@@ -76,6 +77,14 @@ async function playHand(humans, label, onPlay, top, noClick) {
   if (H0.K.phase() === 'guess') {
     const tgt = H0.K.main().target, gs = humans.filter((X) => X.K.canGuess());
     ok(true, label + ': Tipp auf ' + (H0.K.isBotP(tgt) ? 'Bot' : 'Mensch') + ', ' + gs.length + ' Mensch(en) tippen' + (gs.length ? '' : ' – Bots tippen selbst'));
+    const bg = H0.K.guessers().filter((id) => H0.K.isBotP(id));
+    if (gs.length && bg.length && !sawSug) {
+      await until(() => bg.some((id) => Array.isArray(((H0.K.S().guess || {}).sug || {})[id])), label + ': Bot-Vorschlag', 20000);
+      await until(() => /class="sugs"/.test(gs[0].els.app.innerHTML), label + ': Vorschläge sichtbar', 5000);
+      const v = bg.map((id) => H0.K.S().guess.sug[id]).filter(Boolean)[0];
+      ok(v.length === 2 && v.every((x) => Number.isInteger(x) && x >= 0 && x <= 12), label + ': Bot schlägt einen Tipp vor (' + v.join('+') + '), sichtbar bei den Menschen');
+      sawSug = true;
+    }
     if (gs.length) { gs[0].K.setGuessCard(0, 12); await sleep(300); gs[0].K.setGuessCard(1, 11); await sleep(600); for (const X of gs) X.K.confirmGuess(); }
   }
   await until(() => H0.K.phase() === 'reveal', label + ': Aufdecken', 60000);

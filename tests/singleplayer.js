@@ -2,13 +2,14 @@
    Auswertung, Statistik und dass keine Anfrage an den Server geht.
    Nutzung: node tests/singleplayer.js app/public/index.html */
 'use strict';
+let sawSug = false;
 const vm = require('vm'), fs = require('fs'), path = require('path');
 let src = fs.readFileSync(process.argv[2], 'utf8');
 const st0 = src.indexOf('<script>\n') + 9; src = src.slice(st0, src.indexOf('</script>', st0));
 const HANDLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'hand.js'), 'utf8');
 const QRLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'qrcode.js'), 'utf8');
 const hook = `globalThis.__kr={sp:function(){return sp;},spStart:spStart,spTake:spTake,spReady:spReady,spNewHand:spNewHand,
- spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,spBotGuess:spBotGuess,spCoachEst:spCoachEst,insightHtml:insightHtml,coachRounds:coachRounds,spToggleInsight:spToggleInsight,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
+ spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,takeSuggestion:takeSuggestion,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,spBotGuess:spBotGuess,spCoachEst:spCoachEst,insightHtml:insightHtml,coachRounds:coachRounds,spToggleInsight:spToggleInsight,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
  setSpeed:function(v){spSpeed=v;},bestHand:bestHand,cmpHand:cmpHand,leave:leave,roomsHtml:roomsHtml,uid:function(){return uid;}};\n`;
 const i = src.lastIndexOf('})();'); src = src.slice(0, i) + hook + src.slice(i);
 
@@ -169,7 +170,16 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
     }
     if (S().phase === 'guess') {
       if (S().target === 'me') { ok(/tippen jetzt deine/.test(els.app.innerHTML), 'Du hast den höchsten Chip → Bots tippen'); }
-      else { for (let k = 0; k < S().K; k++) X.spGuessSet(k, 12 - k); X.spGuessConfirm(); }
+      else {
+        if (!sawSug) {
+          await until(() => Object.keys(S().sug || {}).length > 0 && /class="sugs"/.test(els.app.innerHTML), 'Bot-Vorschlag beim Tipp', 15000);
+          const id = Object.keys(S().sug)[0], v = S().sug[id];
+          ok(v.length === S().K && v.every((x) => Number.isInteger(x) && x >= 0 && x <= 12) && /Mein Tipp:/.test(els.app.innerHTML), 'Bots schlagen vor, was die Person mit dem höchsten Chip hat (' + v.join('+') + ')');
+          X.takeSuggestion(id); ok(JSON.stringify(S().guess) === JSON.stringify(v), 'Bot-Vorschlag übernommen');
+          sawSug = true;
+        }
+        for (let k = 0; k < S().K; k++) X.spGuessSet(k, 12 - k); X.spGuessConfirm();
+      }
     }
     await until(() => S().phase === 'done', 'Auflösung');
     // unabhängige Prüfung

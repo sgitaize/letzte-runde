@@ -2132,6 +2132,10 @@ function spTick(){
     });
     if(spAllReady()){sp.cd={start:now};sp.cdShown=null;ch=true;}
   }else if(sp.phase==='guess'&&sp.botGuessAt&&now>=sp.botGuessAt){sp.botGuessAt=0;spFinish();return;}
+  else if(sp.phase==='guess'&&sp.sugAt){      // Bots schlagen vor, was die Person mit dem höchsten Chip haben könnte
+    for(var sid in sp.sugAt){if(now<sp.sugAt[sid])continue;delete sp.sugAt[sid];
+      var sv=spBotSug(sid,sp.target);if(sv){sp.sug[sid]=sv;spSay(sid,'Mein Tipp: '+sv.map(function(r){return RANK_NAME[r];}).join(' + '));ch=true;}}
+  }
   for(var id in sp.bubble)if(now-sp.bubble[id].at>4500){delete sp.bubble[id];ch=true;}
   if(ch)render();
 }
@@ -2155,8 +2159,9 @@ function spEndStage(){
   if(sp.stage<4){fx('turn');spStage(sp.stage+1);return;}
   sp.target=spHolder(sp.players.length);
   if(!CFG.guessEnabled){spFinish();return;}
-  sp.phase='guess';
+  sp.phase='guess';sp.sug={};sp.sugAt={};
   if(sp.target==='me'){sp.botGuess=spBotGuess();sp.botGuessAt=Date.now()+2500*spSpeed;}
+  else sp.players.forEach(function(p){if(p.bot&&p.id!==sp.target)sp.sugAt[p.id]=Date.now()+(1200+Math.random()*3500)*SP_TEMPO*spSpeed;});
   render();
 }
 /* Bots tippen die Karten des Spielers per Ausschlussverfahren (hand.js inferHole): Sie kennen ihre eigenen Karten,
@@ -2172,6 +2177,13 @@ function spBotGuess(){
   var top=valueOdds(spInferFor('me',[].concat.apply([],others),others)).slice(0,3),x=Math.random()*top.reduce(function(a,t){return a+t.w*t.w;},0);
   for(var i=0;i<top.length;i++){x-=top[i].w*top[i].w;if(x<=0)return top[i].vals.slice();}
   return top.length?top[0].vals.slice():[12,11];
+}
+/* Vorschlag eines Bots für die Karten von t: er kennt nur seine eigenen Karten und den Chip-Verlauf von t */
+function spBotSug(id,t){
+  if(typeof inferHole!=='function')return null;
+  var own=sp.hole[id],top=valueOdds(spInferFor(t,own.slice(),[own])).slice(0,3),x=Math.random()*top.reduce(function(a,o){return a+o.w*o.w;},0);
+  for(var i=0;i<top.length;i++){x-=top[i].w*top[i].w;if(x<=0)return top[i].vals.slice();}
+  return top.length?top[0].vals.slice():null;
 }
 function spGuessSet(i,v){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&i>=0&&i<sp.K){sp.guess[i]=(v>=0&&v<=12)?v:null;render();}}
 function spGuessConfirm(){if(sp&&sp.phase==='guess'&&sp.target!=='me'&&sp.guess.every(function(x){return x!=null;}))spFinish();}
@@ -2351,7 +2363,9 @@ function spView(){
     else{
       var pick=guessPicker(sp.guess,true);
       gp+='<div class="panel p-guess"><h2>Tipp</h2><p>Welche '+sp.K+' Karten hat <b>'+esc(spPl(t).name)+'</b> (höchster Chip)? Nur der Wert zählt.</p>'+
-        '<div class="row" style="gap:14px">'+pick+'</div><div class="hr"></div><div class="bar">'+
+        '<div class="row" style="gap:14px">'+pick+'</div>'+
+        sugRow(Object.keys(sp.sug||{}).map(function(id){return {id:id,vals:sp.sug[id]};}),sp.guess,sp.K,true,function(id){return esc(spPl(id).name)+' \ud83e\udd16';})+
+        '<div class="hr"></div><div class="bar">'+
         '<button class="primary" data-a="confirm"'+(sp.guess.every(function(x){return x!=null;})?'':' disabled')+'>Tipp bestätigen</button></div></div>';
     }
     out=out.slice(0,afterBoard)+gp+out.slice(afterBoard);   // Tipp oben, wo später die Auflösung steht
@@ -3817,17 +3831,19 @@ function sugList(){
   return guessers().filter(function(id){return Array.isArray(sg[id])&&sg[id].some(function(v){return v!=null;});})
     .map(function(id){return {id:id,vals:sg[id],conf:!!conf[id]};});
 }
-function sugHtml(me){
-  var l=sugList();if(!l.length)return '';
-  var K=HC(),cur=JSON.stringify(((S.guess||{}).cards||[]).slice(0,K));
+function sugHtml(me){return sugRow(sugList(),((S.guess||{}).cards||[]),HC(),me,function(id){return id===uid?'du':esc(pname(id))+(isBotP(id)?' \ud83e\udd16':'');});}
+function sugRow(l,cards,K,me,name){
+  if(!l.length)return '';
+  var cur=JSON.stringify(cards.slice(0,K));
   return '<div class="sugs"><span class="note">Vorschläge:</span>'+l.map(function(x){
     var v=x.vals.slice(0,K),full=v.length===K&&v.every(function(y){return y!=null;}),same=JSON.stringify(v)===cur;
-    return '<div class="sug'+(same?' same':'')+'" title="'+(same?'entspricht dem gemeinsamen Tipp':'')+'"><span class="who">'+(x.id===uid?'du':esc(pname(x.id)))+(x.conf?' \u2713':'')+'</span>'+
+    return '<div class="sug'+(same?' same':'')+'" title="'+(same?'entspricht dem gemeinsamen Tipp':'')+'"><span class="who">'+name(x.id)+(x.conf?' \u2713':'')+'</span>'+
       '<div class="cards">'+v.map(function(y){return rankHtml(y,'xs');}).join('')+'</div>'+
-      (me&&full&&!same&&x.id!==uid?'<button class="small ghost" data-a="gtake" data-id="'+esc(x.id)+'">übernehmen</button>':'')+'</div>';
+      (me&&full&&!same&&x.id!==uid&&x.id!=='me'?'<button class="small ghost" data-a="gtake" data-id="'+esc(x.id)+'">übernehmen</button>':'')+'</div>';
   }).join('')+'</div>';
 }
 function takeSuggestion(id){
+  if(sp){if(sp.phase==='guess'&&sp.sug&&sp.sug[id]){sp.guess=sp.sug[id].slice();render();}return;}
   if(!canGuess())return;
   api('guess',{room:code},{uid:uid,take:id}).then(function(){pollOnce(true);}).catch(function(e){showErr(e);pollOnce(true);});
 }
