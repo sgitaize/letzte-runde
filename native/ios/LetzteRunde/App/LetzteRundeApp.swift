@@ -22,6 +22,8 @@ struct RootView: View {
     @Environment(\.scenePhase) private var phase
     @StateObject private var lan = LanHosting()
     @State private var showPlace = false
+    @StateObject private var bridge = WebBridge()
+    @State private var auth: AuthRequest?
     @State private var reload = 0
     @State private var pageColor = Color("LaunchBackground")
 
@@ -29,7 +31,7 @@ struct RootView: View {
         ZStack {
             pageColor.ignoresSafeArea()
             if host.ready {
-                GameWebView(url: host.baseURL, reloadToken: reload, onMessage: handle)
+                GameWebView(url: host.baseURL, bridge: bridge, reloadToken: reload, onMessage: handle)
                     .ignoresSafeArea()
             } else if let failure = host.failure {
                 VStack(spacing: 12) {
@@ -43,6 +45,17 @@ struct RootView: View {
         .sheet(isPresented: $showPlace) {
             PlaceSheet(lan: lan) { reload += 1 }
                 .environmentObject(host)
+        }
+        .sheet(item: $auth) { r in
+            AuthSheet(kind: r.kind, name: r.name, submit: { kind, name, pw, pw2 in
+                guard let res = await bridge.call("return await window.krAuth(kind, name, pw, pw2)",
+                                                  ["kind": kind, "name": name, "pw": pw, "pw2": pw2]) else {
+                    return "Die Spielseite antwortet nicht. Bitte noch einmal versuchen."
+                }
+                return res["ok"] as? Bool == true ? nil : (res["error"] as? String ?? "Fehler")
+            }, forgot: {
+                Task { _ = await bridge.call("window.krAcctPage('recover'); return {}", [:]) }
+            })
         }
         .onChange(of: phase) { _, p in
             switch p {
@@ -66,8 +79,16 @@ struct RootView: View {
             lan.keepAwake(room: on)
         case .theme(let hex):
             if let c = Color(hex: hex) { pageColor = c }
+        case .auth(let kind, let name):
+            auth = AuthRequest(kind: kind, name: name)
         }
     }
+}
+
+struct AuthRequest: Identifiable {
+    let id = UUID()
+    let kind: String
+    let name: String
 }
 
 enum Haptics {

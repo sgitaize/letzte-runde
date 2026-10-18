@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Impressum &amp; Datenschutz – Letzte Runde</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -10,17 +10,21 @@
   :root{--bg:#f3f1ec;--panel:#fff;--fg:#1b1b19;--muted:#6f6d66;--line:#dedad1;--accent:#1f6b4a}
   @media (prefers-color-scheme: dark){:root{--bg:#0f1110;--panel:#1a1d1b;--fg:#ecebe6;--muted:#9c9b94;--line:#2d312e;--accent:#3fa574}}
   body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
-  main{max-width:760px;margin:0 auto;padding:18px 16px 48px}
+  main{max-width:760px;margin:0 auto;padding:0 calc(16px + env(safe-area-inset-right,0px)) calc(48px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px))}
   section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 14px}
   h1{font-family:Georgia,serif;font-style:italic;font-size:24px;margin:6px 0 14px}
   h2{font-size:18px;margin:4px 0 8px}h3{font-size:15px;margin:14px 0 4px}
   p,li{margin:6px 0}a{color:var(--accent)}.muted{color:var(--muted);font-size:14px}
-  .back{display:inline-block;margin-bottom:8px}
+  /* Zurück-Leiste bleibt oben stehen und liegt unter der Statusleiste/Dynamic Island (App, PWA) – nicht darunter versteckt */
+  .topbar{position:sticky;top:0;z-index:1;background:var(--bg);margin:0 -16px;padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;border-bottom:1px solid var(--line)}
+  .back{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);text-decoration:none;font-weight:600}
+  section{scroll-margin-top:calc(72px + env(safe-area-inset-top,0px))}
+  h1{margin-top:14px}
 </style>
 </head>
 <body>
 <main>
-  <a class="back" href="./">← Zurück zum Spiel</a>
+  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel</a></div>
   <h1>Letzte Runde – Impressum &amp; Datenschutz</h1>
 
   <section id="impressum">
@@ -88,7 +92,7 @@
     <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch (Art. 15–21 DSGVO). Wende dich dazu an die oben genannte E-Mail-Adresse. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg.</p>
     <p class="muted">Stand: Oktober 2026</p>
   </section>
-  <a class="back" href="./">← Zurück zum Spiel</a>
+  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel</a></div>
 </main>
 </body>
 </html>

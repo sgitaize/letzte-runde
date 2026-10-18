@@ -67,6 +67,10 @@ final class NodeHost: ObservableObject {
         setenv("KR_PUBLIC", game.appendingPathComponent("public").path, 1)
         setenv("KR_LAN_PORT", String(NodeHost.lanPort), 1)
         setenv("KR_UPSTREAM", "https://gang.aize.eu", 1)
+        #if DEBUG
+        // Tests im Simulator gegen einen lokalen Server: simctl launch mit SIMCTL_CHILD_KR_UPSTREAM_DEBUG=http://…
+        if let up = ProcessInfo.processInfo.environment["KR_UPSTREAM_DEBUG"], !up.isEmpty { setenv("KR_UPSTREAM", up, 1) }
+        #endif
         setenv("KR_LEADER_SOCK", NSTemporaryDirectory() + "kr.sock", 1)
 
         let script = game.appendingPathComponent("app-host.js").path
@@ -134,6 +138,10 @@ final class NodeHost: ObservableObject {
             let fd = socket(AF_INET, SOCK_STREAM, 0)
             guard fd >= 0 else { return nil }
             defer { close(fd) }
+            // Wie Node beim listen(): SO_REUSEADDR, sonst gilt der Port nach dem Wegwischen der App noch ~30 s als belegt
+            // (TIME_WAIT der alten Verbindungen) → anderer Port → andere Origin → localStorage (Anmeldung, Name …) leer.
+            var one: Int32 = 1
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<Int32>.size))
             var addr = sockaddr_in()
             addr.sin_family = sa_family_t(AF_INET)
             addr.sin_port = in_port_t(UInt16(p).bigEndian)

@@ -8,6 +8,7 @@ enum WebMessage {
     case haptic(String)                // light | medium | success | warning | error
     case awake(Bool)                   // Bildschirm anlassen (im Raum)
     case theme(String)                 // Hintergrundfarbe der Seite (#rrggbb) für Ränder/Statusleiste
+    case auth(kind: String, name: String) // natives Anmelde-/Registrierformular (Passwort-AutoFill)
 
     init?(_ body: Any) {
         guard let d = body as? [String: Any], let a = d["a"] as? String else { return nil }
@@ -16,14 +17,28 @@ enum WebMessage {
         case "haptic": self = .haptic(d["k"] as? String ?? "light")
         case "awake": self = .awake(d["on"] as? Bool ?? false)
         case "theme": self = .theme(d["c"] as? String ?? "")
+        case "auth": self = .auth(kind: d["k"] as? String == "register" ? "register" : "login", name: d["name"] as? String ?? "")
         default: return nil
         }
     }
 }
 
 /// Die Spieloberfläche: WKWebView auf dem eingebetteten App-Host.
+/// Zugriff aus SwiftUI auf die laufende WebView (z. B. Anmeldung aus dem nativen Formular an die Seite reichen).
+@MainActor
+final class WebBridge: ObservableObject {
+    weak var web: WKWebView?
+
+    /// Ruft eine async-Funktion der Seite auf (Argumente als Variablen, nie in den Code eingesetzt).
+    func call(_ js: String, _ args: [String: Any]) async -> [String: Any]? {
+        guard let web else { return nil }
+        return (try? await web.callAsyncJavaScript(js, arguments: args, in: nil, contentWorld: .page)) as? [String: Any]
+    }
+}
+
 struct GameWebView: UIViewRepresentable {
     let url: URL
+    let bridge: WebBridge
     let reloadToken: Int
     var onMessage: (WebMessage) -> Void
 
@@ -35,6 +50,9 @@ struct GameWebView: UIViewRepresentable {
         cfg.mediaTypesRequiringUserActionForPlayback = []
         cfg.websiteDataStore = .default()        // localStorage (Geräteschlüssel, Name, Statistik) bleibt erhalten
         cfg.userContentController.add(context.coordinator, name: "kr")
+        // Die Seite fragt hiermit, ob die App das native Anmeldeformular anbietet (nur iOS)
+        cfg.userContentController.addUserScript(WKUserScript(source: "window.KR_NATIVE={auth:1};",
+                                                             injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.applicationNameForUserAgent = "LetzteRundeApp/1"
         let web = WKWebView(frame: .zero, configuration: cfg)
         web.navigationDelegate = context.coordinator
@@ -48,6 +66,7 @@ struct GameWebView: UIViewRepresentable {
         web.isInspectable = true
         #endif
         context.coordinator.web = web
+        bridge.web = web
         context.coordinator.lastToken = reloadToken
         web.load(URLRequest(url: url))
         return web
@@ -120,7 +139,19 @@ struct GameWebView: UIViewRepresentable {
             retry(webView)
         }
 
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { retries = 0 }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            retries = 0
+            #if DEBUG
+            // Simulator-Tests: simctl launch mit SIMCTL_CHILD_KR_DEBUG_JS='…' führt das Skript nach dem ersten Laden aus
+            if !debugRan, let js = ProcessInfo.processInfo.environment["KR_DEBUG_JS"], !js.isEmpty {
+                debugRan = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { webView.evaluateJavaScript(js) }
+            }
+            #endif
+        }
+        #if DEBUG
+        private var debugRan = false
+        #endif
 
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { webView.reload() }
 
@@ -159,6 +190,107 @@ struct GameWebView: UIViewRepresentable {
             var vc = web?.window?.rootViewController
             while let p = vc?.presentedViewController { vc = p }
             return vc
+        }
+    }
+}
+
+/// Anmelden / Konto erstellen nativ: iOS ordnet die Felder über webcredentials:gang.aize.eu zu und bietet gespeicherte
+/// Passwörter, starke Passwörter und „Passwort sichern?“ an (auf der Seite unter 127.0.0.1 ginge das nicht).
+struct AuthSheet: View {
+    @State var kind: String
+    @State var name: String
+    let submit: (_ kind: String, _ name: String, _ pw: String, _ pw2: String) async -> String?   // Fehlertext oder nil
+    let forgot: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var pw = ""
+    @State private var pw2 = ""
+    @State private var error: String?
+    @State private var busy = false
+    @FocusState private var focus: Field?
+    private enum Field { case name, pw, pw2 }
+
+    private var register: Bool { kind == "register" }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Picker("Aktion", selection: $kind) {
+                    Text("Anmelden").tag("login")
+                    Text("Konto erstellen").tag("register")
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+
+                Section {
+                    TextField("Name", text: $name)
+                        .textContentType(.username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .focused($focus, equals: .name)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .pw }
+                    SecureField(register ? "Passwort (mind. 8 Zeichen)" : "Passwort", text: $pw)
+                        .textContentType(register ? .newPassword : .password)
+                        .focused($focus, equals: .pw)
+                        .submitLabel(register ? .next : .go)
+                        .onSubmit { if register { focus = .pw2 } else { send() } }
+                    if register {
+                        SecureField("Passwort wiederholen", text: $pw2)
+                            .textContentType(.newPassword)
+                            .focused($focus, equals: .pw2)
+                            .submitLabel(.go)
+                            .onSubmit(send)
+                    }
+                } footer: {
+                    if register {
+                        Text("Ohne E-Mail: nur Name (2–18 Zeichen) und Passwort. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.")
+                    } else {
+                        Text("Deine Statistik aus Übungsraum und Räumen ist auf jedem Gerät da, auf dem du angemeldet bist.")
+                    }
+                }
+
+                if let error {
+                    Section { Text(error).foregroundStyle(.red) }
+                }
+
+                Section {
+                    Button(action: send) {
+                        HStack {
+                            Spacer()
+                            if busy { ProgressView() } else { Text(register ? "Konto erstellen" : "Anmelden").bold() }
+                            Spacer()
+                        }
+                    }
+                    .disabled(busy || name.trimmingCharacters(in: .whitespaces).isEmpty || pw.isEmpty || (register && pw2.isEmpty))
+                }
+
+                if !register {
+                    Section {
+                        Button("Passwort vergessen?") { dismiss(); forgot() }
+                    }
+                }
+            }
+            .navigationTitle(register ? "Konto erstellen" : "Anmelden")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+            }
+            .onChange(of: kind) { _, _ in error = nil }
+            .onAppear { focus = name.isEmpty ? .name : .pw }
+        }
+        .interactiveDismissDisabled(busy)
+    }
+
+    private func send() {
+        guard !busy else { return }
+        error = nil
+        busy = true
+        Task {
+            let e = await submit(kind, name.trimmingCharacters(in: .whitespaces), pw, pw2)
+            busy = false
+            if let e { error = e } else { dismiss() }   // Felder verschwinden nach Erfolg → iOS bietet „Passwort sichern?“ an
         }
     }
 }

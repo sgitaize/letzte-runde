@@ -64,7 +64,7 @@ html.kr-app .installhelp,html.kr-lan .installhelp,html.kr-app .apkdl,html.kr-lan
 .placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
 .placebar .sub{color:var(--muted)}
 .optin{display:flex;gap:10px;align-items:flex-start;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
-.optin input{margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--accent)}
+.optin input,.acctbox .optin input{margin:3px 0 0;padding:0;flex:none;width:18px;height:18px;min-width:18px;accent-color:var(--accent)}
 /* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
 button.linkbtn{background:none;border:0;padding:2px 0;margin:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;min-height:0;box-shadow:none}
 button.linkbtn:hover{opacity:.8}
@@ -405,7 +405,7 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
   box-shadow:0 12px 40px rgba(0,0,0,.4);min-width:220px}
 .acctbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.acctbar .small{font-size:13px}
 .acctbox{max-width:620px;width:100%;box-sizing:border-box;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 18px 18px}
-.cd-overlay:has(.acctbox){padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.acctbox .field{margin:8px 0}.acctbox input{width:100%;box-sizing:border-box}
+.cd-overlay:has(.acctbox){padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.acctbox .field{margin:8px 0}.acctbox input:not([type=checkbox]){width:100%;box-sizing:border-box}
 .acctbox h3{font-size:15px;margin:14px 0 4px}.acctabs{margin:6px 0 10px;flex-wrap:wrap;gap:6px}.frbtn{padding:1px 6px;font-size:12px;margin-left:4px}.badge{background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
 .seg{display:inline-flex;gap:4px;flex-wrap:wrap}.lbctl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0}
 .stbl.lb td,.stbl.lb th{padding:4px 5px;white-space:nowrap}@media (max-width:420px){.stbl.lb .lbs{display:none}.stbl.lb td,.stbl.lb th{padding:4px 3px;font-size:13px}}.frrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;flex-wrap:wrap}
@@ -2514,23 +2514,40 @@ function spLearnBtn(){return '<button class="small '+(spLearn?'primary':'ghost')
 function spCoachEst(r){
   r=r||sp.stage;var k=sp.hand+'.'+r;sp.coach=sp.coach||{};
   if(sp.coach[k]==null)sp.coach[k]=estimateRank(sp.hole.me,spVisible(r),sp.players.length-1,sp.K,300);
-  var n=sp.players.length,raw=sp.coach[k],e=Math.max(1,Math.min(n,(n+1)/2+(raw-(n+1)/2)*1.7));   // gespreizt, aber nie außerhalb 1…n
-  return {raw:raw,e:e,sug:Math.max(1,Math.min(n,Math.round(e))),n:n};
+  var n=sp.players.length,raw=sp.coach[k],c=(n+1)/2,e=Math.max(1,Math.min(n,c+(raw-c)*1.7));   // gespreizt, aber nie außerhalb 1…n
+  /* Was die Chips der anderen verraten, fließt mit ein (gleiche Lesart wie unter „🔎 Was die Chips der anderen verraten“),
+     sonst widersprechen sich Empfehlung und Lesart */
+  var rd=[],ks=[];sp.players.forEach(function(p){if(p.id==='me'||!Object.keys(spChipsTo(p.id,r)).length)return;var R=spRead(p.id,r);rd.push(R.list);ks.push(p.id+':'+JSON.stringify(R.ch));});
+  if(rd.length){
+    var kk=k+'|'+ks.join('|');
+    if(sp.coach[kk]==null)sp.coach[kk]=estimateRankGiven(sp.hole.me,spVisible(r),n-1,sp.K,rd,400).e;
+    /* Mit Lesart weniger Unsicherheit über die Gegner → weniger spreizen (1,7 ohne, 1,2 wenn alle gelesen sind) */
+    var f=1.7-0.5*rd.length/(n-1);e=Math.max(1,Math.min(n,c+(sp.coach[kk]-c)*f));
+  }
+  var sug=Math.max(1,Math.min(n,Math.round(e))),d=e-sug,alt=null;
+  if(Math.abs(d)>=0.3){alt=sug+(d>0?1:-1);if(alt<1||alt>n)alt=null;}   // knapp zwischen zwei Plätzen → beide nennen
+  return {raw:raw,e:e,sug:sug,alt:alt,n:n,read:rd.length>0};
 }
+function chipPick(c,html){var a='<b'+(html?' class="coachchip"':'')+'>'+c.sug+'</b>';return c.alt?a+' oder die <b'+(html?' class="coachchip"':'')+'>'+c.alt+'</b>':a;}
+function chipFits(c,chip){return chip===c.sug||chip===c.alt;}
 function whyStronger(a,b){        // a ist stärker als b: kurze Begründung
   if(a.cat!==b.cat)return HAND_NAMES[a.cat]+' schlägt '+HAND_NAMES[b.cat];
   return 'beide '+HAND_NAMES[a.cat]+' – die höheren Werte entscheiden';
 }
 /* Rückschluss aus deiner Sicht: was verraten die Chips eines Mitspielers bis Runde st? (nur sichtbare Tischkarten,
    deine Karten scheiden aus) → Wahrscheinlichkeit je Kartenwert und je Handart. Zwischengespeichert je Chip-Stand. */
-function spRead(id,st){
+function spChipsTo(id,st){
   var ch={},r;for(r=1;r<st;r++){var c=spChipOfStage(id,r);if(c)ch[r]=c;}
   var cur=sp.phase==='play'&&st===sp.stage?sp.chips[id]:spChipOfStage(id,st);if(cur)ch[st]=cur;
+  return ch;
+}
+function spRead(id,st){
+  var ch=spChipsTo(id,st);
   var key=id+'|'+st+'|'+JSON.stringify(ch);sp.reads=sp.reads||{};
   if(sp.reads[key])return sp.reads[key];
   var vis=spVisible(st),list=inferHole({board:vis,dead:sp.hole.me,chips:ch,n:sp.players.length,K:sp.K}),cat={};
   list.forEach(function(x){var h=bestHand(x.hole.concat(vis),x.hole);cat[h.cat]=(cat[h.cat]||0)+x.w;});
-  return (sp.reads[key]={ch:ch,ro:rankOdds(list),cat:cat,vo:valueOdds(list).slice(0,3)});
+  return (sp.reads[key]={ch:ch,ro:rankOdds(list),cat:cat,vo:valueOdds(list).slice(0,3),list:list});
 }
 function spFresh(st){return st===2?sp.board.slice(0,3):st===3?[sp.board[3]]:st===4?[sp.board[4]]:[];}
 function pc(x){return Math.round(x*100)+' %';}
@@ -2549,10 +2566,11 @@ function readLine(p,st){
   var traj=[1,2,3,4].filter(function(r){return R.ch[r];}).map(function(r){return R.ch[r];}).join('→');
   return nm+' ('+traj+'): vermutlich '+esc(HAND_NAMES[c0])+' ('+pc(R.cat[c0])+')'+(R.ro[top]>=0.35?', wahrscheinlich mit '+esc(RANK_NAME[top])+' ('+pc(R.ro[top])+')':'');
 }
-function coachReads(st){
+function coachReads(st,c){
   var ls=sp.players.filter(function(p){return p.bot;}).map(function(p){return readLine(p,st);}).filter(Boolean);
   if(!ls.length)return '';
   return '<details class="coachreads" open><summary>🔎 Was die Chips der anderen verraten</summary><ul class="coachlist">'+ls.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ul>'+
+    (c&&c.read?'<p>Zusammen mit deiner Hand heißt das für dich: die '+chipPick(c)+' – das ist schon in der Empfehlung oben eingerechnet.</p>':'')+
     '<p class="note">Ausschlussverfahren: deine eigenen Karten kann keiner haben; aus dem Chip-Verlauf je Runde wird gerechnet, welche Karten dazu passen.</p></details>';
 }
 function coachPlay(){
@@ -2569,14 +2587,14 @@ function coachPlay(){
   out+='<p class="note">'+(st===1?'Noch keine Tischkarten – nur deine '+sp.K+' Karten zählen. Ein Paar auf der Hand oder hohe Karten (A, K) sind stark; kleine, ungleiche Karten eher schwach.':
     st===4?'Alle 5 Tischkarten liegen – jetzt steht deine Hand fest. Wichtig ist nur noch, wie sie gegen die anderen abschneidet.':
     'Es kommen noch '+(5-vis.length)+' Tischkarte'+(5-vis.length>1?'n':'')+'. Die Einschätzung rechnet mit, was noch kommen kann.')+'</p>';
-  out+='<p>Deine Hand liegt vermutlich auf <b>Platz '+c.e.toFixed(1).replace('.',',')+' von '+c.n+'</b> → passender Chip: <b class="coachchip">'+c.sug+'</b></p>';
-  var holder=spHolder(c.sug);
-  if(!cur)out+='<p class="coachtip">👉 Nimm die <b>'+c.sug+'</b>'+(holder&&holder!=='me'?' – die hat gerade '+esc(spPl(holder).name)+'. Du darfst sie wegnehmen, wenn du dir sicher bist, oder auf die Nachbarzahl ausweichen.':'.')+'</p>';
-  else if(cur===c.sug)out+='<p class="coachok">✓ Dein Chip '+cur+' passt zu deiner Hand.</p>';
-  else if(Math.abs(cur-c.e)<0.8)out+='<p class="coachok">✓ Chip '+cur+' ist vertretbar – deine Hand liegt zwischen '+Math.floor(c.e)+' und '+Math.ceil(c.e)+'.</p>';
-  else out+='<p class="coachwarn">⚠ Chip '+cur+' ist eher zu '+(cur>c.e?'hoch':'niedrig')+': '+(cur>c.e?'Viele andere Hände schlagen '+esc(handName(my))+'.':'Deine Hand schlägt vermutlich mehr Mitspieler, als die '+cur+' sagt.')+' Besser wäre die <b>'+c.sug+'</b>'+(holder&&holder!=='me'?' (hat '+esc(spPl(holder).name)+')':'')+'.</p>';
+  out+='<p>Deine Hand liegt vermutlich auf <b>Platz '+c.e.toFixed(1).replace('.',',')+' von '+c.n+'</b>'+(c.read?' (mit dem, was die Chips der anderen verraten)':'')+' → passender Chip: '+chipPick(c,true)+'</p>';
+  var holder=spHolder(c.sug),hAlt=c.alt?spHolder(c.alt):null,who=function(h){return h&&h!=='me'?esc(spPl(h).name):'';};
+  if(!cur)out+='<p class="coachtip">👉 Nimm die '+chipPick(c)+(c.alt?' – deine Hand liegt knapp dazwischen'+(who(holder)||who(hAlt)?' ('+[who(holder)?'die '+c.sug+' hat '+who(holder):'',who(hAlt)?'die '+c.alt+' hat '+who(hAlt):''].filter(Boolean).join(', ')+')':'')+'.':
+    (who(holder)?' – die hat gerade '+who(holder)+'. Du darfst sie wegnehmen, wenn du dir sicher bist, oder auf die Nachbarzahl ausweichen.':'.'))+'</p>';
+  else if(chipFits(c,cur))out+='<p class="coachok">✓ Dein Chip '+cur+' passt zu deiner Hand'+(c.alt?' (sie liegt zwischen '+Math.min(c.sug,c.alt)+' und '+Math.max(c.sug,c.alt)+')':'')+'.</p>';
+  else out+='<p class="coachwarn">⚠ Chip '+cur+' ist eher zu '+(cur>c.e?'hoch':'niedrig')+': '+(cur>c.e?'Viele andere Hände schlagen '+esc(handName(my))+'.':'Deine Hand schlägt vermutlich mehr Mitspieler, als die '+cur+' sagt.')+' Besser wäre die '+chipPick(c)+(who(holder)&&!c.alt?' (hat '+who(holder)+')':'')+'.</p>';
   if(sp.lostMe&&sp.lostMeTo&&spPl(sp.lostMeTo))out+='<p class="note">'+esc(spPl(sp.lostMeTo).name)+' hat dir die '+sp.lostMe+' weggenommen → ist sich sicher, dorthin zu gehören. Ein „🔄 offen“ heißt dagegen: unsicher, gibt den Chip ohne Streit ab.</p>';
-  out+=coachReads(st);
+  out+=coachReads(st,c);
   out+='<p class="note">Die Chips der anderen sind ihre Einschätzung: Wer eine hohe Zahl festhält, hält seine Hand für stark. Holt sich ein Bot seinen Chip zurück, ist er sich sicher.</p>';
   return out;
 }
@@ -2621,7 +2639,7 @@ function coachRounds(me){
     var c=spChipOfStage('me',r);if(!c)continue;
     var E=spCoachEst(r),vis=spVisible(r),h=bestHand(mine.concat(vis),mine),should,ok;
     if(r===4){ok=c>=me.lo&&c<=me.hi;should=me.lo===me.hi?''+me.lo:me.lo+'–'+me.hi;}
-    else{ok=Math.abs(c-E.e)<0.8;should=''+E.sug;}
+    else{ok=chipFits(E,c);should=''+E.sug+(E.alt?' oder '+E.alt:'');}
     if(ok)continue;
     var high=r===4?c>me.hi:c>E.e,pct=Math.round((E.raw-1)/(n-1)*100);
     var why=r===1?'vor dem Flop zählt nur die Starthand ('+mine.map(function(x){return RANK_NAME[x%13];}).join(', ')+') – sie schlägt im Schnitt etwa '+pct+' % der anderen'
@@ -2840,18 +2858,48 @@ function acctAuth(kind){
   var name=acctVal('acc_name').trim(),pw=acctVal('acc_pw');acctErr='';
   if(kind!=='login'&&pw!==acctVal('acc_pw2')){acctErr='Die Passwörter stimmen nicht überein.';render();return;}
   var body={name:name,pw:pw};if(kind==='recover')body.recovery=acctVal('acc_rec');
+  acctAuthDo(kind,body).catch(acctFail);
+}
+function acctAuthDo(kind,body){
   acctBusy=true;render();
-  api('acct.'+kind,{},body,15000).then(function(r){
+  return api('acct.'+kind,{},body,15000).then(function(r){
     acctBusy=false;ACC={id:r.account.id,name:r.account.name,reset:r.account.reset};acctSave();
     if(r.recovery){acctRec=r.recovery;acctDlg='rec';}else acctDlg='me';
     if(frCode){acctTab='fr';frLoad();}
     if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
     render();acctSync();roomLinkSync(true);seatsLoad();
-  }).catch(acctFail);
+  });
+}
+/* iOS-App: Anmelden/Registrieren im nativen Formular. Die Seite läuft auf 127.0.0.1 – dafür bietet iOS keine
+   gespeicherten Passwörter an; das native Formular gehört zu gang.aize.eu (webcredentials) und bekommt Vorschläge,
+   starke Passwörter und „Passwort sichern?“. Die App ruft danach krAuth auf, das Cookie landet wie gewohnt in der WebView. */
+var NATIVE_AUTH=!!(KRA&&KRA.app&&window.KR_NATIVE&&window.KR_NATIVE.auth);
+function acctShow(m){
+  if(NATIVE_AUTH&&(m==='login'||m==='register')&&appMsg({a:'auth',k:m,name:myName||''})){acctDlg=null;acctErr='';render();return;}
+  acctErr='';acctDlg=m;render();
+}
+window.krAuth=function(kind,name,pw,pw2){
+  if(kind!=='login'&&kind!=='register')return Promise.resolve({error:'Unbekannte Aktion'});
+  if(acctBusy)return Promise.resolve({error:'Bitte kurz warten …'});
+  name=String(name||'').trim();pw=String(pw||'');
+  if(kind==='register'&&pw!==String(pw2||''))return Promise.resolve({error:'Die Passwörter stimmen nicht überein.'});
+  return acctAuthDo(kind,{name:name,pw:pw}).then(function(){return {ok:true};},function(e){acctBusy=false;render();return {error:(e&&e.message)||String(e)};});
+};
+window.krAcctPage=function(m){acctShow(m==='recover'?'recover':'login');};
+/* App: Die Anmeldung steckt im Cookie (gilt für 127.0.0.1 unabhängig vom Port), Name/ID im localStorage (je Port).
+   Fehlt die Anzeige-Info, aber das Cookie ist noch gültig (z. B. anderer Port nach Neustart), still wiederherstellen. */
+function acctRestore(){
+  if(!(KRA&&KRA.app)||KRA.lanGuest)return Promise.resolve();
+  return api('acct.me',{}).then(function(r){
+    if(ACC||!r||!r.account)return;
+    ACC={id:r.account.id,name:r.account.name,reset:r.account.reset};acctSave();
+    if(!myName){myName=ACC.name;try{localStorage.setItem('kr.name',myName);}catch(e){}}
+    render();acctSync();seatsLoad();
+  }).catch(function(){});
 }
 /* Abgleich: Konto-Hände in den Browser holen, fehlende Browser-Hände ins Konto schicken */
 function acctSync(){
-  if(!ACC)return Promise.resolve();
+  if(!ACC)return acctRestore();
   return api('acct.me',{}).then(function(r){
     ACC.name=r.account.name;ACC.reset=r.account.reset;acctSave();acctStats=r.stats;
     if(!acctFr)api('acct.friends',{}).then(function(f){acctFr=f;render();}).catch(function(){});
@@ -2895,7 +2943,7 @@ function acctMaybeMp(){
   api('acct.mphand',{},{room:code,hand:h,day:day,hr:hr}).then(function(){acctStats=null;})
     .catch(function(e){if(!e||e.status!==403)acctMpDone[k]=false;});
 }
-function acctOpen(){acctErr='';acctDlg=ACC?'me':'login';render();if(ACC)acctSync();}
+function acctOpen(){if(!ACC)return acctShow('login');acctErr='';acctDlg='me';render();acctSync();}
 function acctLogout(){if(!ACC)return;if(code&&joined)api('acct.roomlink',{},{room:code,off:true}).catch(function(){});roomAcc={};api('acct.logout',{},{}).catch(function(){});ACC=null;acctStats=null;acctDlg=null;acctSave();render();}
 function acctPassword(){
   if(acctBusy)return;var nw=acctVal('acc_new');
@@ -3775,7 +3823,7 @@ document.addEventListener('click',function(ev){
   else if(a==='acct')acctOpen();
   else if(a==='acctfr'){acctTab='fr';acctOpen();frLoad();}
   else if(a==='acctclose'){acctDlg=null;acctErr='';render();}
-  else if(a==='acctmode'){ev.preventDefault&&ev.preventDefault();acctErr='';acctDlg=el.getAttribute('data-m');render();}
+  else if(a==='acctmode'){ev.preventDefault&&ev.preventDefault();acctShow(el.getAttribute('data-m'));}
   else if(a==='acctlogin')acctAuth('login');
   else if(a==='acctreg')acctAuth('register');
   else if(a==='acctrecover')acctAuth('recover');
@@ -3871,7 +3919,7 @@ if(window.addEventListener){
       try{myName=localStorage.getItem('kr.name')||'';}catch(e){}
       render();
       acctSync();seatsLoad();
-      if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{acctDlg='login';uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';}render();}
+      if(frCode&&!code){if(ACC){acctTab='fr';acctDlg='me';frLoad();}else{uiNote='Melde dich an oder erstelle ein Konto, um die Freundschaftsanfrage zu schicken.';acctShow('login');}render();}
       if(/[?&]sp=1\b/.test(location.search||'')&&!code){spStart();}   // Kurzbefehl „Singleplayer“ (auch offline)
       else if(tvCode&&!code)tvJoin(tvCode);
       else rejoin();

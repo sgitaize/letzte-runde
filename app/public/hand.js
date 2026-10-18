@@ -118,6 +118,33 @@ function estimateRank(hole,vis,others,K,sims){
   return sum/sims;
 }
 
+/* Wie estimateRank, aber für einen Teil der Gegner ist schon bekannt, welche Hände zu ihren Chips passen:
+   reads = [[{hole,w}]…] (aus inferHole, je ein Gegner); die übrigen Gegner bekommen Zufallskarten.
+   Liefert {e: erwarteter Rang 1..others+1, p: [Wahrscheinlichkeit je Rang, Index 0 = Rang 1]}. */
+function estimateRankGiven(hole,vis,others,K,reads,sims){
+  sims=sims||400;reads=(reads||[]).filter(function(l){return l&&l.length;}).slice(0,others);
+  var known={},base=[],i,s,n=others+1,p=[],sum=0,done=0;
+  for(i=0;i<n;i++)p.push(0);
+  hole.concat(vis).forEach(function(c){known[c]=1;});
+  for(i=0;i<52;i++)if(!known[i])base.push(i);
+  var cum=reads.map(function(l){var a=[],t=0;l.forEach(function(x){t+=x.w;a.push(t);});return {l:l,a:a,t:t};});
+  var pick=function(c){var r=Math.random()*c.t,lo=0,hi=c.a.length-1;while(lo<hi){var m=(lo+hi)>>1;if(c.a[m]<r)lo=m+1;else hi=m;}return c.l[lo].hole;};
+  for(s=0;s<sims*3&&done<sims;s++){
+    var used={},opp=[],bad=false;
+    for(i=0;i<cum.length&&!bad;i++){var h=pick(cum[i]);if(h.some(function(c){return used[c]||known[c];}))bad=true;else{h.forEach(function(c){used[c]=1;});opp.push(h);}}
+    if(bad)continue;      // zwei Lesarten wollen dieselbe Karte → neu ziehen
+    var d=base.filter(function(c){return !used[c];}),need=(others-opp.length)*K+(5-vis.length);
+    for(i=0;i<need;i++){var j=i+Math.floor(Math.random()*(d.length-i)),t=d[i];d[i]=d[j];d[j]=t;}
+    for(i=opp.length;i<others;i++)opp.push(d.slice((i-cum.length)*K,(i-cum.length)*K+K));
+    var board=vis.concat(d.slice((others-cum.length)*K,need)),mine=bestHand(hole.concat(board),hole),rank=1;
+    opp.forEach(function(oh){var x=cmpHand(mine,bestHand(oh.concat(board),oh));if(x>0)rank+=1;else if(x===0)rank+=0.5;});
+    var f=Math.floor(rank);if(rank===f)p[f-1]+=1;else{p[f-1]+=0.5;p[f]+=0.5;}
+    sum+=rank;done++;
+  }
+  if(!done)return {e:estimateRank(hole,vis,others,K),p:null};
+  return {e:sum/done,p:p.map(function(x){return x/done;})};
+}
+
 /* Rückschluss (Ausschlussverfahren): Welche Handkarten passen zu den Chips, die jemand je Runde genommen hat?
    o = {board:[bis 5 Tischkarten], dead:[Karten, die er sicher nicht hat], chips:{1..4: Chip}, n: Spielerzahl, K: Handkarten,
         beats:[[Karten]…] Hände, die er am Ende schlagen soll (weich gewichtet)}.
@@ -176,7 +203,7 @@ function valueOdds(list){
   return Object.keys(m).map(function(k){return {vals:k.split(',').map(Number),w:m[k]};}).sort(function(a,b){return b.w-a.w;});
 }
 
-var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,preKey:preKey,
+var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,estimateRankGiven:estimateRankGiven,preKey:preKey,
   inferHole:inferHole,rankOdds:rankOdds,valueOdds:valueOdds};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else for(var k in api)root[k]=api[k];
