@@ -39,3 +39,11 @@ Erzeugt mit `node --experimental-websocket tests/shot-features.js docs/screensho
 | ![](20-konto-statistik.png) | **20** Konto-Seite neu: Kopf mit Überblick, Tabs (#5) |
 | ![](21-konto-plaetze.png) | **21** Plätze aus allen Geräten |
 | ![](22-konto-einstellungen.png) | **22** Konto: Passwort, Wiederherstellungscode, Löschen getrennt |
+
+## Spielerliste (fester Aufbau)
+
+Oben Chip · Name · Knöpfe, darunter immer die Karten mit Handname und Ergebnis – unabhängig von Namenslänge und Bildschirmbreite (vorher rutschten die Karten mal neben, mal unter den Namen).
+
+| iPhone 18 Pro (402 pt), Runde 4 | iPhone 18 Pro Max (440 pt), aufgedeckt | Tablet quer |
+|---|---|---|
+| ![](spielerliste/play-402.png) | ![](spielerliste/done-440.png) | ![](spielerliste/done-1180.png) |

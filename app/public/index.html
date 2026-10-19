@@ -128,7 +128,12 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .plist{display:flex;flex-direction:column;gap:2px}
 .pl{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .pl:last-child{border-bottom:0}
-.pl .nm{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.pl .nm{flex:1 1 120px;min-width:0;overflow-wrap:anywhere}
+/* Spielerzeile fest aufgebaut: oben Chip · Name · Knöpfe, darunter immer Karten + Handname/Ergebnis, eingerückt unter dem Namen
+   (früher rutschten die Karten je nach Namenslänge und Bildschirmbreite mal daneben, mal darunter) */
+.pl .plx{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding-left:calc(var(--plchip,38px) + 10px);min-width:0}
+.pl .plx .cards{flex:none}
+.pl>.chip{flex:none}
 .tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .tag.ok{color:var(--accent);border-color:var(--accent)}
 .tag.you{background:var(--chip)}
@@ -142,7 +147,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .tag.here{background:var(--gold);border-color:var(--gold);color:#1b1407;font-weight:650}
 .pl.res-ok{box-shadow:inset 4px 0 0 var(--accent)}
 /* Farbige Zeilen: Chip-Ringe (bis 5 px) dürfen weder den Balken noch den Kastenrand überdecken */
-.pl.me,.pl.res-ok,.pl.res-bad{padding-left:14px;padding-right:8px}
+.pl.me,.pl.res-ok,.pl.res-bad,.p-players .pl{padding-left:14px;padding-right:8px}   /* alle Spielerzeilen gleich eingerückt */
 .plist{padding:0 2px}
 .playcount{margin:0 0 10px;font-size:14px;color:var(--muted)}.playcount b{color:var(--fg)}
 .pl.res-bad{background:color-mix(in srgb,var(--red) 12%,transparent);box-shadow:inset 4px 0 0 var(--red);border-radius:10px}
@@ -162,7 +167,8 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .endbar.next .res{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto;font-size:15.5px;font-weight:650;line-height:1.3}
 .endbar.next .res .note{font-weight:400}.endbar.next .row{flex-wrap:nowrap;flex:none;gap:6px}
 .endbar.next button{font-size:15px;padding:10px 14px;border-radius:12px;white-space:nowrap}
-@media(max-width:480px){.endbar.next{padding:8px 10px}.endbar.next .res{font-size:14.5px}.endbar.next button{font-size:14px;padding:9px 11px}}
+@media(max-width:480px){.endbar.next{padding:8px 10px}.endbar.next .res{font-size:14.5px}.endbar.next button{font-size:14px;padding:9px 11px}
+  .endbar.next .row:has(> button + button) [data-a="jumpto"] .jt{display:none}}   /* zwei Knöpfe: Sprung nur als Pfeil, Text bleibt lesbar */
 /* Hinweise (Toast) im Raum über der Leiste unten, nicht darauf */
 #app.inroom~.toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .flash{outline:3px solid var(--gold);outline-offset:3px;border-radius:14px}
@@ -206,7 +212,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   .inroom .mine-row{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
   .inroom .mine-row .mychips{margin-top:0}
   .inroom .chip.big{width:46px;height:46px;font-size:18px;border-width:3px}
-  .inroom .pl{padding:5px 4px}
+  .inroom .pl{padding:5px 4px;--plchip:var(--chipw)}
   .inroom .endbar{margin-bottom:0}
   .inroom .coach-l{display:none}.inroom .coach-r{display:block;font-size:.95em}   /* Lernmodus oben rechts, sofort sichtbar */
   .inroom .coach-r .note{display:none}
@@ -334,7 +340,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .gcard{padding:2px;border:2px solid transparent;border-radius:9px;background:none;display:flex;justify-content:center;min-width:0}.gcard.on{border-color:var(--accent)}
 .gcard .card.sm{width:100%;max-width:44px;height:auto;aspect-ratio:38/54}
 .gcard .card,.gslot .card{margin:0}
-.sugs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:8px 0 2px;flex:1 1 100%}
+.sugs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:8px 0 2px;flex:1 1 100%}.sugs>.note{flex:1 1 100%}
 .sug{display:flex;align-items:center;gap:6px;padding:3px 6px 3px 9px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .sug.same{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.sug .who{font-size:13px;font-weight:600;color:var(--fg)}.sug .cards{gap:3px}
 .tv-mid .sugs{justify-content:center;flex:0 1 auto}.tv-mid .sug{padding:calc(var(--u)*.4) calc(var(--u)*.9)}.tv-mid .sug .who{font-size:calc(var(--u)*1.9)}
@@ -2276,7 +2282,7 @@ function jumpTo(sel){
 function stepBar(step){
   if(!step)return '';
   return '<div class="endbar next" role="status"><div class="res"><span>'+step.t+'</span>'+(step.sub?'<span class="note">'+step.sub+'</span>':'')+'</div>'+
-    '<div class="row">'+(step.go?'<button class="'+(step.act?'ghost':'primary')+'" data-a="jumpto" data-sel="'+esc(step.go)+'">↑ '+esc(step.goTxt||'Hin')+'</button>':'')+
+    '<div class="row">'+(step.go?'<button class="'+(step.act?'ghost':'primary')+'" data-a="jumpto" data-sel="'+esc(step.go)+'" title="'+esc(step.goTxt||'Hin')+'" aria-label="'+esc(step.goTxt||'Hin')+'">↑<span class="jt"> '+esc(step.goTxt||'Hin')+'</span></button>':'')+
       (step.act?'<button class="primary" data-a="'+step.act+'">'+esc(step.actTxt)+'</button>':'')+'</div></div>';
 }
 function names(ids){return ids.map(function(id){return id===uid?'dich':esc(pname(id));}).join(', ');}
@@ -2388,7 +2394,7 @@ function spView(){
         (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+'</div>'+
       (ph==='play'&&p.bot&&p.open&&c?'<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">🔄 offen</span>':'')+
       (ph==='play'?(sp.ready[id]&&c?'<span class="tag ok" title="bereit">👊</span>':'<span class="tag">'+(p.bot?'🤔':'…')+'</span>'):'')+
-      cards+verdict+'</div>';
+      ((cards||verdict)?'<div class="plx">'+cards+verdict+'</div>':'')+'</div>';
   });
   var Rt=(spInsight?insightHtml():'')+'<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
 
@@ -3869,7 +3875,7 @@ function playerList(inHand){
       (!watching&&isHost()&&id!==uid&&m[id]&&!isBotP(id)&&!isOnline(id)?'<button class="small ghost" data-botify="'+esc(id)+'" title="Offline-Spieler durch einen Bot ersetzen">\ud83e\udd16 ersetzen</button>':'')+
       (id!==uid&&!isBotP(id)?'<button class="small ghost" data-mod="'+esc(id)+'" title="Stummschalten oder melden" aria-label="'+esc(p.name||'Spieler')+': stummschalten oder melden">\u22ef</button>':'')+
       (!watching&&isHost()&&id!==uid&&m[id]?'<button class="small ghost" data-kick="'+esc(id)+'" title="Aus dem Raum entfernen">\u2715</button>':'')+
-      cards+verdict+
+      ((cards||verdict)?'<div class="plx">'+cards+verdict+'</div>':'')+
     '</div>';
   });
   return out+'</div>';
