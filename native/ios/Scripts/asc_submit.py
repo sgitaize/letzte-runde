@@ -67,11 +67,13 @@ print("Build", BUILD, "zugeordnet")
 if not SUBMIT:
     raise SystemExit("fertig vorbereitet (ohne --submit nicht eingereicht)")
 
-for i in call("GET", f"v1/apps/{APP}/inAppPurchasesV2?limit=50")["data"]:
-    if i["attributes"]["state"] == "READY_TO_SUBMIT":
-        call("POST", "v1/inAppPurchaseSubmissions", {"data": {"type": "inAppPurchaseSubmissions",
-             "relationships": {"inAppPurchaseV2": rel("inAppPurchases", i["id"])}}})
-        print("Kauf mit eingereicht:", i["attributes"]["productId"])
+pending = [i for i in call("GET", f"v1/apps/{APP}/inAppPurchasesV2?limit=50")["data"] if i["attributes"]["state"] == "READY_TO_SUBMIT"]
+if pending and "--iaps-selected" not in sys.argv:
+    # Die ersten Verbrauchsartikel einer App müssen zusammen mit einer Version eingereicht werden
+    # (STATE_ERROR.FIRST_CONSUMABLE_MUST_BE_SUBMITTED_ON_VERSION) – diese Auswahl gibt es nur in der Weboberfläche.
+    raise SystemExit("Noch nicht geprüfte Käufe: " + ", ".join(i["attributes"]["productId"] for i in pending) +
+                     "\n→ In App Store Connect bei der Version unter „In-App-Käufe und Abonnements“ auswählen und dort "
+                     "„Zur Prüfung hinzufügen“ – oder danach erneut mit --iaps-selected aufrufen.")
 
 sub = call("POST", "v1/reviewSubmissions", {"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"},
            "relationships": {"app": rel("apps", APP)}}})["data"]
