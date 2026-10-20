@@ -13,13 +13,13 @@ val signing = Properties().apply {
 
 android {
     namespace = "de.sgitaize.letzterunde"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 6
         versionName = "1.1.1"
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared") } }
@@ -37,7 +37,7 @@ android {
     }
 
     // Zwei Vertriebswege (wie bookshelv): „github“ = Download-APK aus den GitHub-Releases (Hinweis auf neue APK, Spendenlink),
-    // „play“ = Google Play (Updates nur über den Store, kein externer Spendenlink – Play-Richtlinien)
+    // „play“ = Google Play (Updates nur über den Store, Spezi per Play Billing statt externem Spendenlink – Play-Richtlinien)
     flavorDimensions += "store"
     productFlavors {
         create("github") {
@@ -102,4 +102,5 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")   // QR scannen + erzeugen, ohne Google Play
+    "playImplementation"("com.android.billingclient:billing-ktx:7.1.1")   // „Kauf mir eine Spezi“ nur in der Play-Fassung
 }

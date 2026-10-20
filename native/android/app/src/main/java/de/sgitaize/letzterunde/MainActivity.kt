@@ -137,6 +137,7 @@ class MainActivity : AppCompatActivity() {
             "place" -> PlaceSheet(this).show()
             "haptic" -> haptic(m.optString("k", "light"))
             "awake" -> { inRoom = m.optBoolean("on"); updateKeepAwake() }
+            "tip" -> Tips.show(this)
         }
     }
 
