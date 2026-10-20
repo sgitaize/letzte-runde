@@ -753,6 +753,19 @@ const resolver = require('./resolve');
 const LOGIC = require('./public/hand.js').LOGIC_VERSION;
 const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
 const moderation = require('./moderation')({ dataDir: DATA, json, readBody, cleanName });
+/* Push an den Betreiber (Issue #7) über ntfy: KR_ADMIN_NTFY = volle Topic-URL (https://ntfy.sh/<geheimes-topic> oder eigener
+   Server). Nur ein kurzer Hinweis ohne Namen oder Inhalte; ohne Variable (z. B. in der App) passiert nichts. */
+function notifyAdmin(text) {
+  const url = process.env.KR_ADMIN_NTFY;
+  if (!/^https:\/\//.test(url || '')) return;
+  try {
+    const rq = require('https').request(url, { method: 'POST', timeout: 8000, headers: { Title: 'Letzte Runde', Tags: 'rotating_light', Click: 'https://letzterunde.aize-it.de/admin.html' } },
+      (rs) => rs.resume());
+    rq.on('error', (e) => console.warn('ntfy: ' + e.message));
+    rq.on('timeout', () => rq.destroy());
+    rq.end(text);
+  } catch (e) { console.warn('ntfy: ' + e.message); }
+}
 function filterWords(s) { return require('./moderation').filter(s); }
 setInterval(guard(bots.tick, 'Bots'), 300).unref();
 /* Hängt die Ereignisschleife (lange Rechnung, z. B. Bots), merken es alle Spieler*innen sofort → protokollieren */
@@ -1128,6 +1141,7 @@ async function api(req, res, u) {
     if (!authPlayer(r, who, req)) return json(res, 403, { error: 'Nur Spieler' });
     if (!target || target === who || !r.docs['players/' + target] || isBotId(r, target)) return json(res, 400, { error: 'Spieler unbekannt' });
     const fresh = moderation.report(r, code, who, target, String(body.reason || ''), body.note);
+    if (fresh) notifyAdmin('Neue Meldung in Raum ' + code + ' – bitte im Admin prüfen.');
     return json(res, 200, { ok: true, dup: !fresh });
   }
   if (a === 'nudge') {

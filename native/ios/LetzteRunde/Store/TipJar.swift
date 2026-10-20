@@ -34,6 +34,11 @@ final class TipJar: ObservableObject {
         defer { loading = false }
         do {
             products = try await Product.products(for: Self.productIDs).sorted { $0.price < $1.price }
+            if products.isEmpty {   // direkt nach dem Start antwortet der Store manchmal leer: einmal kurz nachfassen
+                try? await Task.sleep(for: .seconds(1.5))
+                products = try await Product.products(for: Self.productIDs).sorted { $0.price < $1.price }
+            }
+            error = nil
         } catch {
             self.error = error.localizedDescription
         }
@@ -63,8 +68,11 @@ struct SupportView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Letzte Runde ist kostenlos – ohne Werbung, ohne Tracking, ohne Abo.").font(.headline)
-                        Text("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). Es schaltet nichts frei, macht mich aber sehr froh.")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Letzte Runde ist kostenlos.").font(.headline)
+                            Text("Ohne Werbung, ohne Tracking, ohne Abo.").font(.subheadline)
+                        }
+                        Text("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). Es schaltet nichts frei, aber es macht mir eine Freude.")
                             .foregroundStyle(.secondary)
                     }.padding(.vertical, 4)
                 }

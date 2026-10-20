@@ -1709,10 +1709,6 @@ function bundleCheck(){
     render();
   }).catch(function(){bundle.busy=false;showToast('Keine Verbindung zum Server');render();});
 }
-function bundleReset(){
-  if(typeof confirm==='function'&&!confirm('Zurück zur Spiellogik, die mit der App ausgeliefert wurde?'))return;
-  bundleCall('reset',true).then(function(){try{location.reload();}catch(e){}}).catch(function(){});
-}
 function kb(n){return Math.max(1,Math.round((num(n)||0)/1024))+' KB';}
 function bundleDialog(){
   var s=bundle.st,av=s&&s.available;
@@ -1757,14 +1753,14 @@ function donateDialog(){
   if(!donateOpen||!canDonate())return '';
   return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="dnh"><div class="cd-box vbox donate">'+
     '<div class="spread"><h2 id="dnh">Kauf mir eine Spezi</h2><button class="small ghost" data-a="donateclose" aria-label="Schließen">✕</button></div>'+
-    '<p>Letzte Runde ist kostenlos – ohne Werbung, ohne Tracking, ohne Abo. Wenn euch das Spiel gefällt: Spendier mir eine Spezi (oder eine Runde). Es schaltet nichts frei, macht mich aber sehr froh.</p>'+
+    '<p><b>Letzte Runde ist kostenlos.</b><br>Ohne Werbung, ohne Tracking, ohne Abo.</p><p>Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). Es schaltet nichts frei, aber es macht mir eine Freude.</p>'+
     '<div class="tiers">'+TIERS.map(function(t){return '<a class="tier" href="'+esc(donateUrl(t[2]))+'" target="_blank" rel="noopener"><span class="te">'+t[0]+'</span><span class="tn">'+esc(t[1])+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</span><b>'+t[2]+' €</b></a>';}).join('')+'</div>'+
     '<p class="note">Öffnet die Spendenseite im Browser. Weitersagen hilft genauso – und ein ⭐ auf <a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">GitHub</a>.</p></div></div>';
 }
 function bundleFoot(){
   if(!bundleOn())return '';
   var a=bundle.st&&bundle.st.active;
-  return '<span class="note">Spiellogik '+num(KRA.logic||LOGIC_VERSION)+(KRA.bundle==='download'?' (nachgeladen · <button class="linkbtn" data-a="breset">zurücksetzen</button>)':'')+
+  return '<span class="note">Spiellogik '+num(KRA.logic||LOGIC_VERSION)+
     (a&&a.build?' · Build '+num(a.build):'')+
     ' · <button class="linkbtn" data-a="bcheck"'+(bundle.busy?' disabled':'')+'>'+(bundle.busy?'prüfe …':'Update prüfen')+'</button></span>';
 }
@@ -4104,7 +4100,6 @@ document.addEventListener('click',function(ev){
   else if(a==='bapply')bundleApply();
   else if(a==='blater'){bundle.dlg=false;render();}
   else if(a==='bshow'){bundle.dlg=true;bundle.err='';render();}
-  else if(a==='breset')bundleReset();
   else if(a==='bcheck')bundleCheck();
   else if(a==='apkskip'){try{localStorage.setItem('kr.apk.skip',el.getAttribute('data-v')||'');}catch(e){}render();}
   else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
