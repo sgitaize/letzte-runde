@@ -3,6 +3,7 @@
 Name, Beschreibung (de-DE), Preis (Basisland DEU), Verfügbarkeit (nur DEU) und optional Review-Screenshot.
 
     python3 Scripts/asc_tips.py [review-screenshot.png]
+    python3 Scripts/asc_tips.py --shot-only review-screenshot.png   # nur Screenshot tauschen (Name/Preis gesperrt, z. B. im Review)
 
 Screenshot im Simulator (Debug-Build): App mit `-showTipSheet YES -tipPreview YES` starten, `xcrun simctl io … screenshot`.
 Braucht: pip install pyjwt cryptography requests; Zugang in ~/.appstoreconnect/ (asc.env + private_keys, nie ins Repo).
@@ -38,7 +39,23 @@ def rel(type_, id_):
     return {"data": {"type": type_, "id": id_}}
 
 
-shot = open(sys.argv[1], "rb").read() if len(sys.argv) > 1 else None
+def upload_shot(iid):
+    old = call("GET", f"v2/inAppPurchases/{iid}/appStoreReviewScreenshot").get("data")
+    if old:
+        call("DELETE", f"v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
+    res = call("POST", "v1/inAppPurchaseAppStoreReviewScreenshots", {"data": {"type": "inAppPurchaseAppStoreReviewScreenshots",
+          "attributes": {"fileName": "tip-sheet.png", "fileSize": len(shot)},
+          "relationships": {"inAppPurchaseV2": rel("inAppPurchases", iid)}}})["data"]
+    for op in res["attributes"]["uploadOperations"]:
+        requests.request(op["method"], op["url"], headers={h["name"]: h["value"] for h in op["requestHeaders"]},
+                         data=shot[op["offset"]:op["offset"] + op["length"]]).raise_for_status()
+    call("PATCH", f"v1/inAppPurchaseAppStoreReviewScreenshots/{res['id']}", {"data": {"type": "inAppPurchaseAppStoreReviewScreenshots",
+         "id": res["id"], "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(shot).hexdigest()}}})
+
+
+SHOT_ONLY = "--shot-only" in sys.argv
+args = [a for a in sys.argv[1:] if a != "--shot-only"]
+shot = open(args[0], "rb").read() if args else None
 have = {i["attributes"]["productId"]: i["id"] for i in call("GET", f"v1/apps/{APP}/inAppPurchasesV2?limit=50")["data"]}
 for pid, (ref, name, desc, price) in TIPS.items():
     iid = have.get(pid)
@@ -50,6 +67,10 @@ for pid, (ref, name, desc, price) in TIPS.items():
              "attributes": {"availableInNewTerritories": False},
              "relationships": {"inAppPurchase": rel("inAppPurchases", iid),
                                "availableTerritories": {"data": [{"type": "territories", "id": "DEU"}]}}}})
+    if SHOT_ONLY:
+        if shot: upload_shot(iid)
+        print(f"{pid}: Screenshot")
+        continue
     locs = call("GET", f"v2/inAppPurchases/{iid}/inAppPurchaseLocalizations")["data"]
     de = next((l for l in locs if l["attributes"]["locale"] == "de-DE"), None)
     if de:
@@ -68,17 +89,7 @@ for pid, (ref, name, desc, price) in TIPS.items():
         "included": [{"type": "inAppPurchasePrices", "id": "${p0}", "attributes": {"startDate": None},
                       "relationships": {"inAppPurchasePricePoint": rel("inAppPurchasePricePoints", pp["id"])}}]})
     if shot:
-        old = call("GET", f"v2/inAppPurchases/{iid}/appStoreReviewScreenshot").get("data")
-        if old:
-            call("DELETE", f"v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
-        res = call("POST", "v1/inAppPurchaseAppStoreReviewScreenshots", {"data": {"type": "inAppPurchaseAppStoreReviewScreenshots",
-              "attributes": {"fileName": "tip-sheet.png", "fileSize": len(shot)},
-              "relationships": {"inAppPurchaseV2": rel("inAppPurchases", iid)}}})["data"]
-        for op in res["attributes"]["uploadOperations"]:
-            requests.request(op["method"], op["url"], headers={h["name"]: h["value"] for h in op["requestHeaders"]},
-                             data=shot[op["offset"]:op["offset"] + op["length"]]).raise_for_status()
-        call("PATCH", f"v1/inAppPurchaseAppStoreReviewScreenshots/{res['id']}", {"data": {"type": "inAppPurchaseAppStoreReviewScreenshots",
-             "id": res["id"], "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(shot).hexdigest()}}})
+        upload_shot(iid)
     print(f"{pid}: {name} · {desc} · {price} €" + (" · Screenshot" if shot else ""))
 for i in call("GET", f"v1/apps/{APP}/inAppPurchasesV2?limit=50")["data"]:
     print(" ", i["attributes"]["productId"], i["attributes"]["state"])
