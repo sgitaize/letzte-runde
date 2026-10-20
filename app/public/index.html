@@ -2963,7 +2963,7 @@ function inviteName(){var r=(openRooms||[]).filter(function(x){return x.code===i
 function countsHtml(){
   if(!playCounts)return '';
   var f=function(n){return Number(n).toLocaleString('de-DE');};
-  return '<p class="playcount">\ud83c\udccf Bisher gespielt: <b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?'Hand':'Hände')+' in Räumen \u00b7 <b>'+
+  return '<p class="playcount">\ud83c\udccf Alle zusammen bisher: <b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?'Hand':'Hände')+' in Räumen \u00b7 <b>'+
     f(playCounts.sp)+'</b> im Singleplayer</p>';
 }
 function roomsHtml(){
