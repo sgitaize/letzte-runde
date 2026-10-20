@@ -75,7 +75,7 @@ struct SupportView: View {
                         #if DEBUG
                         // Review-Screenshot im Simulator (dort liefert der Store ohne .storekit nichts): -tipPreview YES
                         if UserDefaults.standard.bool(forKey: "tipPreview") {
-                            ForEach(Self.preview, id: \.0) { p in row(emoji: emoji(p.0), name: p.1, description: "Danke! Schaltet nichts frei, hilft einfach.", price: p.2) }
+                            ForEach(Self.preview, id: \.0) { p in row(emoji: emoji(p.0), name: p.1, description: "Danke! Schaltet nichts frei.", price: p.2) }
                         } else { unavailable }
                         #else
                         unavailable
@@ -110,7 +110,7 @@ struct SupportView: View {
 
     private func row(emoji: String, name: String, description: String, price: String) -> some View {
         HStack {
-            if emoji.isEmpty { SpeziBottle().frame(width: 14, height: 34).frame(width: 30) } else { Text(emoji).font(.title2) }
+            if emoji.isEmpty { SpeziBottle().frame(width: 14, height: 34).frame(width: 30) } else { Text(emoji).font(.title2).frame(width: 30) }
             VStack(alignment: .leading) {
                 Text(name).foregroundStyle(.primary)
                 if !description.isEmpty { Text(description).font(.footnote).foregroundStyle(.secondary) }

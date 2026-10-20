@@ -24,7 +24,12 @@ struct RootView: View {
     @State private var showPlace = false
     @StateObject private var bridge = WebBridge()
     @State private var auth: AuthRequest?
+    #if DEBUG
+    // Review-Screenshot der Trinkgeld-Käufe im Simulator: -showTipSheet YES -tipPreview YES
+    @State private var showTip = UserDefaults.standard.bool(forKey: "showTipSheet")
+    #else
     @State private var showTip = false
+    #endif
     @State private var reload = 0
     @State private var pageColor = Color("LaunchBackground")
 
