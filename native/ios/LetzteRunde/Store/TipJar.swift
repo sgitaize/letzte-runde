@@ -64,7 +64,7 @@ struct SupportView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Letzte Runde ist kostenlos – ohne Werbung, ohne Tracking, ohne Abo.").font(.headline)
-                        Text("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt, freue ich mich über ein Trinkgeld – es schaltet nichts frei, es hilft einfach.")
+                        Text("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). Es schaltet nichts frei, macht mich aber sehr froh.")
                             .foregroundStyle(.secondary)
                     }.padding(.vertical, 4)
                 }
@@ -93,7 +93,7 @@ struct SupportView: View {
                     Section { Label("Danke! Das bedeutet mir viel.", systemImage: "heart.fill").foregroundStyle(.pink) }
                 }
             }
-            .navigationTitle("Unterstützen")
+            .navigationTitle("Kauf mir eine Spezi")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
             .task { await jar.load() }
@@ -103,14 +103,14 @@ struct SupportView: View {
     /// Der App Store hat (noch) keine Produkte geliefert – z. B. ohne Netz: erklären und neu laden lassen
     private var unavailable: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Die Trinkgeld-Optionen konnten gerade nicht vom App Store geladen werden.").foregroundStyle(.secondary)
+            Text("Die Optionen konnten gerade nicht vom App Store geladen werden.").foregroundStyle(.secondary)
             Button { Task { await jar.load() } } label: { Label("Erneut versuchen", systemImage: "arrow.clockwise") }
         }.padding(.vertical, 4)
     }
 
     private func row(emoji: String, name: String, description: String, price: String) -> some View {
         HStack {
-            Text(emoji).font(.title2)
+            if emoji.isEmpty { SpeziBottle().frame(width: 14, height: 34).frame(width: 30) } else { Text(emoji).font(.title2) }
             VStack(alignment: .leading) {
                 Text(name).foregroundStyle(.primary)
                 if !description.isEmpty { Text(description).font(.footnote).foregroundStyle(.secondary) }
@@ -121,10 +121,36 @@ struct SupportView: View {
     }
 
     #if DEBUG
-    private static let preview = [("small", "Ein Kaffee", "1,99 €"), ("medium", "Ein Kartendeck", "4,99 €"), ("large", "Eine letzte Runde für alle", "9,99 €")]
+    private static let preview = [("small", "Eine Spezi", "1,99 €"), ("medium", "Ein Kartendeck", "4,99 €"), ("large", "Eine letzte Runde für alle", "9,99 €")]
     #endif
 
     private func emoji(_ id: String) -> String {
-        id.hasSuffix("small") ? "☕️" : id.hasSuffix("medium") ? "🃏" : "🍻"
+        id.hasSuffix("small") ? "" : id.hasSuffix("medium") ? "🃏" : "🍻"
+    }
+}
+
+/// Kleine Spezi-Flasche (selbst gezeichnet, ohne Logo) für die kleinste Stufe – wie im Web (SPEZI in index.html)
+struct SpeziBottle: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let sx = size.width / 16, sy = size.height / 40
+            func r(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> CGRect { CGRect(x: x * sx, y: y * sy, width: w * sx, height: h * sy) }
+            ctx.fill(Path(roundedRect: r(5.5, 0.5, 5, 3), cornerRadius: sx), with: .color(Color(red: 0.79, green: 0.64, blue: 0.15)))
+            var body = Path()
+            body.move(to: CGPoint(x: 6 * sx, y: 3.5 * sy)); body.addLine(to: CGPoint(x: 10 * sx, y: 3.5 * sy))
+            body.addLine(to: CGPoint(x: 10 * sx, y: 9.5 * sy))
+            body.addQuadCurve(to: CGPoint(x: 14 * sx, y: 17 * sy), control: CGPoint(x: 14 * sx, y: 12 * sy))
+            body.addLine(to: CGPoint(x: 14 * sx, y: 37 * sy))
+            body.addQuadCurve(to: CGPoint(x: 11.5 * sx, y: 39.5 * sy), control: CGPoint(x: 14 * sx, y: 39.5 * sy))
+            body.addLine(to: CGPoint(x: 4.5 * sx, y: 39.5 * sy))
+            body.addQuadCurve(to: CGPoint(x: 2 * sx, y: 37 * sy), control: CGPoint(x: 2 * sx, y: 39.5 * sy))
+            body.addLine(to: CGPoint(x: 2 * sx, y: 17 * sy))
+            body.addQuadCurve(to: CGPoint(x: 6 * sx, y: 9.5 * sy), control: CGPoint(x: 2 * sx, y: 12 * sy))
+            body.closeSubpath()
+            ctx.fill(body, with: .color(Color(red: 0.35, green: 0.16, blue: 0.07)))
+            ctx.fill(Path(r(2, 20, 12, 10)), with: .color(Color(red: 0.95, green: 0.61, blue: 0.12)))
+            ctx.fill(Path(r(2, 23.5, 12, 3)), with: .color(Color(red: 0.23, green: 0.49, blue: 0.85)))
+        }
+        .accessibilityHidden(true)
     }
 }
