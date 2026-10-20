@@ -414,8 +414,8 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   for(let k=0;k<3;k++)await fetch(BASE+'api?a=sphand',{method:'POST',headers:{'Content-Type':'application/json','x-forwarded-for':'203.0.113.77'},body:'{}'});
   const rl2=await (await fetch(BASE+'api?a=rooms')).json();
   ok(rl2.counts.sp===sp0+1,'Singleplayer-Zähler: 3 Meldungen in Folge von einer IP zählen nur einmal');
-  await until(()=>/Bisher gespielt: <b>\d+<\/b> Hände? in Räumen · <b>\d+<\/b> im Singleplayer/.test(V.els.playcount.innerHTML),'Zähler auf der Startseite',8000);
-  ok(true,'Startseite zeigt „Bisher gespielt: … Hände in Räumen · … im Singleplayer“');
+  await until(()=>/Alle zusammen: <b>\d+<\/b> Hände? in Räumen · <b>\d+<\/b> im Singleplayer/.test(V.els.playcount.innerHTML),'Zähler auf der Startseite',8000);
+  ok(true,'Startseite zeigt „Alle zusammen: … Hände in Räumen · … im Singleplayer“');
   { const h=V.els.app.innerHTML; ok(h.indexOf('id="playcount"')>h.indexOf('So läuft eine Hand')&&/href="impressum.html">Impressum<\/a>/.test(h)&&/impressum.html#datenschutz/.test(h)&&/href="https:\/\/github.com\/sgitaize\/letzte-runde"/.test(h),'Startseite: Statistik ganz unten, darunter Impressum, Datenschutz und GitHub'); }
   { const imp=await (await fetch(BASE+'impressum.html')).text(); ok(/Sachsenstr\. 1/.test(imp)&&/§ 5 Digitale-Dienste-Gesetz/.test(imp)&&/id="datenschutz"/.test(imp),'Impressum + Datenschutz erreichbar'); }
   // ---- Geplanter Raum: Link vorab, Beitritt erst ab Startzeit, erster Spieler wird Host ----
