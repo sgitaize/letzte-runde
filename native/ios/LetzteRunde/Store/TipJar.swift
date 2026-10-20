@@ -75,7 +75,7 @@ struct SupportView: View {
                         #if DEBUG
                         // Review-Screenshot im Simulator (dort liefert der Store ohne .storekit nichts): -tipPreview YES
                         if UserDefaults.standard.bool(forKey: "tipPreview") {
-                            ForEach(Self.preview, id: \.0) { p in row(emoji: emoji(p.0), name: p.1, description: "Danke! Schaltet nichts frei.", price: p.2) }
+                            ForEach(Self.preview, id: \.0) { p in row(emoji: emoji(p.0), name: p.1, description: p.3, price: p.2) }
                         } else { unavailable }
                         #else
                         unavailable
@@ -110,10 +110,10 @@ struct SupportView: View {
 
     private func row(emoji: String, name: String, description: String, price: String) -> some View {
         HStack {
-            if emoji.isEmpty { SpeziBottle().frame(width: 14, height: 34).frame(width: 30) } else { Text(emoji).font(.title2).frame(width: 30) }
+            TipIcon(kind: emoji).frame(width: 44, height: 34)
             VStack(alignment: .leading) {
                 Text(name).foregroundStyle(.primary)
-                if !description.isEmpty { Text(description).font(.footnote).foregroundStyle(.secondary) }
+                if !description.isEmpty { Text(description.replacingOccurrences(of: ";)", with: "😉")).font(.footnote).foregroundStyle(.secondary) }   // App Store Connect erlaubt keine Emojis
             }
             Spacer()
             Text(price).bold()
@@ -121,11 +121,11 @@ struct SupportView: View {
     }
 
     #if DEBUG
-    private static let preview = [("small", "Eine Spezi", "1,99 €"), ("medium", "Ein Kartendeck", "4,99 €"), ("large", "Eine letzte Runde für alle", "9,99 €")]
+    private static let preview = [("small", "Eine Spezi", "0,99 €", "Danke! Schaltet nichts frei."), ("medium", "Tagesration Spezi", "3,99 €", "Danke! Schaltet nichts frei."), ("large", "Kasten Spezi", "9,99 €", "Bei Netto im Angebot? 😉")]
     #endif
 
     private func emoji(_ id: String) -> String {
-        id.hasSuffix("small") ? "" : id.hasSuffix("medium") ? "🃏" : "🍻"
+        id.hasSuffix("small") ? "small" : id.hasSuffix("medium") ? "medium" : "large"
     }
 }
 
@@ -150,6 +150,36 @@ struct SpeziBottle: View {
             ctx.fill(body, with: .color(Color(red: 0.35, green: 0.16, blue: 0.07)))
             ctx.fill(Path(r(2, 20, 12, 10)), with: .color(Color(red: 0.95, green: 0.61, blue: 0.12)))
             ctx.fill(Path(r(2, 23.5, 12, 3)), with: .color(Color(red: 0.23, green: 0.49, blue: 0.85)))
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// Bild je Stufe: eine Flasche, drei Flaschen (Tagesration), Kasten
+struct TipIcon: View {
+    let kind: String
+    var body: some View {
+        switch kind {
+        case "small": SpeziBottle().frame(width: 14, height: 34)
+        case "medium": HStack(spacing: 1) { ForEach(0..<3, id: \.self) { _ in SpeziBottle().frame(width: 12, height: 29) } }
+        default: SpeziCrate().frame(width: 42, height: 34)
+        }
+    }
+}
+
+/// Getränkekiste mit fünf Flaschenhälsen (selbst gezeichnet, ohne Logo) – wie KASTEN in index.html
+struct SpeziCrate: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let sx = size.width / 48, sy = size.height / 40
+            func r(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> CGRect { CGRect(x: x * sx, y: y * sy, width: w * sx, height: h * sy) }
+            for x in [4.0, 13, 22, 31, 40] {
+                ctx.fill(Path(roundedRect: r(x, 2, 4, 12), cornerRadius: sx), with: .color(Color(red: 0.35, green: 0.16, blue: 0.07)))
+                ctx.fill(Path(roundedRect: r(x, 1, 4, 2.5), cornerRadius: sx), with: .color(Color(red: 0.79, green: 0.64, blue: 0.15)))
+            }
+            ctx.fill(Path(roundedRect: r(1, 12, 46, 27), cornerRadius: 3 * sx), with: .color(Color(red: 0.95, green: 0.61, blue: 0.12)))
+            ctx.fill(Path(r(1, 21, 46, 6)), with: .color(Color(red: 0.23, green: 0.49, blue: 0.85)))
+            ctx.fill(Path(roundedRect: r(17, 15, 14, 4), cornerRadius: 2 * sx), with: .color(Color(red: 0.72, green: 0.43, blue: 0.06)))
         }
         .accessibilityHidden(true)
     }

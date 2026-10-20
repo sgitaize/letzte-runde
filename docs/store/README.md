@@ -29,9 +29,9 @@ ExportOptions: `method app-store-connect`, `destination upload`, `teamID V7GQKCH
 
 | Produkt-ID | Referenzname | Preis (Vorschlag) | Anzeigename | Beschreibung |
 |---|---|---|---|---|
-| `de.sgitaize.letzterunde.tip.small` | Trinkgeld klein | 1,99 € | Eine Spezi | Danke! Schaltet nichts frei. |
-| `de.sgitaize.letzterunde.tip.medium` | Trinkgeld mittel | 4,99 € | Ein Kartendeck | Danke! Schaltet nichts frei. |
-| `de.sgitaize.letzterunde.tip.large` | Trinkgeld groß | 9,99 € | Eine letzte Runde für alle | Danke! Schaltet nichts frei. |
+| `de.sgitaize.letzterunde.tip.small` | Trinkgeld klein | 0,99 € | Eine Spezi | Danke! Schaltet nichts frei. |
+| `de.sgitaize.letzterunde.tip.medium` | Trinkgeld mittel | 3,99 € | Tagesration Spezi | Danke! Schaltet nichts frei. |
+| `de.sgitaize.letzterunde.tip.large` | Trinkgeld groß | 9,99 € | Kasten Spezi | Bei Netto im Angebot? 😉 |
 
 Je Produkt verlangt Apple einen Review-Screenshot (Simulator, Debug-Build: `-showTipSheet YES -tipPreview YES`; angelegt per API am 20.10.2026). Beim **ersten** Einreichen die Käufe auf der Versionsseite unter „In-App-Käufe“ mit auswählen. Im Browser und in der Android-App führt „Unterstützen“ zum Spendenlink aus dem Admin (`donateUrl`); in der iOS-App gibt es keinen externen Link. Der Kauf läuft nur über Apple, der Server sieht nichts davon.
 

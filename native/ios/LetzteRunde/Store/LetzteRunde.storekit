@@ -2,14 +2,14 @@
   "identifier" : "4C7E1A2B",
   "nonRenewingSubscriptions" : [ ],
   "products" : [
-    { "displayPrice" : "1.99", "familyShareable" : false, "internalID" : "6823300001", "localizations" : [
+    { "displayPrice" : "0.99", "familyShareable" : false, "internalID" : "6823300001", "localizations" : [
         { "description" : "Danke! Schaltet nichts frei.", "displayName" : "Eine Spezi", "locale" : "de" } ],
       "productID" : "de.sgitaize.letzterunde.tip.small", "referenceName" : "Trinkgeld klein", "type" : "Consumable" },
-    { "displayPrice" : "4.99", "familyShareable" : false, "internalID" : "6823300002", "localizations" : [
-        { "description" : "Danke! Schaltet nichts frei.", "displayName" : "Ein Kartendeck", "locale" : "de" } ],
+    { "displayPrice" : "3.99", "familyShareable" : false, "internalID" : "6823300002", "localizations" : [
+        { "description" : "Danke! Schaltet nichts frei.", "displayName" : "Tagesration Spezi", "locale" : "de" } ],
       "productID" : "de.sgitaize.letzterunde.tip.medium", "referenceName" : "Trinkgeld mittel", "type" : "Consumable" },
     { "displayPrice" : "9.99", "familyShareable" : false, "internalID" : "6823300003", "localizations" : [
-        { "description" : "Danke! Schaltet nichts frei.", "displayName" : "Eine letzte Runde für alle", "locale" : "de" } ],
+        { "description" : "Bei Netto im Angebot? 😉", "displayName" : "Kasten Spezi", "locale" : "de" } ],
       "productID" : "de.sgitaize.letzterunde.tip.large", "referenceName" : "Trinkgeld groß", "type" : "Consumable" }
   ],
   "settings" : { "_failTransactionsEnabled" : false, "_locale" : "de", "_storefront" : "DEU" },
