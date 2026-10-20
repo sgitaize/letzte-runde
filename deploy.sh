@@ -10,7 +10,7 @@ set -a; . ./.env; set +a
 FILES=("$@")
 [[ ${#FILES[@]} -eq 0 ]] && FILES=(bots.js accounts.js moderation.js resolve.js bundle-manifest.js public/hand.js server.js package.json scripts/setup.js public/index.html public/admin.html
   public/logo.svg public/favicon.svg public/favicon-32.png public/icon-192.png public/icon-512.png
-  public/maskable-512.png public/apple-touch-icon.png public/manifest.json public/qrcode.js public/sw.js public/impressum.html
+  public/maskable-512.png public/apple-touch-icon.png public/manifest.json public/qrcode.js public/kr-subtle.js public/sw.js public/impressum.html
   public/.well-known/apple-app-site-association public/.well-known/assetlinks.json)
 
 for f in "${FILES[@]}"; do
