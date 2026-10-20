@@ -20,9 +20,10 @@ android {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
+        versionCode = 8
         versionName = "1.1.1"
-        externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared") } }
+        // 16-KB-Speicherseiten (Play-Pflicht für 64-Bit): eigene libkrnode so linken; libnode selbst gebaut, siehe scripts/fetch-nodejs-mobile.sh
+        externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
     }
 
     signingConfigs {

@@ -2,7 +2,7 @@
    und daraus die Store-Motive (Überschrift im Stil des Spiels über dem Screenshot).
    Startet einen lokalen Server (Port 3984) aus einer Wegwerf-Kopie von app/.
    Nutzung: CHROME=<pfad> node --experimental-websocket docs/store/storeshots.js
-   Ergebnis: docs/store/screenshots/{iphone,ipad}/0N-<szene>.png (iPhone 6.9″ 1320×2868, iPad 13″ 2064×2752) */
+   Ergebnis: docs/store/screenshots/{iphone,ipad,android,android-tablet}/0N-<szene>.png (iPhone 6.9″ 1320×2868, iPad 13″ 2064×2752, Android 1080×1920 / 1800×3200) */
 'use strict';
 const { spawn, execSync } = require('child_process');
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -25,8 +25,10 @@ const PORT = 3984, URL0 = 'http://127.0.0.1:' + PORT + '/', DBG = 9334;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const DEVICES = [
   { name: 'iphone', w: 440, h: 956, dsf: 3 },     // 1320 × 2868
-  { name: 'ipad', w: 1032, h: 1376, dsf: 2 }       // 2064 × 2752
-];
+  { name: 'ipad', w: 1032, h: 1376, dsf: 2 },      // 2064 × 2752
+  { name: 'android', w: 360, h: 640, dsf: 3 },     // 1080 × 1920 (Play: höchstens 2:1)
+  { name: 'android-tablet', w: 900, h: 1600, dsf: 2 }   // 1800 × 3200
+].filter((d) => !process.env.DEVICES || process.env.DEVICES.split(',').includes(d.name));   // z. B. DEVICES=android,android-tablet
 /* Reihenfolge = Reihenfolge im Store */
 const SCENES = [
   { id: 'play', title: 'Pokern im Team', sub: 'Ordnet eure Hände von schwach bis stark – ohne darüber zu reden.' },
