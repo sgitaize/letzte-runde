@@ -20,7 +20,7 @@ BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
 g() { grep "^$2=" "$1" | cut -d= -f2-; }
 export OPW=$(g $OLD storePassword) OKP=$(g $OLD keyPassword) NPW=$(g "$NEW" storePassword) NKP=$(g "$NEW" keyPassword)
 
-"$BT/apksigner" sign --in "$IN" --out "$OUT" --lineage "$LIN" \
+"$BT/apksigner" sign --in "$IN" --out "$OUT" --lineage "$LIN" --rotation-min-sdk-version 28 \
   --ks "$(g $OLD storeFile)" --ks-key-alias "$(g $OLD keyAlias)" --ks-pass env:OPW --key-pass env:OKP \
   --next-signer --ks "$(g "$NEW" storeFile)" --ks-key-alias "$(g "$NEW" keyAlias)" --ks-pass env:NPW --key-pass env:NKP
 "$BT/apksigner" verify --print-certs "$OUT" | grep -i 'sha-256'
