@@ -20,7 +20,7 @@ android {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
+        versionCode = 6
         versionName = "1.1.1"
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared") } }
     }
@@ -33,6 +33,22 @@ android {
                 keyAlias = signing.getProperty("keyAlias")
                 keyPassword = signing.getProperty("keyPassword")
             }
+        }
+    }
+
+    // Zwei Vertriebswege (wie bookshelv): „github“ = Download-APK aus den GitHub-Releases (Hinweis auf neue APK, Spendenlink),
+    // „play“ = Google Play (Updates nur über den Store, kein externer Spendenlink – Play-Richtlinien)
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") {
+            dimension = "store"
+            buildConfigField("String", "STORE", "\"github\"")
+        }
+        create("play") {
+            dimension = "store"
+            buildConfigField("String", "STORE", "\"play\"")
+            // Play liefert aus dem App Bundle je Gerät nur die passende Architektur → auch 32-Bit-ARM und x86_64
+            ndk { abiFilters += listOf("armeabi-v7a", "x86_64") }
         }
     }
 

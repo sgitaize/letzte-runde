@@ -34,6 +34,7 @@
  * Umgebung: KR_APP_PORT, KR_APP_TOKEN, KR_VAR_DIR (beschreibbar), KR_UPSTREAM (Standard https://letzterunde.aize-it.de; ältere Apps nutzen gang.aize.eu, das weiter funktioniert),
  *           KR_LAN_PORT (Standard 8380, HTTPS auf +1), KR_PUBLIC (gebündelte Dateien, Standard ./public),
  *           KR_PLATFORM (ios|android), KR_APP_VERSION (z. B. 1.0.3; Android: Hinweis auf neue APK)
+ *           KR_STORE (Android: github|play – die Play-Fassung zeigt keinen APK-Hinweis und keinen Spendenlink)
  */
 'use strict';
 const http = require('http');
@@ -71,6 +72,7 @@ function saveQueue() { try { fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue.s
 const HOST_API = 1;
 const PLATFORM = process.env.KR_PLATFORM || '';
 const APP_VERSION = process.env.KR_APP_VERSION || '';
+const STORE = process.env.KR_STORE || '';
 const mf = require('./bundle-manifest.js');
 const BUNDLE_DIR = path.join(VAR_DIR, 'bundle');
 const BSTATE_FILE = path.join(BUNDLE_DIR, 'state.json');
@@ -259,7 +261,7 @@ function injectApp(html, lanGuest) {
   const info = lanGuest
     ? { lanGuest: true }
     : { app: true, acct: UPSTREAM.origin, mode: st.mode, origin: st.mode === 'online' ? UPSTREAM.origin : (st.mode === 'lan' ? lanUrl() : st.join),
-      host: HOST_API, build: a.build, logic: a.logic, bundle: a.src, platform: PLATFORM, version: APP_VERSION };
+      host: HOST_API, build: a.build, logic: a.logic, bundle: a.src, platform: PLATFORM, version: APP_VERSION, store: STORE };
   const tag = '<script>window.KR_APP=' + JSON.stringify(info).replace(/</g, '\\u003c') + ';</script>' +
     (!lanGuest && a.trial ? '<script>setTimeout(function(){if(!window.KR_BOOTED)location.reload();},12000);</script>' : '') +
     (lanGuest ? '<script src="kr-subtle.js"></script>' : '');
@@ -351,7 +353,7 @@ function applyUpdate() {
 }
 /* Android: neue APK auf GitHub? (Releases „latest“, Tag vX.Y.Z) – nur ein Hinweis mit Link, kein Selbst-Update */
 function checkApk() {
-  if (PLATFORM !== 'android' || !APP_VERSION || Date.now() - upd.apkAt < 6 * 3600000) return;
+  if (PLATFORM !== 'android' || STORE === 'play' || !APP_VERSION || Date.now() - upd.apkAt < 6 * 3600000) return;
   upd.apkAt = Date.now();
   fetchBuf('https://api.github.com/repos/sgitaize/letzte-runde/releases/latest', 1048576, 8000).then((b) => {
     const tag = String(JSON.parse(b.toString('utf8')).tag_name || '').replace(/^v/, '');

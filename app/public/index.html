@@ -1716,7 +1716,7 @@ function bundleDialog(){
   var req=s.required,dis=bundle.busy?' disabled':'';
   return '<div class="cd-overlay vdlg" role="dialog" aria-modal="true" aria-labelledby="bdlgh"><div class="cd-box vbox">'+
     '<h2 id="bdlgh">🔄 '+(req?'Update nötig':'Neue Spiellogik')+'</h2>'+
-    (av.needsApp?'<p>Die neue Version braucht eine neuere App. Bitte '+(KRA.platform==='android'?'die neue APK installieren':'im App Store aktualisieren')+'.</p>':
+    (av.needsApp?'<p>Die neue Version braucht eine neuere App. Bitte '+(KRA.platform==='android'?(KRA.store==='play'?'im Play Store aktualisieren':'die neue APK installieren'):'im App Store aktualisieren')+'.</p>':
       '<p>'+(req?'Für <b>Online-Räume</b> brauchst du die neue Spiellogik (Version '+num(av.logic)+'). Übungsraum und Spiele im WLAN gehen auch ohne.':
         'Es gibt eine neue Version der Spiellogik (Version '+num(av.logic)+'): Wertung, Bots und Lernmodus wie auf dem Server.')+'</p>'+
       '<p class="note">Download: '+kb(av.bytes)+' ('+num(av.files)+' Datei'+(av.files===1?'':'en')+'). Danach spielst du damit auch ohne Internet.</p>')+
@@ -1729,11 +1729,11 @@ function bundleBanner(){
   if(!bundleOn()||!bundle.st)return '';
   var s=bundle.st,av=s.available,out='';
   if(s.required&&!av)out+='<div class="placebar upd req"><p class="plc"><span>⚠️ <b>Online-Räume brauchen eine neuere Version</b> <span class="sub">· Spiellogik '+num(s.minLogic)+
-    ' – '+(KRA.platform==='android'?'bitte die neue APK installieren':'bitte die App aktualisieren')+'. Singleplayer und WLAN gehen weiter.</span></span></p></div>';
+    ' – '+(KRA.platform==='android'&&KRA.store!=='play'?'bitte die neue APK installieren':'bitte die App aktualisieren')+'. Singleplayer und WLAN gehen weiter.</span></span></p></div>';
   if(av&&!bundle.dlg)out+='<div class="placebar upd'+(s.required?' req':'')+'"><p class="plc"><span>🔄 <b>'+(s.required?'Update nötig für Online-Räume':'Neue Spiellogik verfügbar')+'</b> <span class="sub">· '+kb(av.bytes)+'</span></span></p>'+
     '<button class="small primary" data-a="bshow">Ansehen</button></div>';
   var apk=s.apk,skip='';try{skip=localStorage.getItem('kr.apk.skip')||'';}catch(e){}
-  if(apk&&apk.latest&&skip!==apk.latest)out+='<div class="placebar upd"><p class="plc"><span>📲 <b>Neue App-Version '+esc(apk.latest)+'</b> <span class="sub">· du hast '+esc(apk.current)+' · Download über GitHub, Play-Store-Version folgt</span></span></p>'+
+  if(apk&&apk.latest&&skip!==apk.latest)out+='<div class="placebar upd"><p class="plc"><span>📲 <b>Neue App-Version '+esc(apk.latest)+'</b> <span class="sub">· du hast '+esc(apk.current)+' · Download über GitHub</span></span></p>'+
     '<span class="row"><a class="btn" href="'+esc(apk.url)+'" target="_blank" rel="noopener">APK laden</a><button class="small ghost" data-a="apkskip" data-v="'+esc(apk.latest)+'" aria-label="Hinweis ausblenden">✕</button></span></div>';
   return out;
 }
@@ -1746,7 +1746,7 @@ var SPEZI3='<svg class="spezi s3" viewBox="0 0 44 40" aria-hidden="true">'+['0',
 var KASTEN='<svg class="spezi kasten" viewBox="0 0 48 40" aria-hidden="true">'+['4','13','22','31','40'].map(function(x){return '<rect x="'+x+'" y="2" width="4" height="12" rx="1" fill="#5a2a12"/><rect x="'+x+'" y="1" width="4" height="2.5" rx="1" fill="#c9a227"/>';}).join('')+'<rect x="1" y="12" width="46" height="27" rx="3" fill="#f39c1f"/><rect x="1" y="21" width="46" height="6" fill="#3b7dd8"/><rect x="17" y="15" width="14" height="4" rx="2" fill="#b86e10"/></svg>';
 var TIERS=[[SPEZI,'Eine Spezi',1],[SPEZI3,'Tagesration Spezi',4],[KASTEN,'Kasten Spezi',10,'Bei Netto im Angebot? 😉']],donateOpen=false;
 function tipNative(){return !!(KRA&&KRA.app&&KRA.platform==='ios'&&window.KR_NATIVE&&window.KR_NATIVE.tip);}
-function canDonate(){return tipNative()||((!KRA||(KRA.app&&KRA.platform==='android'))&&/^https:\/\//.test(CFG.donateUrl||''));}   // Link nur im Browser und in der Android-App
+function canDonate(){return tipNative()||((!KRA||(KRA.app&&KRA.platform==='android'&&KRA.store!=='play'))&&/^https:\/\//.test(CFG.donateUrl||''));}   // Link nur im Browser und in der GitHub-APK (nicht bei Play)
 function donateUrl(amount){var u=String(CFG.donateUrl||'');return u.indexOf('{betrag}')>=0?u.replace('{betrag}',String(amount)):u;}
 function donateOpenDlg(){if(tipNative()){appMsg({a:'tip'});return;}donateOpen=true;render();}
 function donateDialog(){

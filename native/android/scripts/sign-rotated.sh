@@ -3,15 +3,16 @@
 # alt → neu. Dadurch nehmen Geräte (Android 9+), auf denen eine mit dem alten Schlüssel signierte
 # APK installiert ist, das Update an. Android 8 kennt keine Rotation → dort einmal neu installieren.
 #
-#   ./gradlew assembleRelease && scripts/sign-rotated.sh [eingabe.apk] [ausgabe.apk]
+#   ./gradlew assembleGithubRelease && scripts/sign-rotated.sh [eingabe.apk] [ausgabe.apk]
+#   Play: ./gradlew bundlePlayRelease (App Bundle, Upload-Schlüssel = neuer Schlüssel, siehe INTERN.md)
 #
 # Alter Schlüssel: signing.properties (storeFile, storePassword, keyAlias, keyPassword)
 # Neuer Schlüssel: $KR_ANDROID_NEW_PROPS (gleiche Felder), Lineage: $KR_ANDROID_LINEAGE
 # Alles liegt auf dem VPS unter /root/workspace/secrets (nie ins Repo).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-IN=${1:-app/build/outputs/apk/release/app-release.apk}
-OUT=${2:-app/build/outputs/apk/release/letzte-runde.apk}
+IN=${1:-app/build/outputs/apk/github/release/app-github-release.apk}
+OUT=${2:-app/build/outputs/apk/github/release/letzte-runde.apk}
 OLD=signing.properties
 NEW=${KR_ANDROID_NEW_PROPS:-/root/workspace/secrets/letzterunde-release-2026.properties}
 LIN=${KR_ANDROID_LINEAGE:-/root/workspace/secrets/letzterunde-signing.lineage}
