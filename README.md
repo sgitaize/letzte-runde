@@ -42,34 +42,9 @@ Kooperatives Pokerkarten-Spiel für den Browser – inspiriert von „The Gang�
 
 ## Architektur
 
-```mermaid
-flowchart LR
-  G["Gäste im WLAN<br/>(Browser, ohne Internet)"]
-  subgraph App["iOS- / Android-App"]
-    direction TB
-    W["WebView<br/>gleiche Oberfläche"] -->|127.0.0.1| N["eingebettetes Node.js<br/>app-host.js + server.js"]
-  end
-  S["Server<br/>server.js · resolve.js<br/>bots.js · accounts.js<br/>Räume als JSON-Dateien"]
-  subgraph Web["Browser"]
-    direction TB
-    B["Browser / PWA<br/>index.html · hand.js"]
-    T["📺 Tisch-Bildschirm"]
-  end
-  G <-->|"WLAN-Host: HTTPS, QR, Bonjour"| N
-  N <-->|"Proxy /api · /ws"| S
-  S -.->|"signiertes Spiel-Bundle"| N
-  S <-->|"HTTPS + WebSocket"| B
-  S <-->|WebSocket| T
+<p align="center"><img src="docs/architecture.png" alt="Architektur: App mit WebView und eingebettetem Node.js, Server, Browser und Tisch-Bildschirm, WLAN-Gäste" width="100%"></p>
 
-  classDef device fill:#e8f1fb,stroke:#3b7dd8,color:#0b2545
-  classDef core fill:#fff4e0,stroke:#f39c1f,color:#3d2600
-  classDef server fill:#e9f7ef,stroke:#2e9e4f,color:#0b3d1e
-  class G,W,B,T device
-  class N core
-  class S server
-  style App fill:#fafafa,stroke:#bbb
-  style Web fill:#fafafa,stroke:#bbb
-```
+<sub>Quelle: <a href="docs/architecture.mmd">docs/architecture.mmd</a> (Mermaid)</sub>
 
 **So funktioniert es**
 - **Das ganze Spiel steckt im Client** (`index.html`, `hand.js`): Oberfläche, Protokoll, Singleplayer mit Bots und Lernmodus. Der Singleplayer läuft dadurch komplett offline.

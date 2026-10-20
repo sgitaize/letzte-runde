@@ -1,0 +1,22 @@
+flowchart LR
+  G("<b>Gäste im WLAN</b><br/><small>Browser, ohne Internet</small>")
+  subgraph App["iOS- / Android-App"]
+    W("<b>WebView</b><br/><small>gleiche Oberfläche</small>") -->|127.0.0.1| N("<b>Node.js im Gerät</b><br/><small><code>app-host.js · server.js</code></small>")
+  end
+  S("<b>Server</b><br/><small><code>server.js · resolve.js</code></small><br/><small><code>bots.js · accounts.js</code></small><br/><small>Räume als JSON-Dateien</small>")
+  subgraph Web["Browser"]
+    B("<b>Browser / PWA</b><br/><small><code>index.html · hand.js</code></small>")
+    T("<b>Tisch-Bildschirm</b><br/><small>PC · TV · Monitor</small>")
+  end
+  G <-->|"WLAN-Host · HTTPS · QR"| N
+  N <-->|"Proxy /api · /ws"| S
+  S -.->|"signiertes Spiel-Bundle"| N
+  S <-->|"HTTPS · WebSocket"| B
+  S <-->|WebSocket| T
+
+  classDef client stroke:#58a6ff,stroke-width:1.5px
+  classDef core stroke:#f0883e,stroke-width:1.5px
+  classDef server stroke:#3fb950,stroke-width:1.5px
+  class G,W,B,T client
+  class N core
+  class S server
