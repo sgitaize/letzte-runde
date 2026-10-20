@@ -1,0 +1,7 @@
+• Private Räume: nicht in der Raumliste, Beitritt nur mit Code oder Link
+• Gemeinsames Tippen: Vorschläge der Mitspielenden live, auch auf dem Tisch – Bots machen mit
+• Leiste „Nächster Schritt“ zeigt jederzeit, was gerade zu tun ist
+• Konto-Seite neu: Statistik, Freunde, Plätze und Konto in Reitern
+• Der Server wertet jede Hand selbst aus
+• „Kauf mir eine Spezi“: freiwilliges Trinkgeld, schaltet nichts frei
+• Viele kleine Verbesserungen und Fehlerbehebungen
