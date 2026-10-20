@@ -233,25 +233,39 @@ try {
   const c = JSON.parse(fs.readFileSync(COUNT_FILE, 'utf8'));
   counters.mp = Math.max(0, parseInt(c.mp, 10) || 0); counters.sp = Math.max(0, parseInt(c.sp, 10) || 0);
 } catch (e) { /* neu */ }
-function bump(k) { counters[k]++; countersDirty = true; }
+/* Mehrere Prozesse (zwei Domains, Passenger-Neustarts) teilen sich die Datei: gespeichert wird nur der eigene Zuwachs,
+   aufaddiert auf den aktuellen Dateistand – früher überschrieb jeder Prozess die Zählungen der anderen. */
+const countersDelta = { mp: 0, sp: 0 };
+function bump(k, n) { n = n || 1; counters[k] += n; countersDelta[k] += n; countersDirty = true; }
 function saveCounters() {
   if (!countersDirty) return;
-  try { fs.writeFileSync(COUNT_FILE + '.tmp', JSON.stringify(counters)); fs.renameSync(COUNT_FILE + '.tmp', COUNT_FILE); countersDirty = false; }
-  catch (e) { console.error('counters', e.message); }
+  try {
+    let cur = { mp: 0, sp: 0 };
+    try { const c = JSON.parse(fs.readFileSync(COUNT_FILE, 'utf8')); cur = { mp: parseInt(c.mp, 10) || 0, sp: parseInt(c.sp, 10) || 0 }; } catch (e) { /* neu */ }
+    const next = { mp: cur.mp + countersDelta.mp, sp: cur.sp + countersDelta.sp };
+    const tmp = COUNT_FILE + '.' + process.pid + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(next)); fs.renameSync(tmp, COUNT_FILE);
+    countersDelta.mp = 0; countersDelta.sp = 0; counters.mp = next.mp; counters.sp = next.sp; countersDirty = false;
+  } catch (e) { console.error('counters', e.message); }
 }
-/* Bremsen gegen Aufblähen: je Raum höchstens eine Hand je 10 s, Übungsraum je IP eine Hand je 8 s */
+/* Stand der anderen Prozesse übernehmen (Startseite zeigt sonst nur den eigenen) */
+function refreshCounters() {
+  if (countersDirty) return;
+  try { const c = JSON.parse(fs.readFileSync(COUNT_FILE, 'utf8')); counters.mp = parseInt(c.mp, 10) || 0; counters.sp = parseInt(c.sp, 10) || 0; } catch (e) { /* egal */ }
+}
+/* Bremsen gegen Aufblähen: je Raum jede Hand nur einmal, Übungsraum je IP eine Meldung je 8 s */
 const lastMpCount = new Map(), lastSpCount = new Map();
-function countMpHand(code) {
-  const now = Date.now();
-  if (now - (lastMpCount.get(code) || 0) < 10000) return;
+function countMpHand(code, hand) {
+  const k = code + ':' + hand;   // je Raum und Hand genau einmal
+  if (lastMpCount.has(k)) return;
   if (lastMpCount.size > 5000) lastMpCount.clear();
-  lastMpCount.set(code, now); bump('mp');
+  lastMpCount.set(k, Date.now()); bump('mp');
 }
 function countSpHand(ip, n) {
   const now = Date.now(), k = ip || '?';
   if (now - (lastSpCount.get(k) || 0) < (ip ? 8000 : 1000)) return;
   if (lastSpCount.size > 20000) lastSpCount.clear();
-  lastSpCount.set(k, now); counters.sp += (n || 1) - 1; bump('sp');
+  lastSpCount.set(k, now); bump('sp', n || 1);
 }
 setInterval(guard(flushAll, 'save'), 2000).unref();
 
@@ -332,6 +346,7 @@ function autoResult(code) {
   const doc = resolver.resultDoc(x), changed = ['state/result'];
   r.docs['state/result'] = doc;
   if (!x.res.missing && statsAdd(r, statsEntry(r, m, hand, x.res.by, doc.win, doc.guess, 'server'))) changed.push('stats');
+  countMpHand(code, hand);   // Startseite: fertige Hand (der Server wertet jede genau einmal aus)
   commit(code, changed);
   return doc;
 }
@@ -849,7 +864,7 @@ function openRooms() {
 async function api(req, res, u) {
   const a = u.searchParams.get('a') || '';
   if (a === 'config') return json(res, 200, { config: config, logic: LOGIC, bundle: bundleInfo() });
-  if (a === 'rooms') return json(res, 200, { rooms: openRooms(), counts: { mp: counters.mp, sp: counters.sp } });
+  if (a === 'rooms') { refreshCounters(); return json(res, 200, { rooms: openRooms(), counts: { mp: counters.mp, sp: counters.sp } }); }
   if (a === 'sphand') {                   // Übungsraum meldet neue Hand(en); offline gespielte werden nachgereicht (max. 20)
     let body = {}; try { body = await readBody(req); } catch (e) { /* egal */ }
     countSpHand(clientIp(req), Math.min(20, Math.max(1, parseInt(body.n, 10) || 1)));
@@ -1194,8 +1209,6 @@ async function api(req, res, u) {
     if (bad) return json(res, 409, { error: bad, stale: true });
     const prevMain = p === 'state/main' ? (r.docs['state/main'] || {}) : null;
     const v = change(code, p, body);
-    /* Neue Hand gestartet (Phase „geben“, Handnummer +1) → Zähler für die Startseite */
-    if (v !== null && prevMain && body.phase === 'deal' && Number(body.hand) === (Number(prevMain.hand) || 0) + 1 && prevMain.phase !== 'deal') countMpHand(code);
     if (v === null) return json(res, 413, { error: 'Raum voll' });
     if (p.indexOf('players/') === 0 && r.docs.room && !r.docs.room.hostId) {
       /* Geplanter Raum: erster Spieler wird Host (Server entscheidet, Reihenfolge der Anfragen) */
