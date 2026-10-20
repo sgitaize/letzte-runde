@@ -1737,7 +1737,7 @@ function bundleBanner(){
   if(av&&!bundle.dlg)out+='<div class="placebar upd'+(s.required?' req':'')+'"><p class="plc"><span>🔄 <b>'+(s.required?'Update nötig für Online-Räume':'Neue Spiellogik verfügbar')+'</b> <span class="sub">· '+kb(av.bytes)+'</span></span></p>'+
     '<button class="small primary" data-a="bshow">Ansehen</button></div>';
   var apk=s.apk,skip='';try{skip=localStorage.getItem('kr.apk.skip')||'';}catch(e){}
-  if(apk&&apk.latest&&skip!==apk.latest)out+='<div class="placebar upd"><p class="plc"><span>📲 <b>Neue App-Version '+esc(apk.latest)+'</b> <span class="sub">· du hast '+esc(apk.current)+'</span></span></p>'+
+  if(apk&&apk.latest&&skip!==apk.latest)out+='<div class="placebar upd"><p class="plc"><span>📲 <b>Neue App-Version '+esc(apk.latest)+'</b> <span class="sub">· du hast '+esc(apk.current)+' · Download über GitHub, Play-Store-Version folgt</span></span></p>'+
     '<span class="row"><a class="btn" href="'+esc(apk.url)+'" target="_blank" rel="noopener">APK laden</a><button class="small ghost" data-a="apkskip" data-v="'+esc(apk.latest)+'" aria-label="Hinweis ausblenden">✕</button></span></div>';
   return out;
 }
