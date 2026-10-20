@@ -1694,6 +1694,17 @@ function bundleApply(){
     render();
   }).catch(function(e){bundle.busy=false;bundle.err='Update ging nicht – keine Verbindung?';render();});
 }
+/* „Update prüfen“ in der Fußzeile: fragt sofort beim Server nach (sonst beim Start und alle 6 h) */
+function bundleCheck(){
+  if(bundle.busy)return;bundle.busy=true;render();
+  bundleCall('check',true).then(function(s){
+    bundle.busy=false;bundle.st=s;
+    if(s&&s.available){bundle.shown=s.available.build;bundle.dlg=true;}
+    else if(s&&s.error)showToast(s.error);
+    else showToast('Spiellogik ist aktuell');
+    render();
+  }).catch(function(){bundle.busy=false;showToast('Keine Verbindung zum Server');render();});
+}
 function bundleReset(){
   if(typeof confirm==='function'&&!confirm('Zurück zur Spiellogik, die mit der App ausgeliefert wurde?'))return;
   bundleCall('reset',true).then(function(){try{location.reload();}catch(e){}}).catch(function(){});
@@ -1746,7 +1757,8 @@ function bundleFoot(){
   if(!bundleOn())return '';
   var a=bundle.st&&bundle.st.active;
   return '<span class="note">Spiellogik '+num(KRA.logic||LOGIC_VERSION)+(KRA.bundle==='download'?' (nachgeladen · <button class="linkbtn" data-a="breset">zurücksetzen</button>)':'')+
-    (a&&a.build?' · Build '+num(a.build):'')+'</span>';
+    (a&&a.build?' · Build '+num(a.build):'')+
+    ' · <button class="linkbtn" data-a="bcheck"'+(bundle.busy?' disabled':'')+'>'+(bundle.busy?'prüfe …':'Update prüfen')+'</button></span>';
 }
 function vib(p){
   if(KRA&&KRA.app){appMsg({a:'haptic',k:(p&&p.length>1)||p>=60?'success':p>=35?'medium':'light'});return;}
@@ -4085,6 +4097,7 @@ document.addEventListener('click',function(ev){
   else if(a==='blater'){bundle.dlg=false;render();}
   else if(a==='bshow'){bundle.dlg=true;bundle.err='';render();}
   else if(a==='breset')bundleReset();
+  else if(a==='bcheck')bundleCheck();
   else if(a==='apkskip'){try{localStorage.setItem('kr.apk.skip',el.getAttribute('data-v')||'');}catch(e){}render();}
   else if(a==='notable'){hideTable=!hideTable;try{localStorage.setItem('kr.notable',hideTable?'1':'0');}catch(e){}render();}
   else if(a==='tvfs')tvFullscreen();
