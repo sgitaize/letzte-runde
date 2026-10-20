@@ -753,10 +753,11 @@ const resolver = require('./resolve');
 const LOGIC = require('./public/hand.js').LOGIC_VERSION;
 const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
 const moderation = require('./moderation')({ dataDir: DATA, json, readBody, cleanName });
-/* Push an den Betreiber (Issue #7) über ntfy: KR_ADMIN_NTFY = volle Topic-URL (https://ntfy.sh/<geheimes-topic> oder eigener
-   Server). Nur ein kurzer Hinweis ohne Namen oder Inhalte; ohne Variable (z. B. in der App) passiert nichts. */
+/* Push an den Betreiber (Issue #7) über ntfy: KR_ADMIN_NTFY oder data/admin-ntfy.txt = volle Topic-URL (https://ntfy.sh/<geheimes-topic>
+   oder eigener Server). Nur ein kurzer Hinweis ohne Namen oder Inhalte; ohne Angabe (z. B. in der App) passiert nichts. */
 function notifyAdmin(text) {
-  const url = process.env.KR_ADMIN_NTFY;
+  let url = (process.env.KR_ADMIN_NTFY || '').trim();
+  if (!url) try { url = fs.readFileSync(path.join(DATA, 'admin-ntfy.txt'), 'utf8').trim(); } catch (e) { return; }
   if (!/^https:\/\//.test(url || '')) return;
   try {
     const rq = require('https').request(url, { method: 'POST', timeout: 8000, headers: { Title: 'Letzte Runde', Tags: 'rotating_light', Click: 'https://letzterunde.aize-it.de/admin.html' } },
