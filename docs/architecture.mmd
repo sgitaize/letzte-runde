@@ -10,7 +10,7 @@ flowchart LR
   end
   G <-->|"WLAN-Host · HTTPS · QR"| N
   N <-->|"Proxy /api · /ws"| S
-  S -.->|"signiertes Spiel-Bundle"| N
+  N -.->|"lädt signiertes Spiel-Bundle"| S
   S <-->|"HTTPS · WebSocket"| B
   S <-->|WebSocket| T
 
