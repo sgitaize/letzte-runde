@@ -20,7 +20,7 @@ android {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
+        versionCode = 7
         versionName = "1.1.1"
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared") } }
     }
@@ -102,5 +102,5 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")   // QR scannen + erzeugen, ohne Google Play
-    "playImplementation"("com.android.billingclient:billing-ktx:7.1.1")   // „Kauf mir eine Spezi“ nur in der Play-Fassung
+    "playImplementation"("com.android.billingclient:billing-ktx:8.3.0")   // „Kauf mir eine Spezi“ nur in der Play-Fassung
 }

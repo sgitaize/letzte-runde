@@ -66,7 +66,8 @@ object Tips {
         val params = QueryProductDetailsParams.newBuilder().setProductList(IDS.map {
             QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(ProductType.INAPP).build()
         }).build()
-        c.queryProductDetailsAsync(params) { result, list ->
+        c.queryProductDetailsAsync(params) { result, res ->
+            val list = res.productDetailsList   // Billing 8: Ergebnisobjekt statt Liste
             ui {
                 if (result.responseCode == BillingResponseCode.OK && list.isNotEmpty()) {
                     products = list.sortedBy { it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0 }
