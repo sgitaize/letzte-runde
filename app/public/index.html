@@ -3645,7 +3645,7 @@ function roomView(){
     '<div class="note">'+esc(phaseLabel())+(roomPrivate()?' \u00b7 🔒 privat':'')+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
       '<button class="small ghost" data-a="stats" title="Statistik" aria-label="Statistik">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
-      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?'Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden':'Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt')+'">'+(hideTable?'📺 Tisch aus':'🃏 Tisch an')+'</button>':'')+
+      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?'Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden':'Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt')+'">'+(hideTable?'🃏 Tisch einblenden':'📺 Tisch ausblenden')+'</button>':'')+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">Raum schließen</button>':'')+
       '<button class="small ghost" data-a="leave">Verlassen</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">Dein Name</label>'+
