@@ -43,12 +43,12 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
 
   // 2) Server aus = kein Netz – Hinweis muss ohne Neuladen erscheinen
   await stopSrv();
-  { const t = Date.now(); await until('/Offline/.test(document.body.innerText)', 'Offline-Hinweis ohne Neuladen', 15000);
+  { const t = Date.now(); await until('!!document.querySelector(".panel.offline")', 'Offline-Hinweis ohne Neuladen', 15000);
     ok(true, 'Netz weg: Offline-Hinweis erscheint von selbst, ohne Neuladen (' + ((Date.now() - t) / 1000).toFixed(1) + ' s)'); }
   await nav(URL0);
   await until('/Letzte Runde/.test(document.body.innerText)&&!!document.querySelector(\'[data-a="sp"]\')', 'Seite offline');
   ok(true, 'Ohne Server: Seite kommt trotzdem (aus dem Speicher des Geräts)');
-  await until('/Offline/.test(document.body.innerText)', 'Offline-Hinweis', 10000);
+  await until('!!document.querySelector(".panel.offline")', 'Offline-Hinweis', 10000);
   ok(true, 'Offline-Hinweis „Räume gehen gerade nicht, der Singleplayer schon“');
 
   // 3) Singleplayer offline: komplette Hand, dann gleich die nächste
@@ -88,7 +88,7 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
   const tt = Date.now() - t;
   ok(tt < 6000, 'Hängendes Netz: App in ' + (tt / 1000).toFixed(1) + ' s bedienbar, Singleplayer startet');
   await click('[data-a="leave"]'); t = Date.now();
-  await until('/Offline/.test(document.body.innerText)', 'Offline-Hinweis bei hängendem Netz', 15000);
+  await until('!!document.querySelector(".panel.offline")', 'Offline-Hinweis bei hängendem Netz', 15000);
   ok(true, 'Hängendes Netz: Offline-Hinweis nach ' + ((Date.now() - t) / 1000).toFixed(1) + ' s, ohne Neuladen');
   await new Promise((r) => { for (const c of [...(hang._conns || [])]) c.destroy(); hang.close(r); setTimeout(r, 500); });
 
