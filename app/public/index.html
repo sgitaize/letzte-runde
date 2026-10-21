@@ -68,7 +68,7 @@ h2{font-size:13px;margin:0 0 8px;font-weight:600;color:var(--muted);text-transfo
 p{margin:0 0 10px}
 .muted{color:var(--muted)}
 .small{font-size:13px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .row:has(> .field){align-items:flex-end}
 /* App (window.KR_APP): Installationshilfe nur im Browser */
@@ -91,7 +91,7 @@ a.btn{display:inline-block;padding:5px 9px;border-radius:9px;background:var(--ac
 .chk input{-webkit-appearance:none;appearance:none;width:20px;height:20px;min-height:0;padding:0;margin:0;flex:none;border:2px solid var(--line);border-radius:6px;background:transparent center/14px no-repeat;cursor:pointer}
 .chk input:checked{background-color:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .chk .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
-.subact{width:100%;justify-content:center;margin-top:8px}
+.subact{width:100%;justify-content:center;margin-top:8px}button.small.subact{padding:10px 12px}
 .optin{display:flex;gap:10px;align-items:flex-start;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
 .optin input,.acctbox .optin input{margin:3px 0 0;padding:0;flex:none;width:18px;height:18px;min-width:18px;accent-color:var(--accent)}
 /* Text-Knöpfe (statt blauer Links), z. B. im Konto-Dialog */
@@ -104,7 +104,8 @@ button:hover{border-color:var(--muted)}
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 button.ghost{background:transparent}
 button:disabled{opacity:.45;cursor:default}
-button.small{padding:5px 9px;font-size:13px;font-weight:500}
+button.small{padding:7px 12px;font-size:13px;font-weight:500;line-height:1.3}
+.pl button.small{padding:5px 9px}
 input,select{font:inherit;padding:9px 10px;border-radius:9px;border:1px solid var(--line);
   background:var(--panel);color:var(--fg);min-width:0}
 input{width:100%}
@@ -137,7 +138,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .pl .plx{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding-left:calc(var(--plchip,38px) + 10px);min-width:0}
 .pl .plx .cards{flex:none}
 .pl>.chip{flex:none}
-.tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag{font-size:11px;padding:2px 8px;line-height:1.4;display:inline-block;vertical-align:middle;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .tag.ok{color:var(--accent);border-color:var(--accent)}
 .tag.you{background:var(--chip)}
 .hist{display:inline-flex;align-items:center;gap:3px;margin-left:8px;vertical-align:middle}
@@ -201,21 +202,24 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .rename{vertical-align:middle;margin-left:4px}
 /* Raum-Aufbau: im Hochformat eine Spalte in der gewohnten Reihenfolge (Spalten lösen sich auf) … */
 .cols{display:flex;flex-direction:column}
-.col-l,.col-r{display:contents}
+.col-l,.col-r,.col-rs,.col-s{display:contents}
 .p-board{order:1}.p-guess,.p-reveal{order:2}.p-coach{order:2}.p-mine{order:3}.p-players{order:4}.p-chips{order:0}.p-guess{order:6}.cols .endbar{order:7}
-/* … ab Tablet-Größe im Querformat nebeneinander, ohne Scrollen: links Tisch/Karten/Chips, rechts Spieler + Chat */
+/* … ab Tablet-Größe im Querformat nebeneinander, ohne Scrollen: links Tisch/Karten/Chips, rechts Spieler, darunter Insight + Chat
+   (Chat-Lage setzt placeChat() per JS: direkt unter dem Inhalt der Seitenspalte, Rest der Höhe) */
 @media (orientation:landscape) and (min-width:900px) and (min-height:560px){
-  :root{--rw:clamp(320px,34vw,460px);--chatH:clamp(170px,30vh,300px)}
+  :root{--rw:clamp(360px,40vw,460px)}
   .wrap.inroom{max-width:1500px;height:100vh;height:100dvh;box-sizing:border-box;padding:10px 16px;display:flex;flex-direction:column;overflow:hidden}
   .wrap.inroom>.panel{flex:0 0 auto;margin-bottom:10px}
-  .inroom .cols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--rw);gap:14px}
-  .inroom .col-l,.inroom .col-r{display:block;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-  .inroom .cols.with-chat .col-r{padding-bottom:calc(var(--chatH) + 10px)}
-  .inroom .panel{padding:10px 12px;margin-bottom:10px}
+  .inroom .cols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--rw);grid-template-rows:minmax(0,1fr);gap:14px}
+  .inroom .col-l,.inroom .col-rs{display:block;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;position:relative}
+  .inroom .col-r,.inroom .col-s{display:block}
+  .inroom .panel{padding:12px 14px;margin-bottom:10px}
+  .rhead .row button.small{padding:5px 8px}
+  .inroom .rhead>.spread{flex-wrap:nowrap}.inroom .rhead .rtitle{flex:none}.inroom .rhead .spread>.row{flex:1 1 0;justify-content:flex-end;gap:6px}
   .inroom .mine-row{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
   .inroom .mine-row .mychips{margin-top:0}
   .inroom .chip.big{width:46px;height:46px;font-size:18px;border-width:3px}
-  .inroom .pl{padding:5px 4px;--plchip:var(--chipw)}
+  .inroom .pl{--plchip:var(--chipw)}
   .inroom .endbar{margin-bottom:0}
   .inroom .coach-l{display:none}.inroom .coach-r{display:block;font-size:.95em}   /* Lernmodus oben rechts, sofort sichtbar */
   .inroom .coach-r .note{display:none}
@@ -236,9 +240,30 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   .inroom button{font-size:clamp(14px,1.7vh,17px)}
   /* nach der Hand: eigene Karten stehen in der Spielerliste, „Neue Hand“ in der Leiste → Doppeltes ausblenden */
   .inroom .cols.is-done .p-mine,.inroom .cols.is-done .p-reveal [data-a="start"],.inroom .cols.is-done .p-reveal [data-a="spnext"]{display:none}
-  #chat{position:fixed;bottom:10px;right:max(16px,calc((100vw - 1500px)/2 + 16px));width:var(--rw);height:var(--chatH);max-width:none;padding:0;margin:0;box-sizing:border-box}
+  #chat{position:fixed;bottom:10px;right:16px;width:var(--rw);height:220px;max-width:none;padding:0;margin:0;box-sizing:border-box}
   #chat .panel{height:100%;box-sizing:border-box;display:flex;flex-direction:column;margin:0}
-  #chat .chatmsgs{flex:1 1 auto;max-height:none;min-height:0}
+  #chat .chatmsgs{flex:1 1 auto;max-height:none;min-height:0}#chat.mini .chatmsgs{display:none}#chat.mini .chatform{margin-top:auto}
+  /* Spielerzeilen kompakt, damit alle ohne Scrollen lesbar sind: Chip · Karten · Name (+ Handname/Ergebnis darunter) · Knöpfe */
+  .inroom .p-players .pl{gap:8px;flex-wrap:nowrap}.inroom .p-players .pl>.nm{flex:1 1 0;min-width:60px}
+  .inroom .p-players .pl>*{order:3}
+  .inroom .p-players .pl>.chip{order:0}
+  .inroom .p-players .pl>.nm{order:2}
+  .inroom .p-players .pl>.plx{order:1;flex:none;padding-left:0}   /* Karten direkt hinter dem Chip → bündig untereinander */
+  .inroom .p-players .nmres{display:flex;flex-wrap:wrap;gap:3px 5px;margin-top:3px}.inroom .p-players .plx>.tag{display:none}
+  .inroom .cols.is-done.has-ins .p-players .hist{display:none}   /* Chip-Verlauf zeigt dann die Insight-Grafik */
+  .inroom .p-players .nmres .tag{white-space:normal;border-radius:8px;max-width:100%}
+  .inroom .p-players .pl .say{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:.8em}
+  .inroom .p-players .tag.open .tx{display:none}   /* „🔄“ reicht (Tooltip erklärt), sonst bricht die Zeile um */
+}
+/* Breite Bildschirme: drei Spalten – Tisch schmaler | Spieler | Insight oben + Chat darunter */
+@media (orientation:landscape) and (min-width:1200px) and (min-height:560px){
+  :root{--pw:clamp(380px,29vw,500px);--sw:clamp(290px,22vw,420px)}
+  .wrap.inroom{max-width:1880px}
+  .inroom .cols{grid-template-columns:minmax(0,1fr) var(--pw) var(--sw)}
+  .inroom .cols.no-side{grid-template-columns:minmax(0,1fr) var(--pw)}.inroom .cols.no-side .col-s{display:none}
+  .inroom .cols.no-r{grid-template-columns:minmax(0,1fr) var(--sw)}.inroom .cols.no-r .col-r{display:none}
+  .inroom .col-rs{display:contents}
+  .inroom .col-r,.inroom .col-s{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;position:relative}
 }
 .vbox{max-width:520px;text-align:left}.vbox ul{margin:8px 0 12px 18px;padding:0}.vbox li{margin:6px 0;font-size:15px}.vbox h2{font-size:18px;text-transform:none;letter-spacing:0;color:var(--fg)}
 .vbox .danger.primary{background:var(--red,#c0392b);border-color:var(--red,#c0392b);color:#fff}
@@ -318,8 +343,8 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .coachtip,.coachok,.coachwarn{padding:6px 10px;border-radius:8px}.coachtip{background:color-mix(in srgb,var(--coachc) 14%,transparent)}
 .coachok{background:color-mix(in srgb,#2e9d57 14%,transparent)}.coachwarn{background:color-mix(in srgb,#e0a31a 20%,transparent)}
 .coachlist{margin:4px 0 4px 18px;padding:0}.coachlist li{margin:3px 0}.coach b.ok{color:#2e9d57}
-.insight{width:100%;max-width:460px;display:block;margin:4px 0}.insight .ig{stroke:var(--line);stroke-width:1}.insight .it{fill:var(--muted);font-size:11px}
-.insight .il{fill:var(--fg);font-size:12px}.insight .il.me{font-weight:700}.insight .id{stroke:var(--panel,#fff);stroke-width:2}
+.insight{width:100%;max-width:460px;display:block;margin:4px 0}.insight .ig{stroke:var(--line);stroke-width:1}.insight .it{fill:var(--muted);font-size:12px}
+.insight .il{fill:var(--fg);font-size:14px;font-weight:650;paint-order:stroke;stroke:var(--panel,#fff);stroke-width:3px;stroke-linejoin:round}.insight .il.me{font-weight:700}.insight .id{stroke:var(--panel,#fff);stroke-width:2}
 .ilegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px}.ileg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .p-insight{order:4}
 .coachreads{margin:6px 0}.coachreads summary{cursor:pointer;font-weight:600}
@@ -350,8 +375,11 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .tv-mid .sugs{justify-content:center;flex:0 1 auto}.tv-mid .sug{padding:calc(var(--u)*.4) calc(var(--u)*.9)}.tv-mid .sug .who{font-size:calc(var(--u)*1.9)}
 .tv-mid .sug .card{width:calc(var(--u)*3.2);height:calc(var(--u)*4.4)}.tv-mid .sug .card .r{font-size:calc(var(--u)*1.7)}
 .revcd{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center;padding:4px 8px;border-radius:999px;border:2px solid var(--accent)}
+.nmres{display:none}
+/* Raumkopf: Titel und Knöpfe nebeneinander, wenn Platz ist – sonst Titel über den Knöpfen (Handy) statt zusammengequetscht */
+.rhead>.spread{flex-wrap:wrap;align-items:flex-start}.rhead .rtitle{flex:1 1 200px;min-width:0}
 .say{font-size:13px;font-style:italic;opacity:.85;margin-top:2px}
-.pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4))}
+.pl.sp{border:1px dashed var(--line,rgba(127,127,127,.4));padding:10px 12px;border-radius:10px;margin-bottom:8px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:10px 0}
 .usage{margin-top:12px}.usage summary{font-size:15px;font-weight:600;color:var(--fg)}
 .ubars{display:flex;gap:6px;align-items:flex-end;height:92px;margin:4px 0 10px}.ub{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
@@ -2407,12 +2435,13 @@ function spView(){
     pl+='<div class="pl'+(id==='me'?' me':'')+(rx?(rx.ok?' res-ok':' res-bad'):'')+'">'+
       (c?'<div class="chip r'+(ph==='play'?st:4)+(clickable?'':' static')+(id==='me'?' mine':'')+'"'+(clickable?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">–</div>')+
       '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag">🤖</span>':' <span class="tag you">du</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
-        (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+'</div>'+
-      (ph==='play'&&p.bot&&p.open&&c?'<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">🔄 offen</span>':'')+
+        (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+nmRes(cards,verdict)+'</div>'+
+      (ph==='play'&&p.bot&&p.open&&c?'<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">🔄<span class="tx"> offen</span></span>':'')+
       (ph==='play'?(sp.ready[id]&&c?'<span class="tag ok" title="bereit">👊</span>':'<span class="tag">'+(p.bot?'🤔':'…')+'</span>'):'')+
       ((cards||verdict)?'<div class="plx">'+cards+verdict+'</div>':'')+'</div>';
   });
-  var Rt=(spInsight?insightHtml():'')+'<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
+  var Ins=spInsight?insightHtml():'';
+  var Rt='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+pl+'</div></div>';
 
   if(ph==='play'){
     var free='';
@@ -2448,7 +2477,7 @@ function spView(){
     out=out.slice(0,afterBoard)+rp+(coach?coach.l:'')+out.slice(afterBoard);
     out+=endBar(res,'spnext','');
   }else out+=stepBar(spStep());
-  return head+'<div class="cols'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+out+'</div><div class="col-r">'+(coach?coach.r:'')+Rt+'</div></div>';
+  return head+'<div class="cols'+(ph==='done'?' is-done':'')+(Ins?' has-ins':' no-side')+'"><div class="col-l">'+out+'</div>'+sideCols((coach?coach.r:'')+Rt,Ins)+'</div>';
 }
 
 /* ---------- Voice-Chat (WebRTC direkt zwischen den Geräten, ohne TURN; im Admin schaltbar, Standard aus) ---------- */
@@ -2685,7 +2714,9 @@ function stealHtml(){
 function sayOf(id){var q=(S.say||{})[id];return q&&typeof q.t==='string'&&Date.now()-(q.ts-(srvOff||0))<REACT_MS?q.t:null;}
 /* Server-Bot unsicher → „offen für Wechsel“ (Dokument open/<bot>, gilt nur für diese Hand, Runde und diesen Chip) */
 function isOpenBot(id,h,c){var o=(S.open||{})[id];return !!(o&&o.hand===h&&o.stage===stage()&&o.chip===c);}
-function sayHtml(id){var t=isMuted(id)?'':sayOf(id);return t?'<div class="say">\ud83d\udcac '+esc(t)+'</div>':'';}
+/* Handname + Ergebnis zusätzlich unter dem Namen (nur im Querformat sichtbar, dort stehen die Karten neben dem Namen) */
+function nmRes(cards,verdict){var h=(cards.match(/<span class="tag hand">.*?<\/span>/)||[''])[0];return (h||verdict)?'<div class="nmres">'+h+verdict+'</div>':'';}
+function sayHtml(id){var t=isMuted(id)?'':sayOf(id);return t?'<div class="say" title="'+esc(t)+'">\ud83d\udcac '+esc(t)+'</div>':'';}
 function reactHtml(id){var e=isMuted(id)?'':reactOf(id);return e?'<span class="react-pop" title="Reaktion">'+e+'</span>':'';}
 function reactBar(){
   if(!sp&&(watching||!joined||!code))return '';
@@ -2745,13 +2776,13 @@ function insightHtml(act){
       lines+='<line x1="'+lastPt[0]+'" y1="'+lastPt[1]+'" x2="'+ex+'" y2="'+ey+'" stroke="'+col+'" stroke-width="2" stroke-dasharray="4 3"/>';
       dots+='<circle cx="'+ex+'" cy="'+ey+'" r="5" fill="none" stroke="'+col+'" stroke-width="2"><title>'+esc(p.name)+' · richtig wäre '+(x.lo===x.hi?x.lo:x.lo+'–'+x.hi)+'</title></circle>';}
     if(lastPt)lab.push({y:done?ys((sp.res.by[p.id].lo+sp.res.by[p.id].hi)/2):ys(lastPt[3]),me:p.id==='me',t:p.id==='me'?'Du':p.name,col:col});
-    legend+='<span class="ileg"><i style="background:'+col+'"></i>'+esc(p.id==='me'?'Du':p.name)+'</span>';
+    else legend+='<span class="ileg"><i style="background:'+col+'"></i>'+esc(p.id==='me'?'Du':p.name)+'</span>';   // nur wer (noch) keinen Punkt hat
   });
   lab.sort(function(a,b){return a.y-b.y;}).forEach(function(l,i){if(i&&l.y<lab[i-1].y+13)l.y=lab[i-1].y+13;   // Gleichstand: untereinander
-    labels+='<text x="'+(xs(cols)+10)+'" y="'+(l.y+4)+'" class="il'+(l.me?' me':'')+'">'+esc(l.t)+'</text>';});
-  return '<div class="panel p-insight"><div class="spread"><h2>📈 Insight: Positionen je Runde</h2><button class="small ghost" data-a="'+(act||'spinsight')+'">aus</button></div>'+
+    labels+='<text x="'+(xs(cols)+10)+'" y="'+(l.y+4)+'" class="il'+(l.me?' me':'')+'" style="fill:'+l.col+'">'+esc(l.t)+'</text>';});   // Name in Linienfarbe = Legende
+  return '<div class="panel p-insight"><div class="spread"><h2>📈 Insight · Positionen</h2><button class="small ghost" data-a="'+(act||'spinsight')+'">aus</button></div>'+
     '<svg class="insight" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Chip je Spieler und Runde">'+g+lines+dots+labels+'</svg>'+
-    '<div class="ilegend">'+legend+'</div><p class="note">Oben = höchster Chip. Jede Linie ist ein Spieler; Knick = Positionswechsel.'+(done?' Gestrichelt: wo die Person richtig gestanden hätte (Echt).':'')+'</p></div>';
+    (legend?'<div class="ilegend">'+legend+'</div>':'')+'<p class="note">Oben = höchster Chip. Jede Linie ist eine Person, Name in ihrer Farbe; Knick = Positionswechsel.'+(done?' Gestrichelt: wo die Person richtig gestanden hätte (Echt).':'')+'</p></div>';
 }
 
 /* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
@@ -3572,18 +3603,41 @@ function render(){
   ['name','code','rname','sname','stime','acc_name','acc_pw','acc_pw2','acc_rec','acc_old','acc_new','acc_new2','acc_pwc','acc_fcode'].forEach(function(id){var x=$(id);if(x&&x.value!=null)keep[id]=x.value;});
   /* Scroll-Position der Spalten (Querformat) über das Neuzeichnen retten, sonst springt z. B. die Spielerliste zurück */
   var scr={},qs=el.querySelector?function(c){return el.querySelector(c);}:function(){return null;};
-  ['.col-l','.col-r','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
+  ['.col-l','.col-r','.col-rs','.col-s','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x)scr[c]=x.scrollTop;});
   /* aufgeklappte Bereiche (Rangfolge, Nutzung …) bleiben beim Neuzeichnen offen */
   var opn={},dq=function(){return el.querySelectorAll?el.querySelectorAll('details[class]'):[];};
   [].forEach.call(dq(),function(d){if(d.open)opn[d.className]=1;});
   el.innerHTML = (sp?spView():code?(tvMode?tvView():roomView()+modDialog()):startView()+acctDialog()+donateDialog())+(tvMode?'':bundleDialog());
   [].forEach.call(dq(),function(d){if(opn[d.className])d.open=true;});
   if(flash.sel&&Date.now()<flash.until){var fl=qs(flash.sel);if(fl)fl.classList.add('flash');}
-  ['.col-l','.col-r','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
+  ['.col-l','.col-r','.col-rs','.col-s','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
-  renderChat();
+  renderChat();placeChat();
 }
+/* Rechte Seite im Raum: Spieler (col-r) und Insight + Chat (col-s). Hochformat: alles eine Spalte; Querformat mittel: beide
+   untereinander in einer Spalte (col-rs scrollt); breit: col-rs löst sich auf → drei Spalten Tisch | Spieler | Insight + Chat */
+function sideCols(r,ins){return '<div class="col-rs"><div class="col-r">'+r+'</div><div class="col-s">'+ins+'</div></div>';}
+/* Chat steht fest unten in der Seitenspalte, direkt unter deren Inhalt (Insight bzw. Spieler) und nimmt die Resthöhe;
+   reicht der Platz nicht, behält er eine Mindesthöhe und der Inhalt darüber scrollt */
+var wideMQ=window.matchMedia?matchMedia('(orientation:landscape) and (min-width:900px) and (min-height:560px)'):null;
+var threeMQ=window.matchMedia?matchMedia('(orientation:landscape) and (min-width:1200px) and (min-height:560px)'):null;
+function placeChat(){
+  if(!document.querySelector||!wideMQ)return;   // Tests ohne echtes DOM
+  var box=$('chat');if(!box)return;
+  var col=document.querySelector(threeMQ&&threeMQ.matches?'.with-chat .col-s':'.with-chat .col-rs');
+  if(!col||!wideMQ||!wideMQ.matches||box.style.display==='none'){box.style.cssText=box.style.display==='none'?'display:none':'';box.classList.remove('mini');if(col)col.style.maxHeight='';return;}
+  col.style.maxHeight='';
+  var r=col.getBoundingClientRect(),bottom=col.closest('.cols').getBoundingClientRect().bottom,last=null,kids=col.querySelectorAll('.col-s>.panel,.col-r>.panel,:scope>.panel');
+  for(var i=0;i<kids.length;i++)if(kids[i].offsetHeight)last=kids[i];
+  var gap=10,minH=threeMQ.matches?Math.min(280,(bottom-r.top)*.45):110;   // zwei Spalten: Spieler haben Vorrang, Chat klein
+  var top=last?last.getBoundingClientRect().bottom+col.scrollTop+gap:r.top;
+  top=Math.max(r.top,Math.min(top,bottom-minH));
+  col.style.maxHeight=(Math.ceil(top-r.top)+1)+'px';   // Spalte endet über dem Chat; passt der Inhalt nicht, scrollt er dort
+  box.style.left=r.left+'px';box.style.width=r.width+'px';box.style.top=top+'px';box.style.height=Math.max(0,bottom-top)+'px';
+  box.classList.toggle('mini',bottom-top<150);   // sehr wenig Platz: nur Eingabe, Verlauf ausgeblendet
+}
+if(window.addEventListener)window.addEventListener('resize',function(){placeChat();});
 
 function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
@@ -3635,8 +3689,8 @@ function startView(){
 function roomView(){
   var h=hand(),ph=phase(),ps=parts(),m=pmap();
   var out='';
-  out+='<div class="panel"><div class="spread">'+
-    '<div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span>'+
+  out+='<div class="panel rhead"><div class="spread">'+
+    '<div class="rtitle"><div class="brand sm" data-a="reload" role="button" tabindex="0" title="Seite neu laden"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':'Raum ')+'<span class="code">'+esc(code)+'</span>'+
       (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="Raum umbenennen">✎</button>':'')+'</h1>'+
     '<div class="note">'+esc(phaseLabel())+(roomPrivate()?' \u00b7 🔒 privat':'')+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">Zuschauer</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 Einladen</button>'+
@@ -3658,8 +3712,8 @@ function roomView(){
   if(cd.key)out+=countdownHtml();
   out+=voiceDialog()+botifyDialog()+stealHtml();
 
-  var L='',Rt='';
-  var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+'"><div class="col-l">'+L+'</div><div class="col-r">'+Rt+'</div></div>';};
+  var L='',Rt='',Ins='';
+  var cols=function(){return out+'<div class="cols with-chat'+(ph==='done'?' is-done':'')+(Rt?'':' no-r')+(Ins?' has-ins':'')+'"><div class="col-l">'+L+'</div>'+sideCols(Rt,Ins)+'</div>';};
   if(ph==='lobby'){
     if(preStart())L+='<div class="panel waitroom p-board"><p>\u23f3 <b>Wartebereich</b> \u2013 Start '+esc(fmtWhen(num(S.room.startsAt)))+
       ' \u00b7 noch <b><span data-left="'+num(S.room.startsAt)+'">'+fmtLeft(num(S.room.startsAt)-srvNow())+'</span></b></p>'+
@@ -3714,7 +3768,7 @@ function roomView(){
     rankingHtml(my?my.cat:-1)+'</div>';
 
   /* Spieler + Chips */
-  if(spInsight)Rt+=mpWith(insightHtml)||'';  // Insight auch im Raum (Simon 2026-10-01)
+  if(spInsight)Ins=mpWith(insightHtml)||'';  // Insight auch im Raum (Simon 2026-10-01)
   Rt+='<div class="panel p-players"><div class="spread"><h2>Spieler</h2>'+reactBar()+'</div>'+playerList(true)+'</div>';
 
   if(ph==='play'){
@@ -3880,9 +3934,9 @@ function playerList(inHand){
       (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
       '<div class="nm">'+esc(p.name||'Spieler')+(isMuted(id)?' <span class="tag" title="stummgeschaltet">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">du</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
-        (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+'</div>'+
+        (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+nmRes(cards,verdict)+'</div>'+
       (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
-      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?'<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04 offen</span>':'')+
+      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?'<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04<span class="tx"> offen</span></span>':'')+
       (inHand&&ph==='play'?(isReady(p)?'<span class="tag ok" title="bereit">\ud83d\udc4a</span>':'<span class="tag">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa Platz übernehmen</button>':'')+
       (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa Platz übernehmen</button>':

@@ -54,6 +54,7 @@ async function connect(url) {
   await send('Page.enable');
   if (process.env.APPSIM) await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de"};' });
   await send('Emulation.setDeviceMetricsOverride', { width: SIZES[0][0], height: SIZES[0][1], deviceScaleFactor: 1, mobile: false });
+  if (process.env.DARK) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });   // DARK=1: dunkles Design
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
   await js('document.getElementById("name").value="Simon";1');
@@ -80,7 +81,7 @@ async function connect(url) {
   await js('document.getElementById("name").value="Simon";1');
   await click('[data-a="create"]');
   await until('!!document.querySelector(\'[data-a="addbot"]\')');
-  for (let i = 0; i < 3; i++) { await click('[data-a="addbot"]'); await sleep(900); }
+  for (let i = 0; i < (Number(process.env.MPBOTS) || 3); i++) { await click('[data-a="addbot"]'); await sleep(900); }   // MPBOTS=n: Anzahl Bots im Raum
   await js('document.querySelector(\'[data-a="chat"]\')&&(document.getElementById("chatin").value="Na, wer hat die 4?",document.querySelector(\'[data-a="chat"]\').click());1');
   await sleep(600);
   await shoot('mp-lobby');

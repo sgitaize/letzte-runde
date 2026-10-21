@@ -300,8 +300,8 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
     ok((await rr.json()).dup===true&&A.__kr.S().stats.length===1&&A.__kr.S().stats[0].win===false,'Statistik: zweite Meldung derselben Hand wird ignoriert');
     rr=await post('record',code,{uid:A.__kr.uid(),hand:h1+5,win:true,players:[{id:A.__kr.uid(),ok:true}]},A.ls['kr.sk']);
     ok(rr.status===409,'Statistik: nur die aktuelle, fertige Hand'); }
-  ok((A.els.app.innerHTML.match(/tag res ok/g)||[]).length===3,'Alle drei Spieler mit ✓ markiert');
-  const hands=(A.els.app.innerHTML.match(/class="tag hand">[^<]+/g)||[]).map(s=>s.replace('class="tag hand">',''));
+  ok((A.els.app.innerHTML.replace(/<div class="nmres">.*?<\/div>/g,'').match(/tag res ok/g)||[]).length===3,'Alle drei Spieler mit ✓ markiert');   // ohne die Kopie neben dem Namen (Querformat)
+  const hands=(A.els.app.innerHTML.replace(/<div class="nmres">.*?<\/div>/g,'').match(/class="tag hand">[^<]+/g)||[]).map(s=>s.replace('class="tag hand">',''));
   ok(hands.length===3,'Beim Aufdecken steht bei allen die Hand: '+hands.join(' | '));
   ok(/class="mchip[^>]*>1<[^]*?class="mchip[^>]*>3</.test(A.els.app.innerHTML),'Chip-Verlauf als Mini-Chips');
   // Hand 2: Reihenfolge absichtlich falsch herum
@@ -343,7 +343,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
     ok(/Deine Treffsicherheit/.test(h)&&/<th>R1<\/th>/.test(h)&&/<b>\d+ %<\/b><div class="accb"><i style="height:\d+%"><\/i><\/div><small>Runde 4<\/small>/.test(h),'Statistik: Treffsicherheit je Runde (Zeile + Spalten R1–R4)'); }
   if(!ex.win){
     ok(A.els.app.innerHTML.includes('Nicht ganz')&&/vertauscht mit [^<]+ · wäre Chip \d/.test(A.els.app.innerHTML),'Hand 2: „Nicht ganz“ + „vertauscht mit … · wäre Chip …“');
-    const nBad=(A.els.app.innerHTML.match(/tag res bad/g)||[]).length;
+    const nBad=(A.els.app.innerHTML.replace(/<div class="nmres">.*?<\/div>/g,'').match(/tag res bad/g)||[]).length;   // ohne die Kopie neben dem Namen
     ok(nBad===ex.bad.size,'Genau die vertauschten Spieler rot markiert ('+nBad+')');
   }
   // Anna (Host) und Cem fallen gleichzeitig aus (Tab zu / Handy gesperrt)
