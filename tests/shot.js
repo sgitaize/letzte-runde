@@ -18,7 +18,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let srv, chrome;
 
 async function cdp() {
-  chrome = spawn(process.env.CHROME || 'chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9333', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
+  chrome = spawn(process.env.CHROME || 'chromium', ['--headless=new', '--lang=de-DE', '--accept-lang=de-DE', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9333', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50; i++) { try { list = await (await fetch('http://127.0.0.1:9333/json')).json(); break; } catch (e) { await sleep(200); } }
   return connect(list.find((t) => t.type === 'page').webSocketDebuggerUrl);

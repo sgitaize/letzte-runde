@@ -17,7 +17,7 @@ const stopSrv = () => new Promise((r) => { srv.on('exit', r); srv.kill('SIGTERM'
 
 (async () => {
   await startSrv();
-  chrome = spawn('chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9335', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
+  chrome = spawn('chromium', ['--headless=new', '--lang=de-DE', '--accept-lang=de-DE', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9335', '--user-data-dir=' + path.join(TMP, 'chr'), 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50; i++) { try { list = await (await fetch('http://127.0.0.1:9335/json')).json(); break; } catch (e) { await sleep(200); } }
   const ws = new WebSocket(list.find((t) => t.type === 'page').webSocketDebuggerUrl);

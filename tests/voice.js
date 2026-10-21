@@ -32,7 +32,7 @@ const admin = (body) => fetch(URL0 + 'admin-api?a=config', { method: 'POST', hea
 (async () => {
   srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT) }), stdio: 'ignore' });
   await sleep(800);
-  chrome = spawn('chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9334', '--user-data-dir=' + path.join(TMP, 'chr'),
+  chrome = spawn('chromium', ['--headless=new', '--lang=de-DE', '--accept-lang=de-DE', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=9334', '--user-data-dir=' + path.join(TMP, 'chr'),
     '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required', 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50; i++) { try { list = await (await fetch('http://127.0.0.1:9334/json')).json(); break; } catch (e) { await sleep(200); } }

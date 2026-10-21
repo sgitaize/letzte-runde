@@ -26,7 +26,7 @@ fs.writeFileSync(hf, fs.readFileSync(hf, 'utf8').replace(/var LOGIC_VERSION=\d+;
 execSync(process.execPath + ' scripts/bundle.js build', { cwd: SRV, env });
 
 async function cdp(port) {
-  procs.push(spawn(process.env.CHROME || 'chromium', ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--remote-debugging-port=' + port, '--user-data-dir=' + path.join(TMP, 'chr' + port), 'about:blank'], { stdio: 'ignore' }));
+  procs.push(spawn(process.env.CHROME || 'chromium', ['--headless=new', '--lang=de-DE', '--accept-lang=de-DE', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--remote-debugging-port=' + port, '--user-data-dir=' + path.join(TMP, 'chr' + port), 'about:blank'], { stdio: 'ignore' }));
   for (let i = 0; i < 60; i++) { try { await (await fetch('http://127.0.0.1:' + port + '/json')).json(); return; } catch (e) { await sleep(200); } }
 }
 async function tab(port, url) {
