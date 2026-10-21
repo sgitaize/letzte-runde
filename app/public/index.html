@@ -221,7 +221,7 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   .inroom .chip.big{width:46px;height:46px;font-size:18px;border-width:3px}
   .inroom .pl{--plchip:var(--chipw)}
   .inroom .endbar{margin-bottom:0}
-  .inroom .coach-l{display:none}.inroom .coach-r{display:block;font-size:.95em}   /* Lernmodus oben rechts, sofort sichtbar */
+  .inroom .coach-l{display:none}.inroom .coach-r{display:block;font-size:.95em}   /* Lernmodus in der Insight-Spalte (mittel: unter den Spielern) */
   .inroom .coach-r .note{display:none}
   /* Größen wachsen mit der Bildschirmhöhe: 1024×768 kompakt, iPad 11" (834) größer, iPad 12,9" (1024) groß */
   .wrap.inroom{--cw:clamp(52px,8.4vh,96px);--chipw:clamp(36px,4.9vh,52px);font-size:clamp(15px,1.75vh,18px)}
@@ -2404,7 +2404,7 @@ function spView(){
   for(var i=0;i<5;i++)bh+=i<vis.length?cardHtml(vis[i],fresh.indexOf(i)>=0?'fresh':''):'<div class="card empty"></div>';
   out+='<div class="panel felt p-board"><div class="spread"><h2>Tisch</h2>'+''+'</div>'+
     '<div class="cards board">'+bh+'</div>'+flushWarn(vis)+'</div>';
-  var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: rechte Spalte)
+  var coach=spCoach();                      // Lernmodus: gut sichtbar direkt unter dem Tisch (Querformat: Spalte mit Insight, über der Grafik)
   var afterBoard=out.length;                // Tipp/Auflösung kommen direkt unter den Tisch, über Lernmodus und eigene Hand
   if(ph!=='done'&&coach)out+=coach.l;
 
@@ -2477,7 +2477,7 @@ function spView(){
     out=out.slice(0,afterBoard)+rp+(coach?coach.l:'')+out.slice(afterBoard);
     out+=endBar(res,'spnext','');
   }else out+=stepBar(spStep());
-  return head+'<div class="cols'+(ph==='done'?' is-done':'')+(Ins?' has-ins':' no-side')+'"><div class="col-l">'+out+'</div>'+sideCols((coach?coach.r:'')+Rt,Ins)+'</div>';
+  return head+'<div class="cols'+(ph==='done'?' is-done':'')+(Ins?' has-ins':'')+(Ins||coach?'':' no-side')+'"><div class="col-l">'+out+'</div>'+sideCols(Rt,(coach?coach.r:'')+Ins)+'</div>';
 }
 
 /* ---------- Voice-Chat (WebRTC direkt zwischen den Geräten, ohne TURN; im Admin schaltbar, Standard aus) ---------- */
@@ -2976,7 +2976,7 @@ function spCoach(){
   if(!spLearn||!sp)return null;
   var body='';
   try{body=sp.phase==='play'?coachPlay():sp.phase==='guess'?coachGuess():sp.phase==='done'?coachDone():'';}catch(e){console.error(e);return null;}
-  /* zweimal: links unter dem Tisch (Hochformat), oben rechts über den Spielern (Querformat) – CSS blendet je eines aus */
+  /* zweimal: links unter dem Tisch (Hochformat), rechts in der Insight-Spalte (Querformat) – CSS blendet je eines aus */
   var box=function(cls){return '<div class="panel coach p-coach '+cls+'" role="note"><div class="spread"><h2>🎓 Lernmodus</h2><button class="small ghost" data-a="splearn">aus</button></div>'+body+'</div>';};
   return {l:box('coach-l'),r:box('coach-r')};
 }
