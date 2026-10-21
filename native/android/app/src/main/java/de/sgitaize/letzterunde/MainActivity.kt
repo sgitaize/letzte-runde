@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        Lang.init(applicationContext)
         lan = Lan(this)
         NodeHost.start(applicationContext)
 
@@ -104,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 root.removeView(spinner)
                 root.addView(TextView(this@MainActivity).apply {
-                    text = NodeHost.failure ?: "Der Spielserver startet nicht."
+                    text = NodeHost.failure ?: T("Der Spielserver startet nicht.", "The game server doesn’t start.")
                     setTextColor(Color.WHITE); textSize = 17f; setPadding(64, 64, 64, 64)
                 }, FrameLayout.LayoutParams(-1, -2, android.view.Gravity.CENTER))
             }
@@ -138,6 +139,7 @@ class MainActivity : AppCompatActivity() {
             "haptic" -> haptic(m.optString("k", "light"))
             "awake" -> { inRoom = m.optBoolean("on"); updateKeepAwake() }
             "tip" -> Tips.show(this)
+            "lang" -> Lang.set(if (m.optString("l") == "de") "de" else "en")
         }
     }
 

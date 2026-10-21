@@ -72,6 +72,9 @@ function saveQueue() { try { fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue.s
 const HOST_API = 1;
 const PLATFORM = process.env.KR_PLATFORM || '';
 const APP_VERSION = process.env.KR_APP_VERSION || '';
+/* Sprache der Meldungen: Kopf x-kr-lang der Spielseite, sonst die Gerätesprache aus der App (KR_LANG) */
+const L = (de, en) => (process.env.KR_LANG === 'en' ? en : de);
+const tr = (req, de, en) => ((req && req.headers['x-kr-lang']) || process.env.KR_LANG) === 'en' ? en : de;
 const STORE = process.env.KR_STORE || '';
 const mf = require('./bundle-manifest.js');
 const BUNDLE_DIR = path.join(VAR_DIR, 'bundle');
@@ -194,7 +197,7 @@ function proxy(req, res, body, isAcct) {
     if (b.remote) online = false;
     if (isAcct && body && queueable(req, body)) { queue.push({ url: req.url, body: body.toString('utf8'), at: Date.now() }); saveQueue();
       return send(res, 200, { ok: true, queued: true }); }
-    send(res, 503, { error: b.remote ? 'Keine Verbindung zu ' + UPSTREAM.host : 'Keine Verbindung zum Host im WLAN', offline: true });
+    send(res, 503, { error: b.remote ? tr(req, 'Keine Verbindung zu ', 'No connection to ') + UPSTREAM.host : tr(req, 'Keine Verbindung zum Host im WLAN', 'No connection to the Wi-Fi host'), offline: true });
   });
   if (body) p.end(body); else p.end();
 }
@@ -261,7 +264,7 @@ function injectApp(html, lanGuest) {
   const info = lanGuest
     ? { lanGuest: true }
     : { app: true, acct: UPSTREAM.origin, mode: st.mode, origin: st.mode === 'online' ? UPSTREAM.origin : (st.mode === 'lan' ? lanUrl() : st.join),
-      host: HOST_API, build: a.build, logic: a.logic, bundle: a.src, platform: PLATFORM, version: APP_VERSION, store: STORE };
+      host: HOST_API, build: a.build, logic: a.logic, bundle: a.src, platform: PLATFORM, version: APP_VERSION, store: STORE, lang: process.env.KR_LANG || '' };
   const tag = '<script>window.KR_APP=' + JSON.stringify(info).replace(/</g, '\\u003c') + ';</script>' +
     (!lanGuest && a.trial ? '<script>setTimeout(function(){if(!window.KR_BOOTED)location.reload();},12000);</script>' : '') +
     (lanGuest ? '<script src="kr-subtle.js"></script>' : '');
@@ -288,11 +291,11 @@ function fetchBuf(url, max, timeout) {
     const rq = lib.get(t, { timeout: timeout || 10000, headers: { 'user-agent': 'LetzteRundeApp/' + (APP_VERSION || HOST_API), accept: '*/*' } }, (r) => {
       if (r.statusCode !== 200) { r.resume(); return reject(new Error('HTTP ' + r.statusCode)); }
       const parts = []; let n = 0;
-      r.on('data', (c) => { n += c.length; if (n > max) { rq.destroy(new Error('zu groß')); return; } parts.push(c); });
+      r.on('data', (c) => { n += c.length; if (n > max) { rq.destroy(new Error(L('zu groß', 'too large'))); return; } parts.push(c); });
       r.on('end', () => resolve(Buffer.concat(parts)));
       r.on('error', reject);
     });
-    rq.on('timeout', () => rq.destroy(new Error('Zeitüberschreitung')));
+    rq.on('timeout', () => rq.destroy(new Error(L('Zeitüberschreitung', 'Timeout'))));
     rq.on('error', reject);
   });
 }
@@ -302,11 +305,11 @@ function checkUpdate() {
   upd.checking = (async () => {
     try {
       try { upd.minLogic = Number((JSON.parse(await fetchBuf('/api?a=config', 65536, 6000)).config || {}).minLogic) || 0; } catch (e) { /* alter Server */ }
-      if (!PUBKEY) { upd.error = 'Kein Schlüssel für Bundles in dieser App'; upd.available = null; return; }
+      if (!PUBKEY) { upd.error = L('Kein Schlüssel für Bundles in dieser App', 'No bundle key in this app'); upd.available = null; return; }
       let m;
       try { m = JSON.parse(await fetchBuf('/app/bundle.json', 262144, 8000)); }
-      catch (e) { upd.available = null; upd.error = /HTTP 404/.test(e.message) ? '' : 'Keine Verbindung zu ' + UPSTREAM.host; return; }
-      if (!mf.verify(m, PUBKEY)) { upd.available = null; upd.error = 'Bundle-Signatur ungültig'; return; }
+      catch (e) { upd.available = null; upd.error = /HTTP 404/.test(e.message) ? '' : L('Keine Verbindung zu ', 'No connection to ') + UPSTREAM.host; return; }
+      if (!mf.verify(m, PUBKEY)) { upd.available = null; upd.error = L('Bundle-Signatur ungültig', 'Invalid bundle signature'); return; }
       upd.error = '';
       const cur = activeInfo(), files = activeFiles();
       const diff = Object.keys(m.files).filter((rel) => !files[rel] || files[rel].h !== m.files[rel].h);
@@ -324,7 +327,7 @@ function applyUpdate() {
     try {
       if (!upd.available) await checkUpdate();
       const a = upd.available;
-      if (!a) throw new Error(upd.error || 'Kein Update verfügbar');
+      if (!a) throw new Error(upd.error || L('Kein Update verfügbar', 'No update available'));
       if (a.needsApp) throw new Error('Diese Version braucht ein App-Update');
       const m = a.m, tmp = path.join(BUNDLE_DIR, 'tmp-' + m.build), have = activeFiles(), from = gameDir();
       fs.rmSync(tmp, { recursive: true, force: true });
@@ -334,7 +337,7 @@ function applyUpdate() {
         let buf = null;
         if (have[rel] && have[rel].h === want.h) { try { buf = fs.readFileSync(path.join(from, rel)); } catch (e) { buf = null; } }
         if (!buf || crypto.createHash('sha256').update(buf).digest('hex') !== want.h) buf = await fetchBuf('/app/bundle/' + rel.split('/').map(encodeURIComponent).join('/') + '?b=' + m.build, 4 * 1048576, 20000);
-        if (buf.length !== want.n || crypto.createHash('sha256').update(buf).digest('hex') !== want.h) throw new Error('Prüfsumme falsch: ' + rel);
+        if (buf.length !== want.n || crypto.createHash('sha256').update(buf).digest('hex') !== want.h) throw new Error(L('Prüfsumme falsch: ', 'Checksum mismatch: ') + rel);
         fs.mkdirSync(path.dirname(dst), { recursive: true });
         fs.writeFileSync(dst, buf);
       }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Impressum &amp; Datenschutz – Letzte Runde</title>
+<title>Impressum &amp; Datenschutz / Privacy – Letzte Runde</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root{--bg:#f3f1ec;--panel:#fff;--fg:#1b1b19;--muted:#6f6d66;--line:#dedad1;--accent:#1f6b4a}
@@ -24,8 +24,9 @@
 </head>
 <body>
 <main>
-  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel</a></div>
+  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel / Back to the game</a></div>
   <h1>Letzte Runde – Impressum &amp; Datenschutz</h1>
+  <p class="muted" lang="en">English: <a href="#privacy">privacy policy in English</a> below.</p>
 
   <section id="impressum">
     <h2>Impressum</h2>
@@ -92,7 +93,50 @@
     <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch (Art. 15–21 DSGVO). Wende dich dazu an die oben genannte E-Mail-Adresse. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg.</p>
     <p class="muted">Stand: Oktober 2026</p>
   </section>
-  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel</a></div>
+  <section id="privacy" lang="en">
+    <h2>Privacy policy (English)</h2>
+    <p class="muted">Translation for convenience; the German version above is authoritative.</p>
+    <h3>Controller</h3>
+    <p>Simon Gutjahr, SG IT-Service, Sachsenstr. 1, 76137 Karlsruhe, Germany, <a href="mailto:simon@gutjahrmail.de">simon@gutjahrmail.de</a></p>
+    <h3>In short</h3>
+    <ul>
+      <li>Play without signing up (an account is optional), no tracking, no ads, no analytics services.</li>
+      <li>Only what is needed to play is stored – and rooms are deleted automatically.</li>
+    </ul>
+    <h3>Hosting and server logs</h3>
+    <p>The site is hosted by netcup GmbH (Karlsruhe, Germany) as a processor. When you visit, the web server processes technically necessary data such as IP address, time, requested address and browser identifier in the host’s log files to deliver the site and protect it from abuse. The game application itself keeps IP addresses only briefly in memory to throttle request floods and does not store them permanently. Legal basis: legitimate interest in secure operation (Art. 6(1)(f) GDPR).</p>
+    <h3>Game rooms</h3>
+    <p>When you create or join a room, the server stores the name you chose, the game state, chat messages, reactions and the room’s statistics. Hole cards are stored on the server only in encrypted form; the server cannot read them. Rooms are deleted automatically after 48 hours without activity (planned rooms 48 hours after their start time) or immediately when the host closes them. The server also counts anonymously how many hands were played in total. Legal basis: providing the game you want to use (Art. 6(1)(b) GDPR).</p>
+    <h3>Storage in the browser</h3>
+    <p>Your browser stores locally (localStorage) a random player ID, your name, a device key, settings (e.g. sound, colour scheme, language) and the singleplayer statistics (with an account also your account name for display). A service worker caches the site’s files so that singleplayer also works offline. This data does not leave your device (except name and player ID when you join a room, and your statistics if you use an account) and can be deleted at any time in the browser settings (“clear website data”).</p>
+    <h3>Singleplayer</h3>
+    <p>Singleplayer against bots runs entirely in your browser or app. Without an account, the server is only told that a hand was played (for the anonymous counter on the start page).</p>
+    <h3>User account (optional)</h3>
+    <p>You can play without an account. If you create one, we store your account name, your password not in plain text but only as an irreversible salted hash (scrypt), a hash of your recovery code, login times and your game statistics (results of hands in practice and rooms, including the names of the other players and bots of those hands). We don’t need an e-mail address. The purpose is to make your statistics available on all your devices (Art. 6(1)(b) GDPR). Account data is additionally encrypted (AES-256) on the server. While you are logged in, your browser stores a login cookie (<code>kr_acct</code>, up to 180 days, HTTPS only, not readable by scripts). With a friend code you can become friends with others; only once the other person agrees do you see each other’s account name and totals (number of hands, rate, guess hits, best streak) in the leaderboard – no individual hands. When you are logged in in a room, other logged-in players there only see that your seat belongs to an account (for the “friend request” button) – not your account name; this mapping is kept only briefly in memory. Friendships can be ended at any time. You can delete your account including statistics yourself at any time under “Account &amp; statistics → ⚙️ Account”; the admins can reset passwords and delete accounts but never see passwords.</p>
+    <h3>Reporting and muting</h3>
+    <p>In a room you can mute or report other players. Muting only affects your device: it stores the person’s player ID locally and hides their chat, speech bubbles and reactions for you. A report stores on the server the room code and name, the names of the reporting and the reported person, the reason, the time and the last 20 chat messages of the room, so the operator can review insults or abuse and e.g. close the room. Reports are deleted after review, at the latest once 300 newer ones exist. Chat, player and room names also pass a word filter that replaces gross insults with asterisks. Legal basis: legitimate interest in a respectful, safe game (Art. 6(1)(f) GDPR).</p>
+    <h3>Apps for iPhone, iPad and Android</h3>
+    <p>The apps contain the game itself and run on your device; the same rules as in the browser apply, with these additions:</p>
+    <ul>
+      <li><b>Playing online:</b> rooms, accounts and statistics run through letzterunde.aize-it.de as in the browser (older app versions: gang.aize.eu, same server). The app only forwards the requests; the login cookie is stored in the app’s storage.</li>
+      <li><b>Playing on Wi-Fi (without internet):</b> if you host a Wi-Fi game, the game server runs on your device. Room, names, chat and statistics then stay on your device and are not sent to us. Other devices on the same Wi-Fi connect directly to you (via QR code or local network search). For this the app asks for local network access.</li>
+      <li><b>Wi-Fi hands to your account (optional, off by default):</b> if you turn this on in your account, the app sends the results of your Wi-Fi hands to your account the next time you are online (same data as room hands, marked as “local”; they don’t count in the leaderboard). Until then they wait in a queue on your device.</li>
+      <li><b>Camera:</b> only to scan a QR code for a Wi-Fi game. No images are stored or transmitted.</li>
+      <li><b>Microphone:</b> only for voice chat (see below), when you actively join it.</li>
+      <li><b>Tips (in-app purchases):</b> the optional tips are processed by Apple (App Store) or Google (Google Play); we don’t receive any payment details.</li>
+      <li>The apps contain no ads, no tracking and no third-party analytics or crash-reporting services. The Android app (APK) is downloaded from GitHub (releases of the open-source project, github.com/sgitaize/letzte-runde), where GitHub’s privacy policy applies; for the store versions, the terms of Apple’s App Store or Google Play apply as well.</li>
+    </ul>
+    <h3>Voice chat (if enabled)</h3>
+    <p>Voice chat connects the players’ devices directly (WebRTC); audio runs encrypted from device to device, not through our server, and is not recorded. To set up the connection, the devices exchange technical connection data through our server, which includes your IP address and is visible to the other players. To determine its public address, your browser contacts STUN servers of Google and Cloudflare, which receive your IP address. Before first use we ask for your consent; it is stored only on your device. You additionally allow microphone access yourself; voice chat only starts when you actively join it (Art. 6(1)(a) GDPR). You can withdraw consent at any time via “ⓘ” next to the voice button.</p>
+    <h3>Cookies and consent</h3>
+    <p>We don’t use tracking or analytics services. The only cookie is the login cookie when you log in with an account. What is stored in the browser (see above) is, like the login cookie, technically required for the game you requested (§ 25(2) no. 2 TDDDG) – so no cookie banner is needed. Only for voice chat do we ask for consent beforehand.</p>
+    <h3>Invite links</h3>
+    <p>When you share an invite link in messengers such as WhatsApp, the messenger fetches the preview (room name, start time, logo) from our server. The messenger’s privacy policy applies to its processing.</p>
+    <h3>Your rights</h3>
+    <p>You have the right of access, rectification, erasure, restriction of processing, data portability and objection (Art. 15–21 GDPR). Contact the e-mail address above. You can also complain to a data protection supervisory authority, e.g. the State Commissioner for Data Protection and Freedom of Information of Baden-Württemberg.</p>
+    <p class="muted">As of October 2026</p>
+  </section>
+  <div class="topbar"><a class="back" href="./">← Zurück zum Spiel / Back to the game</a></div>
 </main>
 </body>
 </html>

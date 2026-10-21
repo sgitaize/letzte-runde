@@ -58,6 +58,7 @@ object NodeHost {
             "KR_LAN_PORT=$LAN_PORT",
             "KR_UPSTREAM=https://letzterunde.aize-it.de",
             "KR_PLATFORM=android",
+            "KR_LANG=${Lang.code}",
             "KR_STORE=${BuildConfig.STORE}",
             "KR_APP_VERSION=${BuildConfig.VERSION_NAME}",
             "KR_LEADER_SOCK=${File(ctx.cacheDir, "kr.sock").absolutePath}",
@@ -65,7 +66,7 @@ object NodeHost {
         )
         Thread(null, {
             val rc = startNode(File(game, "app-host.js").absolutePath, env)
-            failure = "Der Spielserver wurde beendet ($rc)."
+            failure = T("Der Spielserver wurde beendet ($rc).", "The game server stopped ($rc).")
         }, "node", 8L * 1024 * 1024).start()
     }
 
@@ -97,7 +98,7 @@ object NodeHost {
         }
         val code = c.responseCode
         val text = (if (code < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() } ?: ""
-        if (code != 200) throw IllegalStateException(runCatching { JSONObject(text).getString("error") }.getOrDefault("Fehler $code"))
+        if (code != 200) throw IllegalStateException(runCatching { JSONObject(text).getString("error") }.getOrDefault(T("Fehler $code", "Error $code")))
         val j = JSONObject(text)
         val l = j.getJSONObject("lan")
         State(

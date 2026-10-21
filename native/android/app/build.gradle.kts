@@ -20,8 +20,8 @@ android {
         applicationId = "de.sgitaize.letzterunde"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.1.1"
+        versionCode = 9
+        versionName = "1.2.0"
         // 16-KB-Speicherseiten (Play-Pflicht für 64-Bit): eigene libkrnode so linken; libnode selbst gebaut, siehe scripts/fetch-nodejs-mobile.sh
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
     }
@@ -82,7 +82,7 @@ android {
 // (Unix-Sekunden): vom Server nachgeladene Spiel-Bundles zählen nur, wenn sie neuer sind (app-host.js „Spiel-Bundle“).
 val bundleGame by tasks.registering(Sync::class) {
     from("../../../app") {
-        include("server.js", "bots.js", "accounts.js", "moderation.js", "resolve.js", "bundle-manifest.js", "app-host.js", "selfsigned.js",
+        include("server.js", "bots.js", "accounts.js", "moderation.js", "resolve.js", "lang.js", "bundle-manifest.js", "app-host.js", "selfsigned.js",
             "package.json", "bundle-key.pub")
         include("public/**")
         exclude("public/sw.js", "public/admin.html")

@@ -107,11 +107,11 @@ object Tips {
 
         fun show() {
             val body = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), dp(28)) }
-            body.addView(text("Kauf mir eine Spezi", 20f, bold = true).apply { setPadding(0, dp(8), 0, dp(12)) })
-            body.addView(text("Letzte Runde ist kostenlos.", 16f, bold = true))
-            body.addView(text("Ohne Werbung, ohne Tracking, ohne Abo.", 15f))
-            body.addView(text("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). " +
-                "Es schaltet nichts frei, aber es macht mir eine Freude.", 15f).apply { alpha = 0.7f; setPadding(0, dp(8), 0, dp(12)) })
+            body.addView(text(T("Kauf mir eine Spezi", "Buy me a Spezi"), 20f, bold = true).apply { setPadding(0, dp(8), 0, dp(12)) })
+            body.addView(text(T("Letzte Runde ist kostenlos.", "Letzte Runde is free."), 16f, bold = true))
+            body.addView(text(T("Ohne Werbung, ohne Tracking, ohne Abo.", "No ads, no tracking, no subscription."), 15f))
+            body.addView(text(T("Ich baue das Spiel in meiner Freizeit. Wenn es euch gefällt: Spendier mir eine Spezi (oder eine Runde). " +
+                "Es schaltet nichts frei, aber es macht mir eine Freude.", "I build this game in my spare time. If you enjoy it: buy me a Spezi (or a round). It unlocks nothing, but it makes me happy."), 15f).apply { alpha = 0.7f; setPadding(0, dp(8), 0, dp(12)) })
             body.addView(list)
             body.addView(status)
             dialog.setContentView(body)
@@ -127,8 +127,8 @@ object Tips {
 
         fun unavailable() {
             list.removeAllViews()
-            list.addView(text("Die Optionen konnten gerade nicht von Google Play geladen werden.", 15f).apply { alpha = 0.7f })
-            list.addView(text("↻  Erneut versuchen", 16f).apply {
+            list.addView(text(T("Die Optionen konnten gerade nicht von Google Play geladen werden.", "The options couldn’t be loaded from Google Play right now."), 15f).apply { alpha = 0.7f })
+            list.addView(text(T("↻  Erneut versuchen", "↻  Try again"), 16f).apply {
                 setTextColor(Color.parseColor("#2E7D4F")); setPadding(0, dp(12), 0, dp(12)); isClickable = true
                 setOnClickListener { connect(act) }
             })
@@ -153,12 +153,12 @@ object Tips {
         }
 
         fun error(msg: String) {
-            status.text = msg.ifEmpty { "Der Kauf hat nicht geklappt." }
+            status.text = msg.ifEmpty { T("Der Kauf hat nicht geklappt.", "The purchase didn’t work.") }
             status.setTextColor(Color.parseColor("#C0392B")); status.alpha = 1f; status.visibility = View.VISIBLE
         }
 
         fun thanks() {
-            status.text = "♥  Danke! Das bedeutet mir viel."
+            status.text = T("♥  Danke! Das bedeutet mir viel.", "♥  Thank you! That means a lot to me.")
             status.setTextColor(Color.parseColor("#D6336C")); status.alpha = 1f; status.visibility = View.VISIBLE
         }
 

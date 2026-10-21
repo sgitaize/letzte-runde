@@ -8,7 +8,8 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs'), os = require('os'), path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const OUT = path.join(__dirname, 'screenshots');
+const EN = process.env.SHOTLANG === 'en';   // englische Store-Bilder (Simon 2026-10-21) → screenshots/en/…
+const OUT = path.join(__dirname, 'screenshots', EN ? 'en' : '');
 const RAW = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-store-raw-'));
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-store-'));
 execSync('cp -r "' + path.join(ROOT, 'app') + '/." "' + TMP + '/"');
@@ -30,7 +31,13 @@ const DEVICES = [
   { name: 'android-tablet', w: 900, h: 1600, dsf: 2 }   // 1800 × 3200
 ].filter((d) => !process.env.DEVICES || process.env.DEVICES.split(',').includes(d.name));   // z. B. DEVICES=android,android-tablet
 /* Reihenfolge = Reihenfolge im Store */
-const SCENES = [
+const SCENES = EN ? [
+  { id: 'play', title: 'Team poker', sub: 'Rank your hands from weakest to strongest – without talking about them.' },
+  { id: 'win', title: 'Win together', sub: 'Get the order right and you all win. Otherwise you all lose.' },
+  { id: 'room', title: 'Open a room, share the link', sub: 'With friends in the app or the browser – bots fill empty seats.' },
+  { id: 'start', title: 'Just start playing', sub: 'No account, no ads. Practise alone or on Wi-Fi without internet.' },
+  { id: 'stats', title: 'Get better', sub: 'Statistics and a leaderboard with friends – on all your devices.' }
+] : [
   { id: 'play', title: 'Pokern im Team', sub: 'Ordnet eure Hände von schwach bis stark – ohne darüber zu reden.' },
   { id: 'win', title: 'Gemeinsam gewinnen', sub: 'Stimmt die Reihenfolge, gewinnt ihr alle. Sonst verliert ihr alle.' },
   { id: 'room', title: 'Raum auf, Link raus', sub: 'Mit Freunden in der App oder im Browser – Bots füllen freie Plätze.' },
@@ -59,15 +66,15 @@ async function scenario(send, dev) {
     console.log(dev.name, id);
   };
   const step = '(function(){var r=document.querySelector(\'[data-a="ready"]\');var mine=document.querySelector(".pl.me .chip:not(.ph)");' +
-    'if(!mine){var c=document.querySelector(".p-chips [data-chip]");if(c)c.click();}else if(r&&!r.disabled&&/Bereit$/.test(r.textContent))r.click();' +
+    'if(!mine){var c=document.querySelector(".p-chips [data-chip]");if(c)c.click();}else if(r&&!r.disabled&&/Bereit$|Ready$/.test(r.textContent))r.click();' +
     'var gk=document.querySelectorAll("[data-grank]");if(gk.length&&document.querySelector(".gslot .card.empty")){gk[12].click();}' +
-    'var cf=document.querySelector(\'[data-a="confirm"]\');if(cf&&!cf.disabled&&/bestätigen/.test(cf.textContent))cf.click();var rv=document.querySelector(\'[data-a="reveal"]\');if(rv)rv.click();return 1;})()';
-  const stage = () => js('(function(){var m=/Runde (\\d) von 4/.exec(document.body.innerText);return m?+m[1]:0;})()');
+    'var cf=document.querySelector(\'[data-a="confirm"]\');if(cf&&!cf.disabled&&/bestätigen|Confirm guess/.test(cf.textContent))cf.click();var rv=document.querySelector(\'[data-a="reveal"]\');if(rv)rv.click();return 1;})()';
+  const stage = () => js('(function(){var m=/(?:Runde|Round) (\\d) (?:von|of) 4/.exec(document.body.innerText);return m?+m[1]:0;})()');
 
   await send('Emulation.setDeviceMetricsOverride', { width: dev.w, height: dev.h, deviceScaleFactor: dev.dsf, mobile: dev.w < 600 });
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
-  await js('localStorage.clear();localStorage.setItem("kr.name","Simon");localStorage.setItem("kr.sp.bots","3");1');
+  await js('localStorage.clear();localStorage.setItem("kr.name","Simon");localStorage.setItem("kr.sp.bots","3");' + (EN ? 'localStorage.setItem("kr.lang","en");' : '') + '1');
   await send('Page.reload'); await until('!!document.querySelector(\'[data-a="sp"]\')');
   await js('document.getElementById("name").value="Simon";var pc=document.getElementById("playcount");if(pc)pc.style.display="none";1');   // Zähler des Wegwerf-Servers (0) nicht zeigen
   await shoot('start');
@@ -110,16 +117,16 @@ async function scenario(send, dev) {
 
   /* Raum mit 3 Bots und Chat, Runde 2 */
   await click('[data-a="leave"]'); await sleep(600);
-  await js('document.getElementById("name").value="Simon";var n=document.getElementById("rname")||document.querySelector("input[placeholder*=Freitag]");if(n)n.value="Freitagsrunde";1');
+  await js('document.getElementById("name").value="Simon";var n=document.getElementById("rname")||document.querySelector("input[placeholder*=Freitag]");if(n)n.value=' + JSON.stringify(EN ? 'Friday round' : 'Freitagsrunde') + ';1');
   await click('[data-a="create"]');
   await until('!!document.querySelector(\'[data-a="addbot"]\')');
   for (let i = 0; i < 3; i++) { await click('[data-a="addbot"]'); await sleep(900); }
-  for (const t of ['Wer bringt die Chips mit? 😄', 'Los geht’s – letzte Runde!']) {
+  for (const t of EN ? ['Who’s bringing the snacks? 😄', 'Here we go – last round!'] : ['Wer bringt die Chips mit? 😄', 'Los geht’s – letzte Runde!']) {
     await js('(function(){var i=document.getElementById("chatin");if(i){i.value=' + JSON.stringify(t) + ';document.querySelector(\'[data-a="chat"]\').click();}return 1;})()');
     await sleep(700);
   }
   await click('[data-a="start"]');
-  await until('/Runde 1 von 4/.test(document.body.innerText)', 40000);
+  await until('/Runde 1 von 4|Round 1 of 4/.test(document.body.innerText)', 40000);
   for (let i = 0; i < 400 && (await stage()) < 2; i++) { await js(step); await sleep(300); }
   for (let i = 0; i < 40 && !(await js('!!document.querySelector(".pl.me .chip:not(.ph)")')); i++) { await js(step); await sleep(300); }
   await sleep(2500);

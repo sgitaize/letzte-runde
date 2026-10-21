@@ -10,6 +10,7 @@ enum WebMessage {
     case theme(String)                 // Hintergrundfarbe der Seite (#rrggbb) für Ränder/Statusleiste
     case auth(kind: String, name: String) // natives Anmelde-/Registrierformular (Passwort-AutoFill)
     case tip                           // „Unterstützen“: Trinkgeld per In-App-Kauf
+    case lang(String)                  // Sprach-Umschalter der Spielseite (de|en)
 
     init?(_ body: Any) {
         guard let d = body as? [String: Any], let a = d["a"] as? String else { return nil }
@@ -20,6 +21,7 @@ enum WebMessage {
         case "theme": self = .theme(d["c"] as? String ?? "")
         case "auth": self = .auth(kind: d["k"] as? String == "register" ? "register" : "login", name: d["name"] as? String ?? "")
         case "tip": self = .tip
+        case "lang": self = .lang(d["l"] as? String == "de" ? "de" : "en")
         default: return nil
         }
     }
@@ -53,7 +55,7 @@ struct GameWebView: UIViewRepresentable {
         cfg.websiteDataStore = .default()        // localStorage (Geräteschlüssel, Name, Statistik) bleibt erhalten
         cfg.userContentController.add(context.coordinator, name: "kr")
         // Die Seite fragt hiermit, ob die App das native Anmeldeformular anbietet (nur iOS)
-        cfg.userContentController.addUserScript(WKUserScript(source: "window.KR_NATIVE={auth:1,tip:1};",
+        cfg.userContentController.addUserScript(WKUserScript(source: "window.KR_NATIVE={auth:1,tip:1,lang:'\(Lang.code)'};",
                                                              injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.applicationNameForUserAgent = "LetzteRundeApp/1"
         let web = WKWebView(frame: .zero, configuration: cfg)
@@ -192,7 +194,7 @@ struct GameWebView: UIViewRepresentable {
 
         private func present(alert message: String, confirm: Bool, completion: @escaping (Bool) -> Void) {
             let ac = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-            if confirm { ac.addAction(UIAlertAction(title: "Abbrechen", style: .cancel) { _ in completion(false) }) }
+            if confirm { ac.addAction(UIAlertAction(title: T("Abbrechen", "Cancel"), style: .cancel) { _ in completion(false) }) }
             ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in completion(true) })
             guard let top = topController() else { return completion(false) }
             top.present(ac, animated: true)
@@ -227,9 +229,9 @@ struct AuthSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Picker("Aktion", selection: $kind) {
-                    Text("Anmelden").tag("login")
-                    Text("Konto erstellen").tag("register")
+                Picker(T("Aktion", "Action"), selection: $kind) {
+                    Text(T("Anmelden", "Log in")).tag("login")
+                    Text(T("Konto erstellen", "Create account")).tag("register")
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
@@ -243,13 +245,13 @@ struct AuthSheet: View {
                         .focused($focus, equals: .name)
                         .submitLabel(.next)
                         .onSubmit { focus = .pw }
-                    SecureField(register ? "Passwort (mind. 8 Zeichen)" : "Passwort", text: $pw)
+                    SecureField(register ? T("Passwort (mind. 8 Zeichen)", "Password (at least 8 characters)") : T("Passwort", "Password"), text: $pw)
                         .textContentType(register ? .newPassword : .password)
                         .focused($focus, equals: .pw)
                         .submitLabel(register ? .next : .go)
                         .onSubmit { if register { focus = .pw2 } else { send() } }
                     if register {
-                        SecureField("Passwort wiederholen", text: $pw2)
+                        SecureField(T("Passwort wiederholen", "Repeat password"), text: $pw2)
                             .textContentType(.newPassword)
                             .focused($focus, equals: .pw2)
                             .submitLabel(.go)
@@ -257,9 +259,9 @@ struct AuthSheet: View {
                     }
                 } footer: {
                     if register {
-                        Text("Ohne E-Mail: nur Name (2–18 Zeichen) und Passwort. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.")
+                        Text(T("Ohne E-Mail: nur Name (2–18 Zeichen) und Passwort. Danach bekommst du einen Wiederherstellungscode – den brauchst du, falls du das Passwort vergisst.", "No e-mail: just a name (2–18 characters) and a password. Afterwards you get a recovery code – you need it if you forget your password."))
                     } else {
-                        Text("Deine Statistik aus Übungsraum und Räumen ist auf jedem Gerät da, auf dem du angemeldet bist.")
+                        Text(T("Deine Statistik aus Übungsraum und Räumen ist auf jedem Gerät da, auf dem du angemeldet bist.", "Your statistics from practice and rooms are available on every device where you’re logged in."))
                     }
                 }
 
@@ -271,7 +273,7 @@ struct AuthSheet: View {
                     Button(action: send) {
                         HStack {
                             Spacer()
-                            if busy { ProgressView() } else { Text(register ? "Konto erstellen" : "Anmelden").bold() }
+                            if busy { ProgressView() } else { Text(register ? T("Konto erstellen", "Create account") : T("Anmelden", "Log in")).bold() }
                             Spacer()
                         }
                     }
@@ -280,14 +282,14 @@ struct AuthSheet: View {
 
                 if !register {
                     Section {
-                        Button("Passwort vergessen?") { dismiss(); forgot() }
+                        Button(T("Passwort vergessen?", "Forgot password?")) { dismiss(); forgot() }
                     }
                 }
             }
-            .navigationTitle(register ? "Konto erstellen" : "Anmelden")
+            .navigationTitle(register ? T("Konto erstellen", "Create account") : T("Anmelden", "Log in"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(T("Abbrechen", "Cancel")) { dismiss() } }
             }
             .onChange(of: kind) { _, _ in error = nil }
             .onAppear { focus = name.isEmpty ? .name : .pw }

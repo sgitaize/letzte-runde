@@ -6,6 +6,7 @@ struct LetzteRundeApp: App {
 
     init() {
         NodeHost.shared.start()
+        Task { @MainActor in await TipJar.shared.load() }   // Trinkgeld-Produkte vorladen: das Blatt zeigt sie dann sofort
     }
 
     var body: some Scene {
@@ -56,9 +57,9 @@ struct RootView: View {
             AuthSheet(kind: r.kind, name: r.name, submit: { kind, name, pw, pw2 in
                 guard let res = await bridge.call("return await window.krAuth(kind, name, pw, pw2)",
                                                   ["kind": kind, "name": name, "pw": pw, "pw2": pw2]) else {
-                    return "Die Spielseite antwortet nicht. Bitte noch einmal versuchen."
+                    return T("Die Spielseite antwortet nicht. Bitte noch einmal versuchen.", "The game page isn’t responding. Please try again.")
                 }
-                return res["ok"] as? Bool == true ? nil : (res["error"] as? String ?? "Fehler")
+                return res["ok"] as? Bool == true ? nil : (res["error"] as? String ?? T("Fehler", "Error"))
             }, forgot: {
                 Task { _ = await bridge.call("window.krAcctPage('recover'); return {}", [:]) }
             })
@@ -90,6 +91,8 @@ struct RootView: View {
             auth = AuthRequest(kind: kind, name: name)
         case .tip:
             showTip = true
+        case .lang(let l):
+            UserDefaults.standard.set(l, forKey: "kr.lang")
         }
     }
 }

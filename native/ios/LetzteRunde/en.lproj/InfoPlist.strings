@@ -1,0 +1,3 @@
+"NSCameraUsageDescription" = "To scan the QR code of a Wi-Fi game.";
+"NSLocalNetworkUsageDescription" = "Letzte Runde finds games on your Wi-Fi and can host a Wi-Fi game itself – no internet needed.";
+"NSMicrophoneUsageDescription" = "For the optional voice chat with the other players.";

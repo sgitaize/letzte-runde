@@ -29,7 +29,7 @@ final class LanHosting: NSObject, ObservableObject, NetServiceDelegate {
         guard hosting, bgTask == .invalid else { return }
         // iOS pausiert die App im Hintergrund – der Host ist dann für die Gäste weg. Die Restzeit nutzen,
         // damit ein kurzer Blick in eine andere App das Spiel nicht sofort unterbricht.
-        bgTask = UIApplication.shared.beginBackgroundTask(withName: "WLAN-Host") { [weak self] in
+        bgTask = UIApplication.shared.beginBackgroundTask(withName: "LAN host") { [weak self] in
             Task { @MainActor in self?.endBackgroundTask() }
         }
     }

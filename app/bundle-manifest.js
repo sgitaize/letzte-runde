@@ -15,7 +15,7 @@ const crypto = require('crypto');
 
 /* Nicht im Bundle: der App-Host selbst (ändert sich nur mit einem Store-Release), Service Worker und Admin (nur Web),
    Passwort-Verknüpfungen (.well-known), Laufzeitdaten */
-const SERVER_FILES = ['server.js', 'bots.js', 'accounts.js', 'moderation.js', 'resolve.js', 'bundle-manifest.js', 'package.json'];
+const SERVER_FILES = ['server.js', 'bots.js', 'accounts.js', 'moderation.js', 'resolve.js', 'lang.js', 'bundle-manifest.js', 'package.json'];
 const SKIP_PUBLIC = /^(sw\.js|admin\.html)$|^\./;
 
 function fileList(root) {

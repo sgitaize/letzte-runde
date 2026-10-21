@@ -38,15 +38,15 @@ class PlaceSheet(private val act: MainActivity) {
     private var https = false
 
     fun show() {
-        body.addView(title("Wo spielen wir?", 20f))
-        body.addView(option("🌐  Online", "Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.") { set("online") })
-        body.addView(option("📶  Im WLAN hosten", "Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.") { set("lan") })
-        body.addView(note("Der Singleplayer läuft immer, auch ganz ohne Netz."))
+        body.addView(title(T("Wo spielen wir?", "Where do we play?"), 20f))
+        body.addView(option("🌐  Online", T("Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.", "Rooms on letzterunde.aize-it.de – with everyone playing in the browser, the web app or the app.")) { set("online") })
+        body.addView(option(T("📶  Im WLAN hosten", "📶  Host on Wi-Fi"), T("Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.", "This device is the game table. No internet – the others scan the QR code.")) { set("lan") })
+        body.addView(note(T("Der Singleplayer läuft immer, auch ganz ohne Netz.", "Singleplayer always works, even with no connection at all.")))
         body.addView(hostBox)
-        body.addView(title("Einem Spiel im WLAN beitreten", 16f).apply { setPadding(0, dp(18), 0, dp(6)) })
+        body.addView(title(T("Einem Spiel im WLAN beitreten", "Join a Wi-Fi game"), 16f).apply { setPadding(0, dp(18), 0, dp(6)) })
         body.addView(games)
         body.addView(MaterialButton(act, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "QR-Code scannen"; setOnClickListener { scan() }
+            text = T("QR-Code scannen", "Scan QR code"); setOnClickListener { scan() }
         })
         val manual = EditText(act).apply {
             hint = "Adresse, z. B. 192.168.1.23:8380"; inputType = InputType.TYPE_TEXT_VARIATION_URI; isSingleLine = true
@@ -91,38 +91,38 @@ class PlaceSheet(private val act: MainActivity) {
         if (s.mode != "lan" || !s.lan.on) return
         val guest = if (https && s.lan.https.isNotEmpty()) s.lan.https else s.lan.http
         hostBox.setPadding(0, dp(16), 0, 0)
-        hostBox.addView(title("Dein Spiel im WLAN", 16f))
+        hostBox.addView(title(T("Dein Spiel im WLAN", "Your Wi-Fi game"), 16f))
         if (guest.isEmpty()) {
-            hostBox.addView(note("Kein WLAN gefunden. Verbinde dich mit einem WLAN oder schalte den Hotspot ein."))
+            hostBox.addView(note(T("Kein WLAN gefunden. Verbinde dich mit einem WLAN oder schalte den Hotspot ein.", "No Wi-Fi found. Connect to a Wi-Fi network or turn on the hotspot.")))
             return
         }
         hostBox.addView(ImageView(act).apply { setImageBitmap(qr(guest)) }, LinearLayout.LayoutParams(dp(220), dp(220)).apply { topMargin = dp(8) })
         hostBox.addView(TextView(act).apply { text = guest; typeface = Typeface.MONOSPACE; textSize = 15f; setTextIsSelectable(true); gravity = Gravity.CENTER })
-        hostBox.addView(note("Mitspieler*innen scannen den Code mit der Kamera – im Browser oder in der App. Lass diese App dabei geöffnet."))
+        hostBox.addView(note(T("Mitspieler*innen scannen den Code mit der Kamera – im Browser oder in der App. Lass diese App dabei geöffnet.", "Other players scan the code with their camera – in the browser or in the app. Keep this app open meanwhile.")))
         if (s.lan.https.isNotEmpty()) {
             hostBox.addView(MaterialSwitch(act).apply {
-                text = "Verschlüsselte Verbindung (https)"; isChecked = https
+                text = T("Verschlüsselte Verbindung (https)", "Encrypted connection (https)"); isChecked = https
                 setOnCheckedChangeListener { _, on -> https = on; renderHost() }
             })
-            if (https) hostBox.addView(note("Der Browser warnt einmal vor dem Zertifikat. Fingerabdruck zum Vergleichen:\n${s.lan.fingerprint}").apply { typeface = Typeface.MONOSPACE; textSize = 11f })
+            if (https) hostBox.addView(note(T("Der Browser warnt einmal vor dem Zertifikat. Fingerabdruck zum Vergleichen:", "The browser warns once about the certificate. Fingerprint to compare:") + "\n${s.lan.fingerprint}").apply { typeface = Typeface.MONOSPACE; textSize = 11f })
         }
         hostBox.addView(MaterialButton(act, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "Link teilen"
+            text = T("Link teilen", "Share link")
             setOnClickListener {
-                act.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, guest) }, "Link teilen"))
+                act.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, guest) }, T("Link teilen", "Share link")))
             }
         })
     }
 
     private fun showGames(list: List<Lan.Game>) {
         games.removeAllViews()
-        if (list.isEmpty()) { games.addView(note("Suche nach Spielen im WLAN …")); return }
+        if (list.isEmpty()) { games.addView(note(T("Suche nach Spielen im WLAN …", "Looking for games on Wi-Fi …"))); return }
         for (g in list) {
             games.addView(MaterialButton(act, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                 text = "♠  ${g.name}"; isAllCaps = false
                 setOnClickListener {
                     act.lan.resolve(g) { url -> act.runOnUiThread {
-                        if (url == null) { errorView.text = "${g.name} antwortet nicht."; errorView.visibility = View.VISIBLE } else set("join", url)
+                        if (url == null) { errorView.text = g.name + T(" antwortet nicht.", " isn’t responding."); errorView.visibility = View.VISIBLE } else set("join", url)
                     } }
                 }
             })
@@ -138,7 +138,7 @@ class PlaceSheet(private val act: MainActivity) {
         if (s.isEmpty()) return
         if (!s.contains("://")) s = "http://$s"
         val u = runCatching { java.net.URI(s) }.getOrNull()
-        if (u?.host == null) { errorView.text = "Ungültige Adresse."; errorView.visibility = View.VISIBLE; return }
+        if (u?.host == null) { errorView.text = T("Ungültige Adresse.", "Invalid address."); errorView.visibility = View.VISIBLE; return }
         var port = if (u.port > 0) u.port else NodeHost.LAN_PORT
         if (u.scheme == "https" && port == NodeHost.LAN_PORT + 1) port = NodeHost.LAN_PORT   // App spricht immer http zum Host
         set("join", "http://${u.host}:$port")
@@ -168,7 +168,7 @@ class PlaceSheet(private val act: MainActivity) {
 private var scanCallback: ((String?) -> Unit)? = null
 fun MainActivity.scanQr(done: (String?) -> Unit) {
     scanCallback = done
-    qrLauncher.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("QR-Code des Spiels scannen").setBeepEnabled(false).setOrientationLocked(false))
+    qrLauncher.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt(T("QR-Code des Spiels scannen", "Scan the game’s QR code")).setBeepEnabled(false).setOrientationLocked(false))
 }
 internal fun deliverScan(text: String?) { scanCallback?.invoke(text); scanCallback = null }
 internal val scanContract = ScanContract()

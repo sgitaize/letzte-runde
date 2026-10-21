@@ -84,6 +84,7 @@ html.kr-app img{-webkit-user-drag:none;pointer-events:none}
 .placebar .plc{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
 .placebar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);flex:none}
 .placebar .sub{color:var(--muted)}
+.placebar.off .dot{background:var(--red);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 25%,transparent)}
 .placebar.upd{border-color:color-mix(in srgb,var(--gold) 60%,var(--line));background:color-mix(in srgb,var(--gold) 10%,var(--panel))}
 .placebar.upd.req{border-color:var(--red);background:color-mix(in srgb,var(--red) 9%,var(--panel))}
 a.btn{display:inline-block;padding:5px 9px;border-radius:9px;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-size:13px;font-weight:560}
@@ -607,19 +608,20 @@ html[data-skin="vegas"] .toast{background:#22090b;color:#ffd700;border:1px solid
 <div class="wrap" id="app"><p class="muted">…</p></div>
 <div class="wrap chatwrap" id="chat" style="display:none"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script>/* Sprache (Simon 2026-10-21): Umschalter (kr.lang) vor Gerätesprache (App: KR_APP.lang); alles außer Deutsch → Englisch.
-   T(de,en) wählt den Text; der Server antwortet in der Sprache aus dem Kopf x-kr-lang. */
-var LANG=(function(){var l=null;try{l=localStorage.getItem('kr.lang');}catch(e){}if(l==='de'||l==='en')return l;
-  var n=(window.KR_APP&&KR_APP.lang)||(navigator.languages&&navigator.languages[0])||navigator.language||'de';return /^de\b/i.test(n)?'de':'en';})();
-function T(de,en){return LANG==='en'?en:de;}
-function krSetLang(l){try{localStorage.setItem('kr.lang',l);}catch(e){}try{location.reload();}catch(e){}}
-try{document.documentElement.lang=LANG;}catch(e){}
-</script>
 <script src="hand.js"></script>
 <script src="qrcode.js" async></script>
 <script>
 (function(){
 "use strict";
+/* Sprache (Simon 2026-10-21): Umschalter (kr.lang) vor Gerätesprache (App: KR_APP.lang); alles außer Deutsch → Englisch.
+   T(de,en) wählt den Text; der Server antwortet in der Sprache aus dem Kopf x-kr-lang. */
+var LANG=(function(){var l=null;try{l=localStorage.getItem('kr.lang');}catch(e){}if(l==='de'||l==='en')return l;
+  var n=(window.KR_NATIVE&&KR_NATIVE.lang)||(window.KR_APP&&KR_APP.lang)||(navigator.languages&&navigator.languages[0])||navigator.language||'de';return /^de\b/i.test(n)?'de':'en';})();
+function T(de,en){return LANG==='en'?en:de;}
+function krSetLang(l){try{localStorage.setItem('kr.lang',l);}catch(e){}
+  var m={a:'lang',l:l};try{window.webkit.messageHandlers.kr.postMessage(m);}catch(e){try{window.KRAndroid.post(JSON.stringify(m));}catch(x){}}   // App: native Texte folgen
+  try{location.reload();}catch(e){}}
+try{document.documentElement.lang=LANG;}catch(e){}
 
 /* ---------- Konstanten ---------- */
 var RANKS=T(['2','3','4','5','6','7','8','9','10','B','D','K','A'],['2','3','4','5','6','7','8','9','10','J','Q','K','A']);
@@ -1704,8 +1706,9 @@ function placeBar(){
   if(!KRA||!KRA.app)return '';
   var t=KRA.mode==='lan'?T('<b>Du hostest im WLAN</b> <span class="sub">· ohne Internet</span>','<b>You’re hosting on Wi-Fi</b> <span class="sub">· no internet</span>'):
         KRA.mode==='join'?T('<b>Im WLAN</b> <span class="sub">· bei ','<b>On Wi-Fi</b> <span class="sub">· at ')+esc(String(KRA.origin||'').replace(/^https?:\/\//,''))+'</span>':
-        '<b>Online</b> <span class="sub">· '+esc(String(KRA.acct||'').replace(/^https?:\/\//,''))+'</span>';
-  return '<div class="placebar"><p class="plc"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?T('Spielort · QR','Venue · QR'):T('Spielort','Venue'))+'</button></div>';
+        '<b>'+(!isOffline()?'Online':noNet()?T('Kein Internet','No internet'):T('Server offline','Server offline'))+'</b> <span class="sub">· '+esc(String(KRA.acct||'').replace(/^https?:\/\//,''))+'</span>';
+  var off=KRA.mode!=='lan'&&KRA.mode!=='join'&&isOffline();   // Online-Modus, aber Server/Internet weg: gleich oben sagen, nicht „Online“
+  return '<div class="placebar'+(off?' off':'')+'"><p class="plc"><span class="dot"></span><span>'+t+'</span></p><button class="small ghost" data-a="place">'+(KRA.mode==='lan'?T('Spielort · QR','Venue · QR'):T('Spielort','Venue'))+'</button></div>';
 }
 /* ---------- Spiellogik nachladen (nur App): der App-Host fragt beim Online-Server nach einem signierten Bundle ----------
    Beim Start: gibt es eins, kommt ein Hinweis; „Jetzt laden“ lädt nur die geänderten Dateien, danach startet die Seite neu
@@ -2750,7 +2753,8 @@ setInterval(function(){                     // abgelaufene Reaktionen ausblenden
 /* ---------- Offline: Service Worker hält die App vor; Übungsraum läuft ohne Netz ---------- */
 var netDown=false,spPending=0;
 try{spPending=Math.max(0,parseInt(localStorage.getItem('kr.sp.pending'),10)||0);}catch(e){}
-function isOffline(){return netDown||(typeof navigator.onLine==='boolean'&&!navigator.onLine);}
+function noNet(){return typeof navigator.onLine==='boolean'&&!navigator.onLine;}   // Gerät ohne Internet (sonst: nur unser Server weg)
+function isOffline(){return netDown||noNet();}
 function reportSpHand0(){spPending--;reportSpHand();}   // nachreichen, ohne eine Hand dazuzuzählen
 function reportSpHand(){
   spPending++;try{localStorage.setItem('kr.sp.pending',String(spPending));}catch(e){}
@@ -2758,7 +2762,9 @@ function reportSpHand(){
 }
 function offlineBanner(){
   if(!isOffline())return '';
-  return T('<div class="panel offline"><p class="info">📴 <b>Offline</b> – Räume gehen gerade nicht, der Singleplayer schon.</p>','<div class="panel offline"><p class="info">📴 <b>Offline</b> – rooms don’t work right now, singleplayer does.</p>')+
+  /* In der App steht „Server offline“ / „Kein Internet“ schon in der Leiste darüber → hier nur noch, was jetzt geht */
+  var head=KRA&&KRA.app&&!KRA.lanGuest?'':noNet()?T('📴 <b>Offline</b> – ','📴 <b>Offline</b> – '):T('📴 <b>Server nicht erreichbar</b> – ','📴 <b>Server unreachable</b> – ');
+  return '<div class="panel offline"><p class="info">'+head+T('Räume gehen gerade nicht, der Singleplayer schon.','Rooms don’t work right now, singleplayer does.')+'</p>'+
     T('<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button>','<div class="bar"><button class="primary" data-a="sp">🤖 Play singleplayer</button>')+
     (KRA&&KRA.app?T('<button data-a="place">📶 Im WLAN spielen</button>','<button data-a="place">📶 Play on Wi-Fi</button>'):'')+'</div></div>';
 }
@@ -2998,10 +3004,11 @@ var PHASE_SHORT=T({lobby:'wartet',deal:'gibt',play:'spielt',guess:'tippt',reveal
 function inviteHint(){
   var ii=inviteInfo&&inviteInfo.code===inviteCode?inviteInfo:null,n=ii&&ii.name?ii.name:inviteName();
   if(ii&&ii.missing)return '<p class="err" style="margin-top:10px">'+T('Raum '+esc(inviteCode)+' gibt es nicht (mehr).','Room '+esc(inviteCode)+' doesn’t exist (anymore).')+'</p>';
-  if(ii&&ii.startsAt&&ii.startsAt>srvNow())
+  if(ii&&ii.startsAt&&ii.startsAt>srvNow()){
     var lft='<b><span data-left="'+num(ii.startsAt)+'">'+fmtLeft(ii.startsAt-srvNow())+'</span></b>';
     return '<p class="info" style="margin-top:10px">'+T('📅 Du bist zu <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen. Start: <b>'+esc(fmtWhen(ii.startsAt))+'</b> \u2013 noch '+lft+'. ','📅 You’re invited to <b>'+esc(roomLabel(inviteCode,n))+'</b>. Start: <b>'+esc(fmtWhen(ii.startsAt))+'</b> \u2013 in '+lft+'. ')+
       T('Du kannst schon jetzt in den <b>Wartebereich</b> und mit den anderen chatten'+(voice.enabled?' oder sprechen':'')+'; los geht’s zur Startzeit. Wer zuerst drin ist, wird Host.</p><div class="bar"><button class="small ghost" data-a="ics" data-code="'+esc(inviteCode)+'">📅 In den Kalender</button></div>','You can already enter the <b>waiting area</b> and chat'+(voice.enabled?' or talk':'')+' with the others; it starts at the start time. Whoever is in first becomes host.</p><div class="bar"><button class="small ghost" data-a="ics" data-code="'+esc(inviteCode)+'">📅 Add to calendar</button></div>');
+  }
   return '<p class="info" style="margin-top:10px">'+T('Du wurdest in <b>'+esc(roomLabel(inviteCode,n))+'</b> eingeladen \u2013 Namen eingeben und auf \u201eBeitreten\u201c tippen.','You were invited to <b>'+esc(roomLabel(inviteCode,n))+'</b> \u2013 enter a name and tap \u201cJoin\u201d.')+
     (ii&&ii.startsAt&&!ii.players?T(' Du bist der Erste und wirst Host.',' You’re the first and become host.'):'')+'</p>';
 }
@@ -3015,7 +3022,7 @@ function countsHtml(){
 function roomsHtml(){
   var pin='<div class="plist"><div class="pl sp"><span class="code">\ud83e\udd16</span><div class="nm"><b>Singleplayer</b>'+
     T('<div class="note">Allein gegen Bots \u00b7 immer offen</div></div><button class="small primary" data-a="sp">Spielen</button></div></div>','<div class="note">Alone against bots \u00b7 always open</div></div><button class="small primary" data-a="sp">Play</button></div></div>');
-  if(openRooms==null)return pin+T('<p class="note">Lade offene Räume \u2026</p>','<p class="note">Loading open rooms \u2026</p>');
+  if(openRooms==null)return pin+(isOffline()?'':T('<p class="note">Lade offene Räume \u2026</p>','<p class="note">Loading open rooms \u2026</p>'));   // offline kommt keine Liste
   if(!openRooms.length)return pin+T('<p class="note">Gerade keine offenen Räume.</p>','<p class="note">No open rooms right now.</p>');
   return pin+'<div class="plist">'+openRooms.map(function(r){
     var full=CFG.maxPlayers&&r.players>=CFG.maxPlayers;

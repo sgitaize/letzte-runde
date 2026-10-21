@@ -1,0 +1,8 @@
+• Now in English (follows your device language, switch at the bottom of the start page)
+• Private rooms: not listed, join only with code or link
+• Joint guessing: other players’ suggestions live, also on the table – bots join in
+• “Next step” bar always shows what to do right now
+• New account page: statistics, friends, seats and account in tabs
+• The server evaluates every hand itself
+• “Buy me a Spezi”: optional tip, unlocks nothing
+• Many small improvements and fixes

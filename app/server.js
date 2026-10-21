@@ -750,6 +750,7 @@ setInterval(guard(() => {                 // Keepalive gegen Proxy-Timeouts; stu
 /* ------------------------------------------------ Bots ------------------- */
 const bots = require('./bots')({ rooms, commit, chipMove });
 const resolver = require('./resolve');
+const lang = require('./lang');
 const LOGIC = require('./public/hand.js').LOGIC_VERSION;
 const accounts = require('./accounts')({ DATA, json, readBody, clientIp, cleanName, load, memberId, keyHash });
 const moderation = require('./moderation')({ dataDir: DATA, json, readBody, cleanName });
@@ -785,6 +786,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
   '.webmanifest': 'application/manifest+json' };
 
 function json(res, codeNum, obj) {
+  if (obj && typeof obj.error === 'string' && lang.wantsEn(res.req)) obj = Object.assign({}, obj, { error: lang.en(obj.error) });   // englische Spielseite
   const b = Buffer.from(JSON.stringify(obj));
   const h = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Length': b.length };
   if (res.req && res.req.tooBig) { codeNum = 413; h.Connection = 'close'; }   // Rest des Uploads nicht mehr annehmen
@@ -911,7 +913,7 @@ async function api(req, res, u) {
     if (startsAt) scheduled.set(code, startsAt);
     rooms.set(code, { version: 1, docs: {
       room: Object.assign(startsAt ? { code: code, hostId: null, createdAt: Date.now(), name: cleanRoomName(body.name), startsAt: startsAt, tz: cleanTz(body.tz) }
-        : { code: code, hostId: host, createdAt: Date.now(), name: cleanRoomName(body.name) }, body.private ? { private: true } : {}),
+        : { code: code, hostId: host, createdAt: Date.now(), name: cleanRoomName(body.name) }, body.private ? { private: true } : {}, lang.wantsEn(req) ? { lang: 'en' } : {}),   // lang: Sprache der Server-Bots
       'state/main': { phase: 'lobby', hand: 0, stage: 0, participants: [] }
     } });
     save(code);

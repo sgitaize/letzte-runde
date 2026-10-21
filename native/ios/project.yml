@@ -26,7 +26,7 @@ targets:
         PRODUCT_NAME: LetzteRunde
         CODE_SIGN_ENTITLEMENTS: LetzteRunde/LetzteRunde.entitlements
         MARKETING_VERSION: "1.1.0"
-        CURRENT_PROJECT_VERSION: "4"
+        CURRENT_PROJECT_VERSION: "5"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
@@ -42,7 +42,7 @@ targets:
       properties:
         CFBundleDisplayName: Letzte Runde
         CFBundleDevelopmentRegion: de
-        CFBundleLocalizations: [de]
+        CFBundleLocalizations: [de, en]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false

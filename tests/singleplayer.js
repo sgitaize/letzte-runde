@@ -206,7 +206,7 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   X.spToggleLearn(); X.spNewHand(); await sleep(50);
   { const h = els.app.innerHTML;
     ok(/class="panel coach p-coach /.test(h) && /passender Chip: <b class="coachchip">\d<\/b>/.test(h) && /Nimm die <b>\d<\/b>/.test(h), 'Lernmodus: Einschätzung + passender Chip, bevor du einen nimmst');
-    ok(h.indexOf('coach-l') > h.indexOf('p-board') && h.indexOf('coach-l') < h.indexOf('p-mine') && h.indexOf('coach-r') < h.indexOf('p-players'), 'Lernmodus-Kasten direkt unter dem Tisch'); }
+    ok(h.indexOf('coach-l') > h.indexOf('p-board') && h.indexOf('coach-l') < h.indexOf('p-mine') && h.indexOf('coach-r') > h.indexOf('p-players'), 'Lernmodus-Kasten direkt unter dem Tisch (Querformat: in der Insight-Spalte nach den Spielern, 531d388)'); }
   { const n = S().players.length, sug = +/coachchip">(\d)/.exec(els.app.innerHTML)[1], bad = sug <= n / 2 ? n : 1;
     X.spTake(bad); await sleep(30);
     ok(Math.abs(bad - sug) < 2 || /class="coachwarn"/.test(els.app.innerHTML), 'Lernmodus warnt bei unpassendem Chip (Chip ' + bad + ', passend ' + sug + ')'); }

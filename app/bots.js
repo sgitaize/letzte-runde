@@ -295,9 +295,9 @@ module.exports = function createBots(ctx) {
         R.moves[id] = mv + 1;
         /* Unsicher (Einschätzung liegt zwischen zwei Chips, früh in der Hand besonders) → offen für Wechsel */
         markOpen(code, r, h, st, id, Math.abs(e - t) > (st <= 2 ? 0.3 : 0.5), t);
-        if (cur && moved) say(code, r, id, (r.docs['players/' + moved.id] || {}).name + ', du nimmst die ' + moved.c + '? Dann bin ich eher die ' + t);
-        else if (b.open && Math.random() < 0.7) say(code, r, id, 'Ich nehm erstmal die ' + t + ' – bin offen für Wechsel');
-        else if (cur && Math.random() < 0.5) say(code, r, id, cur < t ? 'Hmm, doch besser als gedacht' : 'Ach nee, doch nicht so gut');
+        if (cur && moved) say(code, r, id, (r.docs['players/' + moved.id] || {}).name + T(r, ', du nimmst die ' + moved.c + '? Dann bin ich eher die ' + t, ', you take the ' + moved.c + '? Then I’m more the ' + t));
+        else if (b.open && Math.random() < 0.7) say(code, r, id, T(r, 'Ich nehm erstmal die ' + t + ' – bin offen für Wechsel', 'I’ll take the ' + t + ' for now – open to swapping'));
+        else if (cur && Math.random() < 0.5) say(code, r, id, cur < t ? T(r, 'Hmm, doch besser als gedacht', 'Hmm, better than I thought') : T(r, 'Ach nee, doch nicht so gut', 'Oh no, not that good after all'));
       }
       later(1.2); return;
     }
@@ -311,13 +311,13 @@ module.exports = function createBots(ctx) {
     R.contest[key] = cc + 1;
     if (Math.random() < p && take(t)) {
       R.moves[id] = mv + 1; markOpen(code, r, h, st, id, false);
-      if (!isBot(r, holder)) say(code, r, id, cc || lost === t ? 'Nee, die ' + t + ' brauch ich wirklich 😤' : 'Die ' + t + ' nehm ich lieber');
-      else if (Math.random() < 0.5) say(code, r, id, 'Ich glaub, die ' + t + ' ist meine');
+      if (!isBot(r, holder)) say(code, r, id, cc || lost === t ? T(r, 'Nee, die ' + t + ' brauch ich wirklich 😤', 'No, I really need the ' + t + ' 😤') : T(r, 'Die ' + t + ' nehm ich lieber', 'I’d rather take the ' + t));
+      else if (Math.random() < 0.5) say(code, r, id, T(r, 'Ich glaub, die ' + t + ' ist meine', 'I think the ' + t + ' is mine'));
       later(1.3); return;
     }
     b.yieldTo[holder] = t;
     if (!isBot(r, holder)) R.humanFixed[holder] = t;
-    if (!isBot(r, holder) || Math.random() < 0.3) say(code, r, id, 'Okay, die ' + t + ' gehört ' + (r.docs['players/' + holder] || {}).name);
+    if (!isBot(r, holder) || Math.random() < 0.3) say(code, r, id, T(r, 'Okay, die ' + t + ' gehört ', 'Okay, the ' + t + ' belongs to ') + (r.docs['players/' + holder] || {}).name);
     later(0.6);
   }
   function playStep(code, r, m, R, h, st, bots) {
@@ -342,7 +342,7 @@ module.exports = function createBots(ctx) {
           b.yieldTo[taker] = n;
           if (!isBot(r, taker)) R.humanFixed[taker] = n;
           const tn = (r.docs['players/' + taker] || {}).name;
-          say(code, r, id, isBot(r, taker) ? 'Okay, ' + tn + ' nimmt die ' + n : 'Passt ' + tn + ', nimm die ' + n + ' – ich such mir was anderes');
+          say(code, r, id, isBot(r, taker) ? T(r, 'Okay, ' + tn + ' nimmt die ' + n, 'Okay, ' + tn + ' takes the ' + n) : T(r, 'Passt ' + tn + ', nimm die ' + n + ' – ich such mir was anderes', 'Fine ' + tn + ', take the ' + n + ' – I’ll find something else'));
         } else b.lost = n;
         if (Math.random() < 0.25) react(code, r, id, Math.random() < 0.5 ? 2 : 3);      // 😬 / 🤔
       }
@@ -385,7 +385,7 @@ module.exports = function createBots(ctx) {
       R.sugAt[id] = true;
       const cur = r.docs['state/guess'];
       set(code, r, 'state/guess', Object.assign({}, cur, { sug: Object.assign({}, cur.sug || {}, { [id]: vals }) }));
-      if (humans.length && Math.random() < 0.7) say(code, r, id, 'Mein Tipp: ' + vals.map((v) => RANK_SAY[v]).join(' + '));
+      if (humans.length && Math.random() < 0.7) say(code, r, id, T(r, 'Mein Tipp: ', 'My guess: ') + vals.map((v) => T(r, RANK_SAY, RANK_SAY_EN)[v]).join(' + '));
     }
     if (!humans.length && !filled) {                            // niemand außer Bots tippt → Bots tippen selbst
       if (!R.guessAt) { R.guessAt = now + 2500 * TEMPO; return; }
@@ -422,6 +422,9 @@ module.exports = function createBots(ctx) {
   /* ------------------------------------------------ Sprechblasen + Reaktionen (wie im Übungsraum) -- */
   /* Nur der Server schreibt say/<bot> und react/<bot>; Browser zeigen sie gut 4 s neben dem Namen */
   const RANK_SAY = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Bube', 'Dame', 'König', 'Ass'];
+  const RANK_SAY_EN = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+  /* Sprache des Raums (docs.room.lang, beim Erstellen aus x-kr-lang): englische Räume bekommen englische Sprechblasen */
+  function T(r, de, en) { return r && r.docs && r.docs.room && r.docs.room.lang === 'en' ? en : de; }
   function say(code, r, id, text) { set(code, r, 'say/' + id, { t: String(text).slice(0, 80), ts: Date.now() }); }
   /* „🔄 offen“ im Browser: open/<bot> = {hand, stage, chip}; nur schreiben, wenn sich die Anzeige ändert */
   function markOpen(code, r, h, st, id, on, chip) {

@@ -50,7 +50,7 @@ final class NodeHost: ObservableObject {
         guard !started else { return }
         started = true
         guard let game = Bundle.main.url(forResource: "game", withExtension: nil) else {
-            failure = "Spieldateien fehlen im App-Bundle."
+            failure = T("Spieldateien fehlen im App-Bundle.", "Game files are missing from the app bundle.")
             return
         }
         let varDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -68,6 +68,7 @@ final class NodeHost: ObservableObject {
         setenv("KR_LAN_PORT", String(NodeHost.lanPort), 1)
         setenv("KR_UPSTREAM", "https://letzterunde.aize-it.de", 1)
         setenv("KR_PLATFORM", "ios", 1)
+        setenv("KR_LANG", Lang.code, 1)
         setenv("KR_APP_VERSION", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "", 1)
         #if DEBUG
         // Tests im Simulator gegen einen lokalen Server: simctl launch mit SIMCTL_CHILD_KR_UPSTREAM_DEBUG=http://…
@@ -78,7 +79,7 @@ final class NodeHost: ObservableObject {
         let script = game.appendingPathComponent("app-host.js").path
         let thread = Thread {
             let rc = kr_node_start(script)
-            Task { @MainActor in NodeHost.shared.failure = "Der Spielserver wurde beendet (\(rc))." }
+            Task { @MainActor in NodeHost.shared.failure = T("Der Spielserver wurde beendet (\(rc)).", "The game server stopped (\(rc)).") }
         }
         thread.name = "node"
         thread.stackSize = 4 * 1024 * 1024
@@ -99,7 +100,7 @@ final class NodeHost: ObservableObject {
             }
             try? await Task.sleep(nanoseconds: 150_000_000)
         }
-        if !ready { failure = "Der Spielserver startet nicht." }
+        if !ready { failure = T("Der Spielserver startet nicht.", "The game server doesn’t start.") }
         return false
     }
 
@@ -126,7 +127,7 @@ final class NodeHost: ObservableObject {
         }
         let (data, resp) = try await URLSession.shared.data(for: req)
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
-            let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? "Fehler"
+            let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? T("Fehler", "Error")
             throw NSError(domain: "NodeHost", code: 1, userInfo: [NSLocalizedDescriptionKey: msg])
         }
         return try JSONDecoder().decode(State.self, from: data)

@@ -22,19 +22,19 @@ struct PlaceSheet: View {
             List {
                 Section {
                     option(.online, icon: "globe", title: "Online",
-                           text: "Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.")
-                    option(.lan, icon: "wifi", title: "Im WLAN hosten",
-                           text: "Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.")
+                           text: T("Räume auf letzterunde.aize-it.de – mit allen, die im Browser, in der Web-App oder in der App spielen.", "Rooms on letzterunde.aize-it.de – with everyone playing in the browser, the web app or the app."))
+                    option(.lan, icon: "wifi", title: T("Im WLAN hosten", "Host on Wi-Fi"),
+                           text: T("Dieses Gerät ist der Spieltisch. Ohne Internet – die anderen scannen den QR-Code.", "This device is the game table. No internet – the others scan the QR code."))
                 } footer: {
-                    Text("Der Singleplayer läuft immer, auch ganz ohne Netz.")
+                    Text(T("Der Singleplayer läuft immer, auch ganz ohne Netz.", "Singleplayer always works, even with no connection at all."))
                 }
 
                 if mode == .lan, let s = host.state, s.lan.on { hostSection(s) }
 
-                Section("Einem Spiel im WLAN beitreten") {
+                Section(T("Einem Spiel im WLAN beitreten", "Join a Wi-Fi game")) {
                     if browser.games.isEmpty {
-                        Label(browser.denied ? "Erlaube „Lokales Netzwerk“ in den Einstellungen, um Spiele zu finden."
-                                             : "Suche nach Spielen im WLAN …", systemImage: "dot.radiowaves.left.and.right")
+                        Label(browser.denied ? T("Erlaube „Lokales Netzwerk“ in den Einstellungen, um Spiele zu finden.", "Allow “Local Network” in Settings to find games.")
+                                             : T("Suche nach Spielen im WLAN …", "Looking for games on Wi-Fi …"), systemImage: "dot.radiowaves.left.and.right")
                             .foregroundStyle(.secondary)
                     }
                     ForEach(browser.games) { g in
@@ -47,24 +47,24 @@ struct PlaceSheet: View {
                         }
                     }
                     if DataScannerViewController.isSupported {
-                        Button { scanning = true } label: { Label("QR-Code scannen", systemImage: "qrcode.viewfinder") }
+                        Button { scanning = true } label: { Label(T("QR-Code scannen", "Scan QR code"), systemImage: "qrcode.viewfinder") }
                     }
                     HStack {
-                        TextField("Adresse, z. B. 192.168.1.23:8380", text: $manual)
+                        TextField(T("Adresse, z. B. 192.168.1.23:8380", "Address, e.g. 192.168.1.23:8380"), text: $manual)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                        Button("Beitreten") { Task { await joinManual() } }.disabled(manual.isEmpty)
+                        Button(T("Beitreten", "Join")) { Task { await joinManual() } }.disabled(manual.isEmpty)
                     }
                     if mode == .join, let j = host.state?.join, !j.isEmpty {
-                        Label("Verbunden mit \(j.replacingOccurrences(of: "http://", with: ""))", systemImage: "checkmark.circle.fill")
+                        Label(T("Verbunden mit ", "Connected to ") + j.replacingOccurrences(of: "http://", with: ""), systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                     }
                 }
 
                 if let error { Section { Text(error).foregroundStyle(.red) } }
             }
-            .navigationTitle("Wo spielen wir?")
+            .navigationTitle(T("Wo spielen wir?", "Where do we play?"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(T("Fertig", "Done")) { dismiss() } } }
             .disabled(busy)
             .overlay { if busy { ProgressView() } }
             .sheet(isPresented: $scanning) {
@@ -100,28 +100,28 @@ struct PlaceSheet: View {
         let guest = showHttps && !s.lan.https.isEmpty ? s.lan.https : s.lan.http
         Section {
             if guest.isEmpty {
-                Label("Kein WLAN gefunden. Verbinde dich mit einem WLAN oder schalte den persönlichen Hotspot ein.",
+                Label(T("Kein WLAN gefunden. Verbinde dich mit einem WLAN oder schalte den persönlichen Hotspot ein.", "No Wi-Fi found. Connect to a Wi-Fi network or turn on the personal hotspot."),
                       systemImage: "wifi.exclamationmark")
             } else {
                 VStack(spacing: 12) {
                     QRCodeView(text: guest).frame(width: 220, height: 220)
                     Text(guest).font(.system(.body, design: .monospaced)).textSelection(.enabled)
-                    Text("Mitspieler*innen scannen den Code mit der Kamera – im Browser oder in der App. Lass diese App dabei geöffnet.")
+                    Text(T("Mitspieler*innen scannen den Code mit der Kamera – im Browser oder in der App. Lass diese App dabei geöffnet.", "Other players scan the code with their camera – in the browser or in the app. Keep this app open meanwhile."))
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     if !s.lan.https.isEmpty {
-                        Toggle("Verschlüsselte Verbindung (https)", isOn: $showHttps).font(.footnote)
+                        Toggle(T("Verschlüsselte Verbindung (https)", "Encrypted connection (https)"), isOn: $showHttps).font(.footnote)
                         if showHttps {
-                            Text("Der Browser warnt einmal vor dem Zertifikat. Fingerabdruck zum Vergleichen:\n\(s.lan.fingerprint)")
+                            Text(T("Der Browser warnt einmal vor dem Zertifikat. Fingerabdruck zum Vergleichen:", "The browser warns once about the certificate. Fingerprint to compare:") + "\n" + s.lan.fingerprint)
                                 .font(.caption2.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
                         }
                     }
-                    ShareLink(item: URL(string: guest)!) { Label("Link teilen", systemImage: "square.and.arrow.up") }
+                    ShareLink(item: URL(string: guest)!) { Label(T("Link teilen", "Share link"), systemImage: "square.and.arrow.up") }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
         } header: {
-            Text("Dein Spiel im WLAN")
+            Text(T("Dein Spiel im WLAN", "Your Wi-Fi game"))
         }
     }
 
@@ -142,19 +142,19 @@ struct PlaceSheet: View {
         busy = true
         let url = await browser.resolve(g)
         busy = false
-        guard let url else { error = "\(g.name) antwortet nicht."; return }
+        guard let url else { error = g.name + T(" antwortet nicht.", " isn’t responding."); return }
         await set(.join, join: url)
     }
 
     private func joinManual() async {
         var s = manual.trimmingCharacters(in: .whitespacesAndNewlines)
         if !s.contains("://") { s = "http://" + s }
-        guard var c = URLComponents(string: s), c.host != nil else { error = "Ungültige Adresse."; return }
+        guard var c = URLComponents(string: s), c.host != nil else { error = T("Ungültige Adresse.", "Invalid address."); return }
         if c.port == nil { c.port = NodeHost.lanPort }
         // QR-Codes können auf eine Einladung zeigen (…/r/CODE) – der Raum wird nach dem Wechsel auf der Startseite beigetreten.
         c.path = ""; c.query = nil; c.fragment = nil
         if c.scheme == "https", c.port == NodeHost.lanPort + 1 { c.scheme = "http"; c.port = NodeHost.lanPort }
-        guard let url = c.url else { error = "Ungültige Adresse."; return }
+        guard let url = c.url else { error = T("Ungültige Adresse.", "Invalid address."); return }
         await set(.join, join: url)
     }
 }

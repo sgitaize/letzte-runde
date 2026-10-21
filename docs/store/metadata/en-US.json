@@ -1,0 +1,15 @@
+{
+  "locale": "en-US",
+  "privacyPolicyUrl": "https://letzterunde.aize-it.de/impressum.html#privacy",
+  "supportUrl": "https://github.com/sgitaize/letzte-runde/issues",
+  "marketingUrl": "https://letzterunde.aize-it.de",
+  "name": "Letzte Runde - Team Poker",
+  "subtitle": "Cooperative card game",
+  "promotionalText": "Cooperative poker for 3 to 8 players: rank your hands from weakest to strongest – without talking about them. Online, on Wi-Fi without internet, or alone against bots.",
+  "description": "Letzte Runde (“last round”) is poker turned around: you don’t play against each other – you all play together against the cards.\n\nHOW IT WORKS\n• Everyone gets two face-down hole cards, and up to five cards are dealt to the table, just like Texas Hold’em.\n• In each of the four rounds everyone takes a chip: 1 for the weakest hand, the highest chip for the strongest.\n• Talking about cards is off-limits. You communicate only through the chips – take them from the middle or snatch them from each other.\n• At the end, cards are revealed: if the order is right, you all win. If one of you is off, the whole table loses.\n• Optionally, you guess together the cards of the player with the highest chip.\n\nPLAY YOUR WAY\n• Online: create a room, share the link, go. Friends join in the app or simply in the browser – no installation needed.\n• On Wi-Fi without internet: your phone hosts the game, the others join via QR code. Perfect for cabins, trains or basements.\n• Singleplayer: practise alone against 2 to 5 bots, with a learning mode that explains what’s going on. Works completely offline.\n• Table mode: a tablet or TV shows the table big for everyone, while phones show only your own cards.\n• Scheduled rounds, bots for empty seats, chat, reactions and optional voice chat.\n\nFAIR AND PRIVATE\n• Cards are dealt encrypted – neither the server nor other devices can see anyone else’s cards.\n• No account needed, no ads, no tracking. An optional account (just name and password, no e-mail) keeps your statistics on all devices and shows a leaderboard with friends.\n• Players can be muted and reported, and the host can remove people from the room.\n\nAvailable in English and German.\nOpen source: github.com/sgitaize/letzte-runde\nNot gambling: no stakes, no real money. Optional tips (“Buy me a Spezi”) unlock nothing.",
+  "keywords": "poker,card game,cooperative,team,party,friends,hold'em,wifi,offline,bots,game night,cards",
+  "screenshots": {
+    "APP_IPHONE_67": "screenshots/en/iphone",
+    "APP_IPAD_PRO_3GEN_129": "screenshots/en/ipad"
+  }
+}
