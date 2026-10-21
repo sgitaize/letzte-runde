@@ -69,7 +69,7 @@ async function scenario(send, dev) {
     'if(!mine){var c=document.querySelector(".p-chips [data-chip]");if(c)c.click();}else if(r&&!r.disabled&&/Bereit$|Ready$/.test(r.textContent))r.click();' +
     'var gk=document.querySelectorAll("[data-grank]");if(gk.length&&document.querySelector(".gslot .card.empty")){gk[12].click();}' +
     'var cf=document.querySelector(\'[data-a="confirm"]\');if(cf&&!cf.disabled&&/bestätigen|Confirm guess/.test(cf.textContent))cf.click();var rv=document.querySelector(\'[data-a="reveal"]\');if(rv)rv.click();return 1;})()';
-  const stage = () => js('(function(){var m=/(?:Runde|Round) (\\d) (?:von|of) 4/.exec(document.body.innerText);return m?+m[1]:0;})()');
+  const stage = () => js('(function(){var m=/(?:Runde|Round) (\\d) (?:von|of) 4/i.exec(document.body.innerText);return m?+m[1]:0;})()');
 
   await send('Emulation.setDeviceMetricsOverride', { width: dev.w, height: dev.h, deviceScaleFactor: dev.dsf, mobile: dev.w < 600 });
   await send('Page.navigate', { url: URL0 });
@@ -126,7 +126,7 @@ async function scenario(send, dev) {
     await sleep(700);
   }
   await click('[data-a="start"]');
-  await until('/Runde 1 von 4|Round 1 of 4/.test(document.body.innerText)', 40000);
+  await until('/Runde 1 von 4|Round 1 of 4/i.test(document.body.innerText)', 40000);
   for (let i = 0; i < 400 && (await stage()) < 2; i++) { await js(step); await sleep(300); }
   for (let i = 0; i < 40 && !(await js('!!document.querySelector(".pl.me .chip:not(.ph)")')); i++) { await js(step); await sleep(300); }
   await sleep(2500);
@@ -162,7 +162,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.ki
   const send = await connect(list.find((t) => t.type === 'page').webSocketDebuggerUrl);
   await send('Page.enable');
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });   // ohne Gewinn-Animation
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de"};' });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de",acct:"https://letzterunde.aize-it.de"};' });
   for (const dev of DEVICES) await scenario(send, dev);
 
   /* Motive setzen */

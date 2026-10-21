@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Trinkgeld-Käufe (Verbrauchsartikel) von Letzte Runde in App Store Connect anlegen bzw. abgleichen:
-Name, Beschreibung (de-DE), Preis (Basisland DEU), Verfügbarkeit (nur DEU) und optional Review-Screenshot.
+Name, Beschreibung (de-DE + en-US), Preis (Basisland DEU), Verfügbarkeit (alle Länder) und optional Review-Screenshot.
 
     python3 Scripts/asc_tips.py [review-screenshot.png]
     python3 Scripts/asc_tips.py --shot-only review-screenshot.png   # nur Screenshot tauschen (Name/Preis gesperrt, z. B. im Review)
@@ -17,7 +17,12 @@ TIPS = {  # productId: (Referenzname, Anzeigename, Beschreibung, Preis) – Appl
     "de.sgitaize.letzterunde.tip.medium": ("Trinkgeld mittel", "Tagesration Spezi", "Danke! Schaltet nichts frei.", "3.99"),
     "de.sgitaize.letzterunde.tip.large": ("Trinkgeld groß", "Kasten Spezi", "Bei Netto im Angebot? ;)", "9.99"),
 }
-NOTE = "Freiwilliges Trinkgeld (Verbrauchsartikel), schaltet nichts frei. Startseite unten: „Kauf mir eine Spezi“."
+EN = {  # englische Fassung (App Review prüft im US-Store; Simon 2026-10-21)
+    "de.sgitaize.letzterunde.tip.small": ("One Spezi", "Thank you! Unlocks nothing."),
+    "de.sgitaize.letzterunde.tip.medium": ("Daily Ration of Spezi", "Thank you! Unlocks nothing."),
+    "de.sgitaize.letzterunde.tip.large": ("Crate of Spezi", "On sale at the supermarket? ;)"),
+}
+NOTE = "Optional tip (consumable), unlocks nothing. Start screen, at the very bottom: \"Buy me a Spezi\" (German UI: \"Kauf mir eine Spezi\")."
 
 env = dict(l.strip().split("=", 1) for l in open(os.path.expanduser("~/.appstoreconnect/asc.env")) if "=" in l)
 KID, ISS = env["ASC_KEY_ID"].strip('"'), env["ASC_ISSUER_ID"].strip('"')
@@ -64,22 +69,22 @@ for pid, (ref, name, desc, price) in TIPS.items():
               "attributes": {"name": ref, "productId": pid, "inAppPurchaseType": "CONSUMABLE", "reviewNote": NOTE},
               "relationships": {"app": rel("apps", APP)}}})["data"]["id"]
         call("POST", "v1/inAppPurchaseAvailabilities", {"data": {"type": "inAppPurchaseAvailabilities",
-             "attributes": {"availableInNewTerritories": False},
+             "attributes": {"availableInNewTerritories": True},   # alle Länder: App Review prüft mit einem US-Konto
              "relationships": {"inAppPurchase": rel("inAppPurchases", iid),
-                               "availableTerritories": {"data": [{"type": "territories", "id": "DEU"}]}}}})
+                               "availableTerritories": {"data": [{"type": "territories", "id": t["id"]} for t in call("GET", "v1/territories?limit=200")["data"]]}}}})
     if SHOT_ONLY:
         if shot: upload_shot(iid)
         print(f"{pid}: Screenshot")
         continue
-    locs = call("GET", f"v2/inAppPurchases/{iid}/inAppPurchaseLocalizations")["data"]
-    de = next((l for l in locs if l["attributes"]["locale"] == "de-DE"), None)
-    if de:
-        call("PATCH", f"v1/inAppPurchaseLocalizations/{de['id']}", {"data": {"type": "inAppPurchaseLocalizations", "id": de["id"],
-             "attributes": {"name": name, "description": desc}}})
-    else:
-        call("POST", "v1/inAppPurchaseLocalizations", {"data": {"type": "inAppPurchaseLocalizations",
-             "attributes": {"locale": "de-DE", "name": name, "description": desc},
-             "relationships": {"inAppPurchaseV2": rel("inAppPurchases", iid)}}})
+    locs = {l["attributes"]["locale"]: l["id"] for l in call("GET", f"v2/inAppPurchases/{iid}/inAppPurchaseLocalizations")["data"]}
+    for loc, (n, d) in (("de-DE", (name, desc)), ("en-US", EN[pid])):
+        if loc in locs:
+            call("PATCH", f"v1/inAppPurchaseLocalizations/{locs[loc]}", {"data": {"type": "inAppPurchaseLocalizations", "id": locs[loc],
+                 "attributes": {"name": n, "description": d}}})
+        else:
+            call("POST", "v1/inAppPurchaseLocalizations", {"data": {"type": "inAppPurchaseLocalizations",
+                 "attributes": {"locale": loc, "name": n, "description": d},
+                 "relationships": {"inAppPurchaseV2": rel("inAppPurchases", iid)}}})
     points = call("GET", f"v2/inAppPurchases/{iid}/pricePoints?filter[territory]=DEU&limit=200")["data"]
     pp = next(p for p in points if p["attributes"]["customerPrice"] == price)
     call("POST", "v1/inAppPurchasePriceSchedules", {
