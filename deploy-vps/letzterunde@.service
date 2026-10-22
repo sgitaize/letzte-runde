@@ -1,0 +1,64 @@
+# Letzte Runde auf dem VPS. Instanz = Name (z. B. letzterunde@test → /srv/letzterunde-test, /etc/letzterunde-test/env)
+[Unit]
+Description=Letzte Runde (%i)
+After=network.target
+
+[Service]
+Type=simple
+User=letzterunde
+Group=letzterunde
+WorkingDirectory=/srv/letzterunde-%i/app
+ExecStart=/usr/local/lib/node-srv/bin/node server.js
+EnvironmentFile=/etc/letzterunde-%i/env
+Environment=NODE_ENV=production KR_LISTEN_HOST=127.0.0.1 KR_VAR_DIR=/srv/letzterunde-%i/var
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=15
+UMask=0077
+
+# Grenzen
+MemoryMax=768M
+TasksMax=64
+LimitNOFILE=8192
+CPUQuota=200%
+
+# Dateisystem: alles nur lesbar, schreiben nur im eigenen Datenordner; fremde Daten unsichtbar
+ProtectSystem=strict
+ReadWritePaths=/srv/letzterunde-%i/var
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+InaccessiblePaths=-/srv/openrct2 -/var/backups -/var/lib/backup -/var/lib/server-audit -/etc/letzterunde-%i -/opt -/var/www -/var/log -/etc/ssh -/etc/nginx -/etc/letsencrypt
+TemporaryFileSystem=/srv:ro
+BindReadOnlyPaths=/srv/letzterunde-%i/app
+BindPaths=/srv/letzterunde-%i/var
+
+# Netz: nur lokal (nginx davor); keine Verbindungen nach außen
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=127.0.0.1 ::1
+
+# Rechte
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount @debug @cpu-emulation @obsolete @raw-io @reboot @swap @module
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target

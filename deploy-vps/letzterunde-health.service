@@ -1,0 +1,16 @@
+[Unit]
+Description=Letzte Runde: Erreichbarkeit → healthchecks.io
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/letzterunde/health-check.sh
+LoadCredential=hc:/var/lib/backup/hc-urls
+DynamicUser=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+TimeoutStartSec=90

@@ -3,6 +3,7 @@
 # Danach: Spiel-Bundle für die Apps (app/bundle.json) erzeugen, signieren und als Letztes hochladen – die Apps bieten das
 # Update beim nächsten Start an. Schlüssel: KR_BUNDLE_KEY in .env (Pfad zur PEM-Datei, siehe app/scripts/bundle.js keygen).
 # Nutzung: ./deploy.sh [datei ...]   (ohne Argumente: alle App-Dateien)
+[[ -n "${KR_ALLOW_PLESK:-}" ]] || { echo "Letzte Runde läuft seit 2026-10-22 auf dem VPS – deployen mit: sudo deploy-vps/deploy.sh prod (Plesk nur im Notfall: KR_ALLOW_PLESK=1)"; exit 1; }
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 set -a; . ./.env; set +a
