@@ -10,6 +10,10 @@ const tls = require('tls');
 const VPS = '194.163.182.35';
 const HOSTS = new Set(['letzterunde.aize-it.de', 'gang.aize.eu']);
 const agent = new https.Agent({ keepAlive: true, maxSockets: 64 });
+const HOP = ['connection', 'keep-alive', 'proxy-connection', 'transfer-encoding', 'te', 'trailer', 'upgrade'];
+const fs = require('fs');
+const log = (m) => fs.appendFile(__dirname + '/logs/proxy.log', new Date().toISOString() + ' ' + m + '\n', () => {});
+process.on('uncaughtException', (e) => log('uncaught ' + (e && e.stack || e)));
 
 function target(req) {
   const host = String(req.headers.host || '').split(':')[0].toLowerCase();
@@ -29,6 +33,7 @@ function clientIp(req) {
 function headersFor(req, host) {
   const h = { ...req.headers, host, 'x-forwarded-for': clientIp(req), 'x-forwarded-proto': 'https' };
   delete h['x-real-ip'];
+  if (!req.headers.upgrade) for (const k of HOP) delete h[k];
   return h;
 }
 
@@ -36,11 +41,12 @@ const server = http.createServer((req, res) => {
   const host = target(req);
   const up = https.request({ host: VPS, servername: host, port: 443, method: req.method, path: req.url,
     headers: headersFor(req, host), agent, timeout: 30000 }, (r) => {
-    res.writeHead(r.statusCode, r.headers);
+    const h = { ...r.headers }; for (const k of HOP) delete h[k];
+    res.writeHead(r.statusCode, h);
     r.pipe(res);
   });
   up.on('timeout', () => up.destroy(new Error('timeout')));
-  up.on('error', () => { if (!res.headersSent) res.writeHead(502, { 'content-type': 'text/plain' }); res.end('VPS nicht erreichbar'); });
+  up.on('error', (e) => { log(req.method + ' ' + host + req.url.slice(0, 80) + ' → ' + e.message); if (!res.headersSent) res.writeHead(502, { 'content-type': 'text/plain' }); res.end('VPS nicht erreichbar'); });
   req.pipe(up);
 });
 
@@ -58,4 +64,7 @@ server.on('upgrade', (req, sock, head) => {
   up.on('error', end); sock.on('error', end); up.on('close', end); sock.on('close', end);
 });
 
+// Länger als Passenger/nginx eine ruhende Verbindung wiederverwenden (Node-Standard 5 s → sporadische 502)
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 125000;
 server.listen(process.env.PORT || 3000);
