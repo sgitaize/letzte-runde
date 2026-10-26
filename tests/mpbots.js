@@ -3,7 +3,7 @@
    (Mensch+Bots) inkl. Geben, Tipp und Aufdecken durch Bots, und dass der Server-Log fehlerfrei bleibt.
    Nutzung: node tests/mpbots.js <app-verzeichnis> */
 'use strict';
-let sawSug = false;   // Bot-Vorschlag beim Tipp einmal prüfen
+let sawSug = false, netDrop = false;   // Bot-Vorschlag beim Tipp einmal prüfen
 const vm = require('vm'), fs = require('fs'), os = require('os'), path = require('path'), { spawn, execSync } = require('child_process');
 const APP = path.resolve(process.argv[2] || path.join(__dirname, '..', 'app'));
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-bots-'));
@@ -94,7 +94,16 @@ async function playHand(humans, label, onPlay, top, noClick) {
     if (idx !== lastIdx) { if (lastIdx >= 0) waits.push(Date.now() - since); lastIdx = idx; since = Date.now(); }
     const X = humans.find((x) => x.K.uid() === cur);
     if (noClick && X && !sawCd && /data-a="reveal"[^]*id="revleft">\d+</.test(X.els.app.innerHTML) && humans.some((y) => y !== X && /Warten auf[^]*id="revleft">\d+</.test(y.els.app.innerHTML))) sawCd = true;
-    if (!noClick && X && X.els.app.innerHTML.includes('data-a="reveal"')) X.K.revealMine();
+    if (netDrop && X && X.els.app.innerHTML.includes('data-a="reveal"')) {
+      /* Netz fällt genau beim eigenen Aufdecken weg (Live 2026-10-26: Knopf danach tot, Hand blieb verdeckt) */
+      netDrop = false; const i0 = idx, ce0 = consoleErrors;
+      X.netOff = true; X.K.revealMine(); await sleep(4000);
+      ok(H0.K.main().revealIdx === i0, label + ': ohne Netz geht das Aufdecken nicht durch');
+      X.netOff = false;
+      await until(() => H0.K.main().revealIdx > i0 && H0.K.S().reveal[cur], label + ': nach dem Netz-Aussetzer deckt ' + X.K.pmap()[cur].name + ' von selbst auf', 15000);
+      ok(true, label + ': nach dem Netz-Aussetzer automatisch aufgedeckt, nicht übersprungen');
+      consoleErrors = ce0;   // die absichtlichen Offline-Fehler nicht als Browserfehler zählen
+    } else if (!noClick && X && X.els.app.innerHTML.includes('data-a="reveal"')) X.K.revealMine();
     await sleep(200);
   }
   if (noClick) {
@@ -138,6 +147,7 @@ let srv;
 
   // Hand 1: 2 Menschen + 2 Bots → Rollen: 2 Menschen + 1 Bot
   await sleep(200);
+  netDrop = true;
   await playHandWithRoles([A, B], 'Hand 1 (2 Menschen + 2 Bots)');
   // Bot entfernen → 2 Menschen + 1 Bot
   A.K.kickPlayer(b2); await until(() => A.K.S().players.length === 3, 'Bot entfernt');

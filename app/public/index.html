@@ -763,7 +763,7 @@ var SK=(function(){
   return k;
 })();
 var kickCheck=false;
-var docs={},ver=-1,pollTimer=null,pollBusy=false,offline=false;
+var docs={},ver=-1,pollTimer=null,pollBusy=false,offline=false,needResync=false;
 function api(a,params,body,ms){
   var qs='?a='+encodeURIComponent(a);
   for(var k in params)qs+='&'+k+'='+encodeURIComponent(params[k]);
@@ -785,7 +785,8 @@ function doc(p){
   return {
     set:function(o){
       docs[p]=JSON.parse(JSON.stringify(o));applyDocs();
-      return api('set',{room:code,path:p},o);
+      /* ohne Netz bleibt der lokale Stand sonst falsch, bis sich auf dem Server etwas ändert → nach dem nächsten Abruf neu holen */
+      return api('set',{room:code,path:p},o).catch(function(e){if(!e||!e.status)needResync=true;throw e;});
     },
     get:function(){
       return api('get',{room:code,path:p}).then(function(r){
@@ -872,6 +873,7 @@ function pollOnce(force){
     applyConfig(r.config);
     if(r.online){var was=JSON.stringify([online,idle,away,voice.enabled,voice.on?null:voice.list]);setPresence(r);if(was!==JSON.stringify([online,idle,away,voice.enabled,voice.on?null:voice.list])&&r.version===ver)upd();}
     if(offline){offline=false;uiErr='';}
+    if(needResync){needResync=false;resync();return;}
     if(r.version===ver)return;
     ver=r.version;docs=r.docs||{};applyDocs();
   }).catch(function(e){
@@ -1014,7 +1016,7 @@ function resync(note){
   return api('state',{room:c,since:-1,u:uid}).then(function(r){
     if(code!==c)return;
     ver=r.version;docs=r.docs||{};setPresence(r);
-    myHand=null;decryptFailed=null;decrypting=false;boardCache={};revealCache={};verifying={};
+    myHand=null;decryptFailed=null;decrypting=false;boardCache={};revealCache={};verifying={};revealBusy=null;
     applyDocs();
     if(!wsOk){if(ws){try{ws.close();}catch(e){}}else if(!wsRetry)wsConnect();}
     if(note){uiNote=note;}uiErr='';render();
@@ -1436,9 +1438,15 @@ setInterval(function(){
 function revealMine(){
   if(!myHand||myHand.hand!==hand())return;
   if(revealBusy===revKey())return;          // Klick und Automatik gleichzeitig → nur einmal
-  revealBusy=revKey();
+  var k=revKey();revealBusy=k;
   doc('reveal/'+uid).set({hand:hand(),slots:myHand.slots,k1:myHand.k1,k2:myHand.k2,cards:myHand.cards})
-    .then(nextReveal).catch(showErr);
+    .then(function(){if(revKey()===k)return nextReveal();})   // inzwischen weiter (z. B. übersprungen) → nicht nochmal weiterschalten
+    .catch(function(e){
+      /* Senden gescheitert (z. B. Netz kurz weg): Knopf wieder freigeben und automatisch erneut versuchen */
+      if(revealBusy===k)revealBusy=null;
+      if(revT.key===k){revT.fired=false;revT.at=Date.now()-REVEAL_MS+3000;}   // nächster Versuch in 3 s
+      showErr(e);
+    });
 }
 function nextReveal(){
   var ord=main().revealOrder||[],i=(main().revealIdx||0)+1;

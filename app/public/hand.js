@@ -262,8 +262,8 @@ function resolve(o){
 }
 /* Version der Spielregeln/Wertung: bei jeder Änderung an bestHand/resolve erhöhen. Der Admin kann für Online-Räume eine
    Mindestversion verlangen (ältere Apps müssen dann erst die neue Spiellogik laden). 1 = bis 1.0.1, 2 = eigene Kombination
-   zählt auch, wenn der Tisch allein mehr hat (c615829). */
-var LOGIC_VERSION=2;
+   zählt auch, wenn der Tisch allein mehr hat (c615829), 3 = Aufdecken klappt nach Netz-Aussetzer (Client, Pflicht-Update). */
+var LOGIC_VERSION=3;
 
 var api={eval5:eval5,cmpHand:cmpHand,bestHand:bestHand,handCore:handCore,ownImproves:ownImproves,estimateRank:estimateRank,estimateRankGiven:estimateRankGiven,preKey:preKey,
   inferHole:inferHole,rankOdds:rankOdds,valueOdds:valueOdds,resolve:resolve,LOGIC_VERSION:LOGIC_VERSION};

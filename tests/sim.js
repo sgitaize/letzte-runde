@@ -279,6 +279,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   await until(()=>A.__kr.resolveHand(),'Auswertung');
   ok(A.els.app.innerHTML.includes('1 von 2 Karten richtig'),'Tipp: 1 von 2 Karten richtig erkannt');
   ok((A.els.app.innerHTML.match(/card sm hit/g)||[]).length===1&&(A.els.app.innerHTML.match(/card sm miss/g)||[]).length===1,'Getippte Karten einzeln grün/rot');
+  await until(()=>A.__kr.parts().every(id=>A.__kr.revealedCards(id)),'alle Karten im Browser nachgeprüft');   // Prüfung läuft im Hintergrund (nach resync neu)
   let ex=expectWin(A.__kr,A.__kr.parts()), res=A.__kr.resolveHand();
   ok(ex.win&&res.orderOk&&!res.guessOk&&!res.win&&res.part&&A.els.app.innerHTML.includes('Fast richtig')&&!A.els.app.innerHTML.includes('Alles richtig'),
     'Hand 1: Reihenfolge stimmt, Tipp 1 von 2 → „Fast richtig“, nicht „Alles richtig“');
@@ -329,6 +330,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
   }
   await until(()=>A.__kr.phase()==='done'&&A.__kr.resolveHand(),'H2 Auswertung'); await sleep(500);
   ok(P.every(x=>/Du bist dran: Karten aufdecken/.test(toasts(x))),'Jeder bekam beim Aufdecken „Du bist dran“');
+  await until(()=>A.__kr.parts().every(id=>A.__kr.revealedCards(id)),'H2 alle Karten nachgeprüft');
   ex=expectWin(A.__kr,A.__kr.parts()); res=A.__kr.resolveHand();
   ok(res.orderOk===ex.win,'Hand 2: Auswertung stimmt mit unabhängiger Rechnung überein ('+(ex.win?'Gleichstand → richtig':ex.bad.size+' vertauscht')+')');
   await until(()=>A.__kr.S().stats.length===2,'Statistik nach Hand 2');
