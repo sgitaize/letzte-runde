@@ -602,7 +602,7 @@ html[data-skin="win95"] .more.open .moremenu{border:0;border-radius:0;box-shadow
 html[data-skin="arcade"] .more.open .moremenu{border:1px solid #ff2bd6;border-radius:6px;box-shadow:0 0 14px rgba(255,43,214,.45)}
 html[data-skin="vegas"] .more.open .moremenu{border:1px solid rgba(216,180,90,.45);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.6)}
 .moremenu>button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;justify-content:flex-start;font-size:14.5px;padding:9px 10px}
-.moremenu>button.icon[aria-label]::after{content:attr(aria-label);font-size:14.5px}
+.moremenu>button.icon{font-size:14.5px}.moremenu>button.icon[aria-label]::after{content:attr(aria-label);font-size:inherit}
 .moremenu .mseg{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-block:1px solid var(--line);margin:2px 0}
 .moremenu .mseg .note{font-size:14px;color:var(--fg)}
 .moremenu .seg{flex-wrap:nowrap;gap:2px}.moremenu .seg button{min-width:34px;padding:6px 8px}
@@ -681,6 +681,14 @@ html[data-skin="win95"] .startbtns button.big{width:auto;min-width:130px}
 html[data-skin="win95"] .startbtns .joinrow{gap:6px}html[data-skin="win95"] .startbtns .joinrow input{width:140px;flex:none}
 html[data-skin="win95"] .endbar .res{font-size:12px}
 html[data-skin="win95"] .panel .spread>h2{flex:1 1 auto}
+/* Win95-Menü: flache Einträge, blau beim Drüberfahren; Bot-Auswahl als kleine Knöpfe */
+html[data-skin="win95"] .moremenu{gap:0}
+html[data-skin="win95"] .moremenu>button{box-shadow:none;background:transparent;min-width:0;min-height:0;padding:4px 18px 4px 8px;font-size:12px}
+html[data-skin="win95"] .moremenu>button:hover,html[data-skin="win95"] .moremenu>button:focus-visible{background:#000080;color:#fff}
+html[data-skin="win95"] .moremenu>button.primary{outline:0}
+html[data-skin="win95"] .moremenu .mseg{border-block:1px solid #808080;box-shadow:0 1px #fff;padding:4px 8px}
+html[data-skin="win95"] .moremenu .mseg .note{font-size:12px;white-space:nowrap}
+html[data-skin="win95"] .moremenu .seg button{min-width:24px;padding:1px 6px;min-height:21px}
 /* Arcade / Neon */
 html:root[data-skin="arcade"]{
   --bg:#07000f; --bg2:#12001f; --panel:#10001e; --fg:#e8f7ff; --muted:#a595cf; --line:#4a1f7a;
@@ -3781,7 +3789,15 @@ function render(){
   ['.col-l','.col-r','.col-rs','.col-s','.acctbox','.acbody'].forEach(function(c){var x=qs(c);if(x&&scr[c])x.scrollTop=scr[c];});
   for(var id in keep){var x=$(id);if(x&&keep[id]!==''&&(id===act||x.value===''))x.value=keep[id];}
   if(act&&keep[act]!=null){var f=$(act);if(f&&f.focus){f.focus();try{f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}}
-  renderChat();placeChat();
+  renderChat();placeChat();placeMore();
+}
+/* ⋯-Menü immer ganz im Bild: steht der Knopf links (Handy), klappt es nach rechts auf */
+function placeMore(){
+  var m=document.querySelector&&document.querySelector('.more.open .moremenu');if(!m)return;
+  m.style.left='';m.style.right='';
+  var r=m.getBoundingClientRect(),vw=window.innerWidth||document.documentElement.clientWidth;
+  if(r.left<8){m.style.right='auto';m.style.left='0';r=m.getBoundingClientRect();}
+  if(r.right>vw-8)m.style.left=(parseFloat(m.style.left||'0')-(r.right-(vw-8)))+'px';
 }
 /* Rechte Seite im Raum: Spieler (col-r) und Insight + Chat (col-s). Hochformat: alles eine Spalte; Querformat mittel: beide
    untereinander in einer Spalte (col-rs scrollt); breit: col-rs löst sich auf → drei Spalten Tisch | Spieler | Insight + Chat */
@@ -3805,7 +3821,7 @@ function placeChat(){
   box.style.left=r.left+'px';box.style.width=r.width+'px';box.style.top=top+'px';box.style.height=Math.max(0,bottom-top)+'px';
   box.classList.toggle('mini',bottom-top<150);   // sehr wenig Platz: nur Eingabe, Verlauf ausgeblendet
 }
-if(window.addEventListener)window.addEventListener('resize',function(){placeChat();});
+if(window.addEventListener)window.addEventListener('resize',function(){placeChat();placeMore();});
 
 function joinChoice(main){
   return '<div class="row joinrow"><input id="code" maxlength="6" aria-label="'+T('Raumcode','Room code')+'" placeholder="'+T('Raumcode','Room code')+'" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'">'+
