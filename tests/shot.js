@@ -58,10 +58,12 @@ async function connect(url) {
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
   await js('document.getElementById("name").value="Simon";1');
+  await shoot('start');
   // Singleplayer mit 5 Bots, Runde 2 und Handende
   await js('localStorage.setItem("kr.sp.bots","5");1');
   await click('[data-a="sp"]');
   await until('/Singleplayer/.test(document.body.innerText)');
+  if (process.env.MENU) { await click('[data-a="more"]'); await sleep(300); await shoot('sp-menu'); await click('[data-a="more"]'); }   // MENU=1: „⋯“-Menü offen
   if (process.env.LEARN && !(await js('!!document.querySelector(".coach")'))) await click('[data-a="splearn"]');
   if (process.env.INSIGHT && !(await js('!!document.querySelector(".p-insight")'))) await click('[data-a="spinsight"]');
   await sleep(2500);

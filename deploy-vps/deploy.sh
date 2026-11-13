@@ -1,14 +1,19 @@
 #!/bin/bash
 # Letzte Runde auf dem VPS ausrollen – nur gepushte Commits (Regel: Commit → Push → Deploy).
-# Nutzung (als root): deploy-vps/deploy.sh <instanz> [commit]   z. B. deploy-vps/deploy.sh test
+# Nutzung (als root): deploy-vps/deploy.sh <instanz> [commit]   z. B. deploy-vps/deploy.sh test origin/redesign
+# prod nur von origin/main; andere Instanzen auch von jedem gepushten Branch (Testversionen)
 set -euo pipefail
 INST=${1:?Instanz fehlt (z. B. test)}; REPO=$(cd "$(dirname "$0")/.." && pwd)
 BASE=/srv/letzterunde-$INST; ENVF=/etc/letzterunde-$INST/env
 [ "$(id -u)" = 0 ] || { echo "Bitte als root (sudo)"; exit 1; }
 [ -f "$ENVF" ] || { echo "$ENVF fehlt – erst setup.sh"; exit 1; }
-cd "$REPO"; git fetch -q origin main
+cd "$REPO"; git fetch -q origin
 REV=$(git rev-parse "${2:-origin/main}")
-git merge-base --is-ancestor "$REV" origin/main || { echo "Commit $REV ist nicht auf origin/main gepusht"; exit 1; }
+if [ "$INST" = prod ]; then
+  git merge-base --is-ancestor "$REV" origin/main || { echo "Commit $REV ist nicht auf origin/main gepusht"; exit 1; }
+else
+  [ -n "$(git branch -r --contains "$REV" 2>/dev/null)" ] || { echo "Commit $REV ist auf keinem Branch gepusht"; exit 1; }
+fi
 PORT=$(sed -n 's/^PORT=//p' "$ENVF")
 NEW=$BASE/app.new; rm -rf "$NEW"; install -d -o root -g root -m 755 "$NEW"
 git archive "$REV" app | tar -x -C "$NEW" --strip-components=1

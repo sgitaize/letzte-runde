@@ -520,6 +520,98 @@ button.nudge{padding:1px 6px;margin-left:2px;font-size:13px;border:0}
 .msg .tm{font-size:11px;color:var(--muted);margin-left:4px}
 .chatform{flex-wrap:nowrap}
 @media (prefers-reduced-motion: reduce){.tag.new,.cd-num{animation:none}}
+/* ---------- Aufgeräumter Standard-Look (ohne Skin, seit 2026-11) ----------
+   Gleiche Farben, weniger Kästen/Schatten, keine Großbuchstaben-Labels, Chips liegen mit auf dem Tisch (Lampenlicht),
+   Bricolage Grotesque (OFL, public/fonts) für Titel, Kartenwerte, Chips und Zahlen. Gilt nur ohne data-skin. */
+@font-face{font-family:"Bricolage";src:url(fonts/bricolage-latin.woff2) format("woff2");font-weight:200 800;font-stretch:75% 100%;font-display:swap}
+/* Grün (Akzent, Filz) und Gold bleiben; Grundflächen grünlich-grau statt Creme/Weiß, Text grünstichig statt Grau/Fast-Schwarz */
+html:not([data-skin]):root{--onfelt:#eef5f0;--barbg:var(--felt2);--barfg:#eef5f0;--act:var(--gold);--act-fg:#1b1407;--disp:"Bricolage",ui-sans-serif,system-ui,sans-serif;
+  --bg:#e6ebe5; --bg2:#dde4dc; --panel:#f5f8f4; --fg:#18221c; --muted:#59665d; --line:#cdd7ce; --chip:#e1e8e0; --card2:#f2f5f1}
+@media (prefers-color-scheme: dark){html:not([data-skin]):root:not([data-theme="light"]){
+  --bg:#0e1611; --bg2:#121c16; --panel:#16221b; --fg:#e5ece6; --muted:#97a69b; --line:#27362c; --chip:#1e2c23}}
+html:not([data-skin]):root[data-theme="dark"]{--bg:#0e1611; --bg2:#121c16; --panel:#16221b; --fg:#e5ece6; --muted:#97a69b; --line:#27362c; --chip:#1e2c23}
+html:not([data-skin]) body{background:var(--bg)}
+/* Schrift: Display nur dort, wo sie etwas trägt */
+html:not([data-skin]) .brand{font-family:var(--disp);font-style:normal;font-weight:800;font-stretch:76%;letter-spacing:-.01em;font-size:38px;line-height:1}
+html:not([data-skin]) .brand .logo{filter:none}
+html:not([data-skin]) .hero .brand{white-space:nowrap;font-size:clamp(30px,9vw,44px)}html:not([data-skin]) .hero .brand .logo{width:clamp(34px,9vw,46px)}
+html:not([data-skin]) .brand.sm{font-size:15px;font-weight:700;font-stretch:85%;color:var(--muted);letter-spacing:0}
+html:not([data-skin]) h1{font-family:var(--disp);font-weight:700;font-stretch:88%;font-size:25px;letter-spacing:-.01em;line-height:1.15}
+html:not([data-skin]) h2{font-family:var(--disp);text-transform:none;letter-spacing:0;font-size:18px;font-weight:650;color:var(--fg);margin:0 0 10px}
+html:not([data-skin]) .code{font-family:var(--disp);font-weight:700;letter-spacing:.05em}
+html:not([data-skin]) .result .big,html:not([data-skin]) .cd-num,html:not([data-skin]) .avatar{font-family:var(--disp)}
+html:not([data-skin]) .cd-num{font-weight:800;font-stretch:80%;color:var(--act)}
+html:not([data-skin]) .cd-lbl{text-transform:none;letter-spacing:0;font-size:15px}
+/* Flächen statt Kästen: keine Schatten/Rahmen, Hierarchie über Fläche und Abstand */
+html:not([data-skin]) .panel{border:0;box-shadow:none;border-radius:16px;background:var(--panel)}
+html:not([data-skin]) .rhead{background:transparent;padding:6px 4px 2px}
+html:not([data-skin]) .hero{background:transparent;padding:10px 4px 4px}
+/* Knöpfe: ruhiger, Ghost ohne Rahmen */
+html:not([data-skin]) button{border-radius:10px;border-color:var(--line);background:var(--panel)}
+html:not([data-skin]) button:hover{border-color:var(--muted)}
+html:not([data-skin]) button.ghost{background:transparent;border-color:transparent}
+html:not([data-skin]) button.ghost:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
+html:not([data-skin]) button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+html:not([data-skin]) button.danger{color:var(--red)}
+html:not([data-skin]) button.linkbtn{background:none;border:0;padding:2px 0;border-radius:0}
+#code::placeholder{text-transform:none}
+html:not([data-skin]) button.linkbtn{background:none;border:0;padding:2px 0;border-radius:0}
+#code::placeholder{text-transform:none}
+html:not([data-skin]) input,html:not([data-skin]) select{border-radius:10px;background:var(--panel)}
+/* Der Tisch: Chips in der Mitte liegen auf demselben Filz wie die Karten, darüber hängt die Lampe */
+html:not([data-skin]) .felt,html:not([data-skin]) .p-chips{color:var(--onfelt);
+  background:radial-gradient(70% 160px at 50% 0,rgba(255,224,160,.26),transparent),linear-gradient(var(--felt),var(--felt2))}
+html:not([data-skin]) .p-chips:has(+ .p-board.felt){border-radius:18px 18px 0 0;margin-bottom:0;padding-bottom:6px;
+  background:radial-gradient(70% 100% at 50% 0,rgba(255,224,160,.26),transparent),var(--felt)}
+html:not([data-skin]) .p-chips+.p-board.felt{border-radius:0 0 18px 18px;padding-top:8px;background:linear-gradient(var(--felt),var(--felt2))}
+html:not([data-skin]) .p-chips+.p-board.felt>.spread h2{display:none}   /* „Tisch“ ist offensichtlich, wenn Chips und Karten darauf liegen */
+html:not([data-skin]) .notable .p-chips{border-radius:18px;margin-bottom:12px}
+html:not([data-skin]) .felt h2,html:not([data-skin]) .p-chips h2{color:color-mix(in srgb,var(--onfelt) 88%,transparent)}
+html:not([data-skin]) .p-chips .note,html:not([data-skin]) .p-chips .muted,html:not([data-skin]) .felt .note{color:color-mix(in srgb,var(--onfelt) 72%,transparent)}
+html:not([data-skin]) .p-chips button:not(.primary){background:transparent;color:var(--onfelt);border-color:rgba(255,255,255,.3)}
+html:not([data-skin]) .p-chips button.primary{background:var(--onfelt);border-color:var(--onfelt);color:var(--felt2)}
+html:not([data-skin]) .p-chips button:disabled{opacity:.4}
+html:not([data-skin]) .felt .card.empty{border:1.5px dashed rgba(255,255,255,.3)}
+/* Karten: weiß, klar, Wert in der Display-Schrift */
+html:not([data-skin]) .card{background:var(--card);border:1px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 1px 0 rgba(0,0,0,.1)}
+html:not([data-skin]) .card .r{font-family:var(--disp);font-weight:700;font-stretch:84%}
+html:not([data-skin]) .card.empty{background:transparent;box-shadow:none}
+html:not([data-skin]) .card.back{background:repeating-linear-gradient(45deg,#2c5f86 0 5px,#244f70 5px 10px);border:2px solid #f4f1ea}
+html:not([data-skin]) .card.fresh{box-shadow:0 0 0 3px var(--gold);transform:translateY(-3px)}
+html:not([data-skin]) .chip{font-family:var(--disp);font-weight:750;font-stretch:90%}
+/* Spielerliste: Linien statt Kästchen, eigene Zeile mit Messing-Strich */
+html:not([data-skin]) .pl.me{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+html:not([data-skin]) .tag{border-radius:6px}
+/* „Nächster Schritt“: dunkle Filz-Leiste, Hauptaktion in Gold */
+html:not([data-skin]) .endbar{background:var(--barbg);color:var(--barfg);border:0;border-radius:16px;box-shadow:0 10px 30px rgba(12,22,27,.3)}
+html:not([data-skin]) .endbar .note,html:not([data-skin]) .endbar .muted{color:color-mix(in srgb,var(--barfg) 70%,transparent)}
+html:not([data-skin]) .endbar button{background:transparent;color:var(--barfg);border-color:color-mix(in srgb,var(--barfg) 30%,transparent)}
+html:not([data-skin]) .endbar button.primary{background:var(--act);border-color:var(--act);color:var(--act-fg)}
+html:not([data-skin]) .endbar .res.ok{color:#8fe0d4}html:not([data-skin]) .endbar .res.bad{color:#ff9a9a}html:not([data-skin]) .endbar .res.part{color:#f0c66f}
+html:not([data-skin]) .cd-box{border:0;border-radius:20px}
+html:not([data-skin]) .toast{background:var(--barbg);color:var(--barfg)}
+html:not([data-skin]) .info{border-radius:10px}
+/* „⋯“-Menü im Kopf (gilt auch mit Skins) */
+.more{position:relative;display:inline-flex}
+.moremenu{display:none}
+.more.open .moremenu{display:flex;position:absolute;right:0;top:calc(100% + 6px);z-index:45;flex-direction:column;align-items:stretch;gap:2px;
+  width:max-content;min-width:230px;max-width:min(320px,calc(100vw - 24px));padding:6px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.25)}
+.moremenu>button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;justify-content:flex-start;font-size:14.5px;padding:9px 10px}
+.moremenu>button.icon[aria-label]::after{content:attr(aria-label);font-size:14.5px}
+.moremenu .mseg{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-block:1px solid var(--line);margin:2px 0}
+.moremenu .mseg .note{font-size:14px;color:var(--fg)}
+.moremenu .seg{flex-wrap:nowrap;gap:2px}.moremenu .seg button{min-width:34px;padding:6px 8px}
+/* Startseite: drei Wege ins Spiel als Zeilen (gilt auch mit Skins) */
+.namef{margin-top:14px}
+.choices{margin:18px 0 10px;border-top:1px solid var(--line)}
+.choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.choice h2{margin:0;font-size:19px}
+.choice .ch-t .note{margin:2px 0 0}
+.choice>button[data-a="create"],.choice>button[data-a="sp"]{padding:11px 16px}
+.choice>.joinrow{grid-column:1/-1;flex-wrap:nowrap;margin-top:4px}.joinrow input{flex:1 1 auto}.joinrow button{flex:none;padding:10px 16px}
+.choice .chmore{grid-column:1/-1;justify-self:start;font-weight:500;font-size:13.5px;color:var(--muted);text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
+.choice .chopts{grid-column:1/-1;padding:4px 0 2px}
+.choice .chopts .subact{width:auto;justify-content:flex-start;padding-left:0}
 /* ---------- Designs (data-skin), unabhängig von Hell/Dunkel ---------- */
 html[data-skin] [data-a="theme"]{display:none}
 .skinmenu{position:fixed;z-index:90;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;
@@ -657,7 +749,7 @@ var TAKE_MS=30000,HOSTMOVE_MS=120000;
 var uiNote='';        // neutrale Hinweise (kein Fehler)
 var pendingTake=null; // {code,id}: von der Startseite aus „einspringen“
 var lastPollAt=0;
-var inviteOpen=false,inviteCode=null;   // Einladung (Link/QR), Code aus #HASH
+var inviteOpen=false,inviteCode=null,moreOpen=false;   // moreOpen: „⋯“-Menü im Raumkopf   // Einladung (Link/QR), Code aus #HASH
 var lastOwnChipAt=0,prevMine={key:null,chip:null};   // „Chip genommen“-Hinweis
 var lastNudgeTs=-1;                    // Anstupsen: -1 = noch nicht initialisiert
 var fxOn=true,AC=null;                 // Ton + Vibration
@@ -1849,6 +1941,8 @@ function toggleFx(){
   if(fxOn){unlockAudio();fx('tick');}
   showToast(fxOn?T('Ton und Vibration an','Sound and vibration on'):T('Ton und Vibration aus','Sound and vibration off'));render();
 }
+/* „⋯“-Menü: seltene Schalter aus dem Kopf; bleibt im DOM (Tests/Host-Prüfung), nur ausgeblendet */
+function moreBox(items){return '<div class="more'+(moreOpen?' open':'')+'"><button class="small ghost icon" data-a="more" aria-expanded="'+moreOpen+'" aria-label="'+T('Mehr','More')+'" title="'+T('Mehr','More')+'">\u22ef</button><div class="moremenu" role="menu">'+items+'</div></div>';}
 function fxBtn(){return '<button class="small ghost icon" data-a="fx" '+T('title="Ton/Vibration" aria-label="Ton und Vibration umschalten">','title="Sound/vibration" aria-label="Toggle sound and vibration">')+(fxOn?'\ud83d\udd14':'\ud83d\udd15')+'</button>';}
 /* ---------- Anstupsen ---------- */
 function nudge(id){
@@ -2400,19 +2494,19 @@ function spStep(){
   return null;
 }
 function spBotBtns(){
-  var o='';for(var b=2;b<=5;b++)o+='<button class="small'+(b===spBots?' primary':' ghost')+'" data-a="spbots" data-n="'+b+'" title="'+(b+1)+T(' Spieler',' players')+'">'+b+' Bots</button>';
+  var o='';for(var b=2;b<=5;b++)o+='<button class="small'+(b===spBots?' primary':' ghost')+'" data-a="spbots" data-n="'+b+'" title="'+(b+1)+T(' Spieler*innen',' players')+'">'+b+'</button>';
   return o;
 }
 function spChipOfStage(id,st){var h=sp.hist[st];return h?num(h[id]):null;}
 function spView(){
   var ps=sp.players,n=ps.length,ph=sp.phase,st=sp.stage,out='';
   var label=ph==='play'?T('Runde '+st+' von 4','Round '+st+' of 4'):ph==='guess'?T('Tipp','Guess'):T('Hand fertig','Hand over');
-  out+='<div class="panel"><div class="spread"><div><div class="brand sm" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
-    '<h1>🤖 Singleplayer</h1><div class="note">Hand '+num(sp.hand)+' · '+label+T(' · du + ',' · you + ')+(n-1)+' Bots</div></div>'+
-    '<div class="row">'+fxBtn()+themeBtn()+'<button class="small ghost" data-a="stats" title="'+T('Statistik','Statistics')+'" aria-label="'+T('Statistik','Statistics')+'">📊</button>'+
+  out+='<div class="panel rhead"><div class="spread"><div class="rtitle"><div class="brand sm" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
+    '<h1>Singleplayer</h1><div class="note">Hand '+num(sp.hand)+' · '+label+T(' · du + ',' · you + ')+(n-1)+' Bots</div></div>'+
+    '<div class="row">'+moreBox(spLearnBtn()+spInsightBtn()+'<div class="mseg"><span class="note">'+T('Bots am Tisch','Bots at the table')+'</span><div class="seg">'+spBotBtns()+'</div></div>'+
+      fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="stats" title="'+T('Statistik','Statistics')+'" aria-label="'+T('Statistik','Statistics')+'">📊</button>')+
     '<button class="small ghost" data-a="leave">'+T('Verlassen','Leave')+'</button></div></div>'+
-    '<div class="bar" style="margin-top:8px">'+spLearnBtn()+spInsightBtn()+T('<span class="note">Mitspieler:</span>','<span class="note">Players:</span>')+spBotBtns()+
-      (spBots!==n-1?T('<span class="note">ab der nächsten Hand '+(spBots+1)+' Spieler</span>','<span class="note">'+(spBots+1)+' players from the next hand</span>'):'')+'</div></div>';
+    (spBots!==n-1?T('<p class="note">Ab der nächsten Hand '+(spBots+1)+' Spieler*innen</p>','<p class="note">'+(spBots+1)+' players from the next hand</p>'):'')+'</div>';
   if(statsOpen)out+=statsPanel(sp.stats,spUsage());
   out+=stealHtml();
   if(sp.cd)out+='<div class="cd-overlay" role="alertdialog" aria-live="assertive"><div class="cd-box"><div class="cd-lbl">'+
@@ -3028,8 +3122,7 @@ function countsHtml(){
     f(playCounts.sp)+'</b>'+T(' im Singleplayer',' in singleplayer')+'</p>';
 }
 function roomsHtml(){
-  var pin='<div class="plist"><div class="pl sp"><span class="code">\ud83e\udd16</span><div class="nm"><b>Singleplayer</b>'+
-    T('<div class="note">Allein gegen Bots \u00b7 immer offen</div></div><button class="small primary" data-a="sp">Spielen</button></div></div>','<div class="note">Alone against bots \u00b7 always open</div></div><button class="small primary" data-a="sp">Play</button></div></div>');
+  var pin='';   // Singleplayer hat einen eigenen Weg auf der Startseite
   if(openRooms==null)return pin+(isOffline()?'':T('<p class="note">Lade offene Räume \u2026</p>','<p class="note">Loading open rooms \u2026</p>'));   // offline kommt keine Liste
   if(!openRooms.length)return pin+T('<p class="note">Gerade keine offenen Räume.</p>','<p class="note">No open rooms right now.</p>');
   return pin+'<div class="plist">'+openRooms.map(function(r){
@@ -3667,28 +3760,36 @@ function placeChat(){
 }
 if(window.addEventListener)window.addEventListener('resize',function(){placeChat();});
 
+var createOpts=false;   // Startseite: Zusatzoptionen zu „Raum erstellen“ aufgeklappt
+function joinChoice(main){
+  return '<div class="choice"><div class="ch-t"><h2>'+T('Raum beitreten','Join a room')+'</h2></div>'+
+    '<div class="row joinrow"><input id="code" maxlength="6" aria-label="'+T('Raumcode','Room code')+'" placeholder="'+T('Code, z.B. K7PR','Code, e.g. K7PR')+'" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'">'+
+      '<button class="'+(main?'primary':'')+'" data-a="join">'+T('Beitreten','Join')+'</button></div>'+
+    T('<button class="linkbtn small chmore" data-a="tvjoin" title="Dieses Gerät (PC, Fernseher, großer Monitor) zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">Als Tisch beitreten (großer Bildschirm)</button>','<button class="linkbtn small chmore" data-a="tvjoin" title="This device (PC, TV, large monitor) only shows the table with all players – without a seat of its own">Join as table (big screen)</button>')+'</div>';
+}
 function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
   return '<div class="panel hero">'+
-    '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+fxBtn()+themeBtn()+'</div></div>'+
+    '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+moreBox(fxBtn()+themeBtn())+'</div></div>'+
     placeBar()+bundleBanner()+offlineBanner()+(inviteCode?inviteHint():'')+
-    '<div class="hr"></div>'+
-    '<div class="row"><div class="field"><label class="lbl">'+T('Dein Name','Your name')+'</label>'+
-      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div></div>'+acctBar()+
-    T('<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Raumname (optional)</label>','<div class="row" style="margin-top:10px"><div class="field"><label class="lbl">Room name (optional)</label>')+
-      '<input id="rname" maxlength="30" placeholder="'+T('z.B. Freitagsrunde','e.g. Friday round')+'"></div>'+
-      '<button class="primary" data-a="create">'+T('Raum erstellen','Create room')+'</button></div>'+
-    '<label class="chk"><input type="checkbox" id="rpriv"'+(newPriv?' checked':'')+'><span>'+T('🔒 Privater Raum<span class="sub">Erscheint nicht unter „Offene Räume“ – Beitritt nur mit Code oder Link</span>','🔒 Private room<span class="sub">Not listed under “Open rooms” – join only with code or link</span>')+'</span></label>'+
-    planHtml()+
-    '<div class="hr"></div>'+
-    '<div class="row"><div class="field"><label class="lbl">'+T('Raumcode','Room code')+'</label>'+
-      '<input id="code" maxlength="6" placeholder="'+T('z.B. K7PR','e.g. K7PR')+'" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'"></div>'+
-      '<button data-a="join">'+T('Beitreten','Join')+'</button></div>'+
-      T('<button class="ghost small subact" data-a="tvjoin" title="Dieses Gerät (PC, Fernseher, großer Monitor) zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">📺 Als Tisch beitreten (großer Bildschirm)</button>','<button class="ghost small subact" data-a="tvjoin" title="This device (PC, TV, large monitor) only shows the table with all players – without a seat of its own">📺 Join as table (big screen)</button>')+
+    '<div class="field namef"><label class="lbl" for="name">'+T('Dein Name','Your name')+'</label>'+
+      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div>'+acctBar()+
     (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
     (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
-    '<div class="hr"></div>'+
     seatsHtml()+plannedHtml()+
+    /* Drei Wege ins Spiel; mit Einladungslink steht „Beitreten“ oben und ist die Hauptaktion */
+    '<div class="choices">'+(inviteCode?joinChoice(true):'')+
+    '<div class="choice"><div class="ch-t"><h2>'+T('Mit anderen spielen','Play with others')+'</h2><p class="note">'+T('Du bekommst einen Code und Link zum Teilen.','You get a code and a link to share.')+'</p></div>'+
+      '<button class="'+(inviteCode?'':'primary')+'" data-a="create">'+T('Raum erstellen','Create room')+'</button>'+
+      '<button class="linkbtn small chmore" data-a="createopts" aria-expanded="'+!!(createOpts||planOpen)+'">'+((createOpts||planOpen)?T('Optionen ausblenden','Hide options'):T('Name, privat, für später planen','Name, private, plan for later')+(newPriv?T(' (privat an)',' (private on)'):''))+'</button>'+
+      ((createOpts||planOpen)?'<div class="chopts"><div class="field"><label class="lbl" for="rname">'+T('Raumname (optional)','Room name (optional)')+'</label>'+
+        '<input id="rname" maxlength="30" placeholder="'+T('z.B. Freitagsrunde','e.g. Friday round')+'"></div>'+
+        '<label class="chk"><input type="checkbox" id="rpriv"'+(newPriv?' checked':'')+'><span>'+T('Privater Raum<span class="sub">Erscheint nicht unter „Offene Räume“ – Beitritt nur mit Code oder Link</span>','Private room<span class="sub">Not listed under “Open rooms” – join only with code or link</span>')+'</span></label>'+
+        planHtml()+'</div>':'')+
+    '</div>'+(inviteCode?'':joinChoice(false))+
+    '<div class="choice"><div class="ch-t"><h2>'+T('Allein üben','Practice alone')+'</h2><p class="note">'+T('Gegen 2–5 Bots, auch offline.','Against 2–5 bots, offline too.')+'</p></div>'+
+      '<button data-a="sp">'+T('Singleplayer starten','Start singleplayer')+'</button></div>'+
+    '</div>'+
     '<h2>'+T('Offene Räume','Open rooms')+'</h2><div id="roomlist">'+roomsHtml()+'</div>'+
     '<div class="hr"></div>'+
     T('<details><summary>So läuft eine Hand</summary><ol class="steps">','<details><summary>How a hand works</summary><ol class="steps">')+
@@ -3722,10 +3823,10 @@ function roomView(){
     '<div class="rtitle"><div class="brand sm" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</div><h1>'+(roomName()?esc(roomName())+' ':T('Raum ','Room '))+'<span class="code">'+esc(code)+'</span>'+
       (isHost()&&!watching?' <button class="small ghost rename" data-a="rename" title="'+T('Raum umbenennen','Rename room')+'">✎</button>':'')+'</h1>'+
     '<div class="note">'+esc(phaseLabel())+(roomPrivate()?T(' \u00b7 🔒 privat',' \u00b7 🔒 private'):'')+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">'+T('Zuschauer','Spectator')+'</span>':'')+'</div></div>'+
-    '<div class="row">'+voiceBtns()+fxBtn()+themeBtn()+'<button class="small ghost" data-a="invite">\ud83d\udd17 '+T('Einladen','Invite')+'</button>'+
-      '<button class="small ghost" data-a="stats" title="'+T('Statistik','Statistics')+'" aria-label="'+T('Statistik','Statistics')+'">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
+    '<div class="row">'+voiceBtns()+'<button class="small ghost" data-a="invite">'+T('Einladen','Invite')+'</button>'+moreBox(fxBtn()+themeBtn()+
+      '<button class="small ghost icon" data-a="stats" title="'+T('Statistik','Statistics')+'" aria-label="'+T('Statistik','Statistics')+'">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
       (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?T('Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden','Table is hidden (a big screen shows it) – tap to show'):T('Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt','Hide the table when a big screen shows it'))+'">'+(hideTable?T('🃏 Tisch einblenden','🃏 Show table'):T('📺 Tisch ausblenden','📺 Hide table'))+'</button>':'')+
-      (isHost()&&!watching?'<button class="small ghost danger" data-a="close">'+T('Raum schließen','Close room')+'</button>':'')+
+      (isHost()&&!watching?'<button class="small ghost danger" data-a="close">'+T('Raum schließen','Close room')+'</button>':''))+
       '<button class="small ghost" data-a="leave">'+T('Verlassen','Leave')+'</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">'+T('Dein Name','Your name')+'</label>'+
       '<input id="name" value="'+esc(myName)+'" maxlength="18" placeholder="Name"></div>'+
@@ -4161,8 +4262,10 @@ document.addEventListener('click',function(ev){
   if(ev.target.closest&&ev.target.closest('.hap'))return;
   if(skinMenuEl&&!skinMenuEl.contains(ev.target)&&!(ev.target.closest&&ev.target.closest('[data-a="skin"]'))){skinMenuEl.remove();skinMenuEl=null;}
   var el=ev.target.closest?ev.target.closest('[data-a],[data-chip],[data-kick],[data-take],[data-replace],[data-nudge],[data-react],[data-botify],[data-gslot],[data-grank],[data-mod]'):null;
+  if(moreOpen&&!(ev.target.closest&&ev.target.closest('[data-a="more"],[data-a="skin"]'))){moreOpen=false;var mo=document.querySelector('.more.open');if(mo)mo.classList.remove('open');}
   if(!el)return;
   var a=el.getAttribute('data-a');
+  if(a==='more'){moreOpen=!moreOpen;render();return;}
   if(el.tagName==='BUTTON'&&el.classList.contains('primary'))fx('tap');
   if(el.hasAttribute('data-chip')){takeChip(parseInt(el.getAttribute('data-chip'),10));return;}
   if(el.hasAttribute('data-kick')){kickPlayer(el.getAttribute('data-kick'));return;}
@@ -4207,6 +4310,7 @@ document.addEventListener('click',function(ev){
   else if(a==='sharelink')shareLink(el.getAttribute('data-code'));
   else if(a==='ics')icsDownload(el.getAttribute('data-code'));
   else if(a==='plan')planRoom();
+  else if(a==='createopts'){createOpts=!createOpts;if(!createOpts)planOpen=false;render();}
   else if(a==='planopen'){planOpen=!planOpen;planShow=null;render();}
   else if(a==='planlink'){var pc=el.getAttribute('data-code');planShow=planShow===pc?null:pc;render();}
   else if(a==='planclose'){planShow=null;render();}

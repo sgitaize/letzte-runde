@@ -5,7 +5,7 @@
    der Dateien in public/ (ändert sich eine Datei, wird alles neu geholt); neue Dateien zusätzlich in ASSETS eintragen. */
 const VERSION = 'lr-10';
 const ASSETS = ['./', 'index.html', 'hand.js', 'qrcode.js', 'logo.svg', 'favicon.svg', 'favicon-32.png', 'icon-192.png',
-  'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'manifest.json', 'impressum.html'];
+  'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'manifest.json', 'impressum.html', 'fonts/bricolage-latin.woff2'];
 const WAIT_MS = 1500, SLOW_MS = 15000;
 let slowUntil = 0;
 self.addEventListener('install', (e) => {

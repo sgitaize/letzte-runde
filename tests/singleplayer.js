@@ -10,7 +10,7 @@ const HANDLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'hand.j
 const QRLIB = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'qrcode.js'), 'utf8');
 const hook = `globalThis.__kr={sp:function(){return sp;},spStart:spStart,spTake:spTake,spReady:spReady,spNewHand:spNewHand,
  spEstimate:spEstimate,spSetBots:spSetBots,spGuessSet:spGuessSet,takeSuggestion:takeSuggestion,spGuessConfirm:spGuessConfirm,spTick:spTick,spTakeFor:spTakeFor,spToggleLearn:spToggleLearn,spBotGuess:spBotGuess,spCoachEst:spCoachEst,insightHtml:insightHtml,coachRounds:coachRounds,spToggleInsight:spToggleInsight,sendReact:sendReact,statsPanel:statsPanel,spStage:spStage,
- setSpeed:function(v){spSpeed=v;},bestHand:bestHand,cmpHand:cmpHand,leave:leave,roomsHtml:roomsHtml,uid:function(){return uid;}};\n`;
+ setSpeed:function(v){spSpeed=v;},bestHand:bestHand,cmpHand:cmpHand,leave:leave,roomsHtml:roomsHtml,startView:startView,uid:function(){return uid;}};\n`;
 const i = src.lastIndexOf('})();'); src = src.slice(0, i) + hook + src.slice(i);
 
 let fetches = 0, errors = 0, reloads = 0; const fetchUrls = [];
@@ -36,7 +36,7 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
 
 (async () => {
   await sleep(300);
-  ok(/data-a="sp"/.test(X.roomsHtml()) && /Singleplayer/.test(X.roomsHtml()), 'Startseite: Singleplayer immer in der Raumliste');
+  ok(/data-a="sp"/.test(X.startView()), 'Startseite: Singleplayer immer erreichbar');
   ok(/class="brand" data-a="reload"/.test(els.app.innerHTML), 'Startseite: Logo lädt die Seite neu');
   const f0 = fetches;
   X.setSpeed(0.03);
@@ -45,10 +45,10 @@ const holder = (n) => Object.keys(X.sp().chips).find((k) => X.sp().chips[k] === 
   ok(S() && S().players.length === 4 && S().phase === 'play' && S().stage === 1, 'Singleplayer startet: du + 3 Bots, Runde 1');
   ok(/Singleplayer/.test(els.app.innerHTML) && /data-chip="4"/.test(els.app.innerHTML), 'Ansicht mit Tisch, Chips und Spielern');
   ok(/class="brand sm" data-a="reload"/.test(els.app.innerHTML), 'Singleplayer: Logo lädt die Seite neu');
-  ok(/Mitspieler:/.test(els.app.innerHTML) && /data-a="spbots" data-n="5"/.test(els.app.innerHTML), 'Auswahl der Mitspieler im Kopf sichtbar');
+  ok(/Bots am Tisch/.test(els.app.innerHTML) && /data-a="spbots" data-n="5"/.test(els.app.innerHTML), 'Auswahl der Mitspieler im Kopf sichtbar');
   X.spSetBots(4); ok(S().players.length === 5 && S().stage === 1, 'Runde 1 ohne eigenen Chip: 4 Bots gelten sofort');
   S().stage = 2; X.spSetBots(2);
-  ok(S().players.length === 5 && /ab der nächsten Hand 3 Spieler/.test(els.app.innerHTML), 'Mitten in der Hand: Hinweis „ab der nächsten Hand“');
+  ok(S().players.length === 5 && /ab der nächsten Hand 3 Spieler/i.test(els.app.innerHTML), 'Mitten in der Hand: Hinweis „ab der nächsten Hand“');
   X.spNewHand(); ok(S().players.length === 3, 'Nächste Hand mit 2 Bots');
   X.spSetBots(3);
 
