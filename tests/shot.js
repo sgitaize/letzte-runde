@@ -63,6 +63,7 @@ async function connect(url) {
   await js('localStorage.setItem("kr.sp.bots","5");1');
   await click('[data-a="sp"]');
   await until('/Singleplayer/.test(document.body.innerText)');
+  if (process.env.FLASH) { await click('[data-a="jumpto"]'); await sleep(350); await shoot('sp-flash'); }   // FLASH=1: Sprung „Zu den Chips“
   if (process.env.MENU) { await click('[data-a="more"]'); await sleep(300); await shoot('sp-menu'); await click('[data-a="more"]'); }   // MENU=1: „⋯“-Menü offen
   if (process.env.LEARN && !(await js('!!document.querySelector(".coach")'))) await click('[data-a="splearn"]');
   if (process.env.INSIGHT && !(await js('!!document.querySelector(".p-insight")'))) await click('[data-a="spinsight"]');

@@ -619,6 +619,11 @@ html:not([data-skin]) .startbtns button.big,html:not([data-skin]) .startbtns .jo
 .startfoot details{margin:0 0 6px}.startfoot summary{font-size:13.5px}
 .startfoot .installhelp{margin:0}.startfoot .donatebar{align-items:flex-start;margin:12px 0 0}
 .startfoot .playcount,.startfoot .sitefoot{text-align:left}
+/* „Zu den Chips“: Tisch mit Chips ist eine Fläche – statt halbem Rahmen die Chips selbst hervorheben */
+html:not([data-skin]) .p-chips.flash:has(+ .p-board.felt){outline:0}
+html:not([data-skin]) .p-chips.flash:has(+ .p-board.felt) .row .chip{box-shadow:0 0 0 2px var(--cf,var(--accent)),0 0 0 6px var(--gold);animation:chipcall .5s ease-in-out 4 alternate}
+@keyframes chipcall{to{transform:translateY(-5px) scale(1.08)}}
+@media (prefers-reduced-motion: reduce){html:not([data-skin]) .p-chips.flash .row .chip{animation:none}}
 /* Chips in der Mitte: feste Höhe, damit Tisch und Karten darunter bei jedem Zug nicht springen */
 .p-chips>.row{min-height:46px}
 .p-chips .bar{flex-wrap:nowrap}.p-chips .bar>button{flex:none;white-space:nowrap}.p-chips .bar>.note{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
