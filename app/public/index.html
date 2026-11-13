@@ -596,7 +596,11 @@ html:not([data-skin]) .info{border-radius:10px}
 .more{position:relative;display:inline-flex}
 .moremenu{display:none}
 .more.open .moremenu{display:flex;position:absolute;right:0;top:calc(100% + 6px);z-index:45;flex-direction:column;align-items:stretch;gap:2px;
-  width:max-content;min-width:230px;max-width:min(320px,calc(100vw - 24px));padding:6px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.25)}
+  width:max-content;min-width:230px;max-width:min(320px,calc(100vw - 24px));padding:6px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+/* ⋯-Menü im Stil der Skins (wie deren Design-Menü) */
+html[data-skin="win95"] .more.open .moremenu{border:0;border-radius:0;box-shadow:inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf}
+html[data-skin="arcade"] .more.open .moremenu{border:1px solid #ff2bd6;border-radius:6px;box-shadow:0 0 14px rgba(255,43,214,.45)}
+html[data-skin="vegas"] .more.open .moremenu{border:1px solid rgba(216,180,90,.45);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.6)}
 .moremenu>button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;justify-content:flex-start;font-size:14.5px;padding:9px 10px}
 .moremenu>button.icon[aria-label]::after{content:attr(aria-label);font-size:14.5px}
 .moremenu .mseg{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-block:1px solid var(--line);margin:2px 0}
@@ -606,8 +610,9 @@ html:not([data-skin]) .info{border-radius:10px}
 .namein{margin-top:18px;font-size:17px;padding:12px 14px}
 .hero .acctbar{margin-top:6px}.hero .acctbar .muted{display:none}
 .startbtns{display:flex;flex-direction:column;gap:10px;margin:22px 0 6px}
-.startbtns button.big{width:100%;font-size:17px;padding:14px 16px;border-radius:12px}
-.startbtns .joinrow{flex-wrap:nowrap;gap:10px}.startbtns .joinrow input{flex:1 1 auto;font-size:17px;padding:12px 14px;border-radius:12px}
+.startbtns button.big{width:100%;font-size:17px;padding:14px 16px}
+html:not([data-skin]) .startbtns button.big,html:not([data-skin]) .startbtns .joinrow input,html:not([data-skin]) .namein{border-radius:12px}
+.startbtns .joinrow{flex-wrap:nowrap;gap:10px}.startbtns .joinrow input{flex:1 1 auto;font-size:17px;padding:12px 14px}
 .startbtns .joinrow button.big{width:auto;flex:none}
 #roomlist h2{margin-top:22px}
 .startfoot{margin:26px 4px 8px;font-size:13.5px;color:var(--muted)}
@@ -650,6 +655,10 @@ html[data-skin="win95"] .result,html[data-skin="win95"] .msg,html[data-skin="win
 html[data-skin="win95"] .toast{background:#ffffe1;color:#000;border:1px solid #000;border-radius:0;box-shadow:2px 2px 0 rgba(0,0,0,.4)}
 html[data-skin="win95"] .brand{font-family:inherit;font-style:normal;color:#000080}
 html[data-skin="win95"] .brand.sm{color:#000080}
+/* Win95: nichts rund außer Chips; Leiste unten als Fenster, Fußzeile auf dem Desktop lesbar */
+html[data-skin="win95"] :is(.endbar,.pl,.pl.me,.pl.here,.pl.sp,.info,.linkbox,.sug,.qr,.cd-box,.tier,.acc,.tile,.revcd,.gslot,.gcard,.placebar,.actabs,.actabs button,.reccode,.acdanger,.ranking li,.coach,.coachtip,.coachok,.coachwarn,.steal-box,.flushwarn,.badge,.avatar,.result,.mchip.none){border-radius:0}
+html[data-skin="win95"] .endbar{background:#c0c0c0;border:0;box-shadow:inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf,4px 4px 0 rgba(0,0,0,.35)}
+html[data-skin="win95"] .startfoot,html[data-skin="win95"] .startfoot .note,html[data-skin="win95"] .startfoot .playcount,html[data-skin="win95"] .startfoot .playcount b,html[data-skin="win95"] .startfoot summary,html[data-skin="win95"] .startfoot a,html[data-skin="win95"] .startfoot button.linkbtn{color:#fff}
 /* Arcade / Neon */
 html:root[data-skin="arcade"]{
   --bg:#07000f; --bg2:#12001f; --panel:#10001e; --fg:#e8f7ff; --muted:#a595cf; --line:#4a1f7a;
