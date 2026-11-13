@@ -659,6 +659,28 @@ html[data-skin="win95"] .brand.sm{color:#000080}
 html[data-skin="win95"] :is(.endbar,.pl,.pl.me,.pl.here,.pl.sp,.info,.linkbox,.sug,.qr,.cd-box,.tier,.acc,.tile,.revcd,.gslot,.gcard,.placebar,.actabs,.actabs button,.reccode,.acdanger,.ranking li,.coach,.coachtip,.coachok,.coachwarn,.steal-box,.flushwarn,.badge,.avatar,.result,.mchip.none){border-radius:0}
 html[data-skin="win95"] .endbar{background:#c0c0c0;border:0;box-shadow:inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf,4px 4px 0 rgba(0,0,0,.35)}
 html[data-skin="win95"] .startfoot,html[data-skin="win95"] .startfoot .note,html[data-skin="win95"] .startfoot .playcount,html[data-skin="win95"] .startfoot .playcount b,html[data-skin="win95"] .startfoot summary,html[data-skin="win95"] .startfoot a,html[data-skin="win95"] .startfoot button.linkbtn{color:#fff}
+/* Win95-Grundregeln: eine Schrift in 12 px, alles normal – fett nur Fenstertitel; alle Knöpfe gleich groß, Standardknopf nur mit schwarzer Linie */
+html[data-skin="win95"] body{font:12px/1.4 Tahoma,"MS Sans Serif","Microsoft Sans Serif",Geneva,Verdana,sans-serif;-webkit-font-smoothing:none}
+html[data-skin="win95"] :is(button,input,select,summary,h1,h2,h3,label,.lbl,.code,.nm,.res,.tag,.note,.chk,.playcount,.sitefoot){font-family:inherit;font-weight:400;letter-spacing:0;text-transform:none}
+html[data-skin="win95"] :is(h1,.panel h2){font-weight:700}
+html[data-skin="win95"] :is(button,button.small,button.primary,.startbtns button.big,.endbar button,.endbar button.primary){min-height:23px;min-width:75px;padding:3px 12px;font-size:12px;font-weight:400;line-height:1.3;border-radius:0}
+html[data-skin="win95"] :is(input,select,.namein,.startbtns .joinrow input){font-size:12px;padding:3px 4px;line-height:1.3;border-radius:0}
+html[data-skin="win95"] h1{font-size:13px}html[data-skin="win95"] .note,html[data-skin="win95"] .small{font-size:11px}
+html[data-skin="win95"] button.linkbtn{background:none;box-shadow:none;min-width:0;min-height:0;padding:0;color:inherit;text-decoration:underline}
+/* Titelleisten: Logo-Zeile der Startseite, Kopf im Raum */
+html[data-skin="win95"] .hero>.spread:first-child{background:linear-gradient(90deg,#000080,#1084d0);margin:-13px -13px 12px;padding:2px 3px 2px 4px;align-items:center}
+html[data-skin="win95"] .hero .brand{color:#fff;font-size:12px;font-weight:700;gap:4px}html[data-skin="win95"] .hero .brand .logo{width:16px;filter:none}
+html[data-skin="win95"] .hero>.spread:first-child button{min-width:0;min-height:0;padding:0 5px;font-size:11px;line-height:14px}
+html[data-skin="win95"] .rhead .brand.sm{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-size:12px;font-weight:700;padding:2px 4px;margin:0 0 6px;width:auto}
+html[data-skin="win95"] .rhead .brand.sm .logo{width:14px}
+/* Startseite: Knöpfe in einer Gruppe wie im Dialog, links bündig, gleich breit */
+html[data-skin="win95"] .namein{margin-top:4px;width:100%}
+html[data-skin="win95"] .startbtns{position:relative;align-items:flex-start;gap:8px;margin:18px 0 4px;padding:16px 10px 10px;border:2px groove #dfdfdf}
+html[data-skin="win95"] .startbtns::before{content:attr(data-l);position:absolute;top:-8px;left:8px;padding:0 3px;background:#c0c0c0}
+html[data-skin="win95"] .startbtns button.big{width:auto;min-width:130px}
+html[data-skin="win95"] .startbtns .joinrow{gap:6px}html[data-skin="win95"] .startbtns .joinrow input{width:140px;flex:none}
+html[data-skin="win95"] .endbar .res{font-size:12px}
+html[data-skin="win95"] .panel .spread>h2{flex:1 1 auto}
 /* Arcade / Neon */
 html:root[data-skin="arcade"]{
   --bg:#07000f; --bg2:#12001f; --panel:#10001e; --fg:#e8f7ff; --muted:#a595cf; --line:#4a1f7a;
@@ -3801,7 +3823,7 @@ function startView(){
     (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
     seatsHtml()+plannedHtml()+((planOpen||planShow)?planHtml():'')+
     /* Drei Wege ins Spiel; mit Einladungslink steht „Beitreten“ oben und ist die Hauptaktion */
-    '<div class="startbtns">'+(inviteCode?joinChoice(true):'')+
+    '<div class="startbtns" data-l="'+T('Spielen','Play')+'">'+(inviteCode?joinChoice(true):'')+
       '<button class="big'+(inviteCode?'':' primary')+'" data-a="create">'+T('Raum erstellen','Create room')+'</button>'+
       (inviteCode?'':joinChoice(false))+
       '<button class="big" data-a="sp">'+T('Allein üben','Practice alone')+'</button></div>'+
