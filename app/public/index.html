@@ -553,6 +553,7 @@ html:not([data-skin]) button.ghost{background:transparent;border-color:transpare
 html:not([data-skin]) button.ghost:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 html:not([data-skin]) button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 html:not([data-skin]) button.danger{color:var(--red)}
+html:not([data-skin]) button.primary{box-shadow:none}
 html:not([data-skin]) button.linkbtn{background:none;border:0;padding:2px 0;border-radius:0}
 #code::placeholder{text-transform:none}
 html:not([data-skin]) button.linkbtn{background:none;border:0;padding:2px 0;border-radius:0}
@@ -601,17 +602,21 @@ html:not([data-skin]) .info{border-radius:10px}
 .moremenu .mseg{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-block:1px solid var(--line);margin:2px 0}
 .moremenu .mseg .note{font-size:14px;color:var(--fg)}
 .moremenu .seg{flex-wrap:nowrap;gap:2px}.moremenu .seg button{min-width:34px;padding:6px 8px}
-/* Startseite: drei Wege ins Spiel als Zeilen (gilt auch mit Skins) */
-.namef{margin-top:14px}
-.choices{margin:18px 0 10px;border-top:1px solid var(--line)}
-.choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--line)}
-.choice h2{margin:0;font-size:19px}
-.choice .ch-t .note{margin:2px 0 0}
-.choice>button[data-a="create"],.choice>button[data-a="sp"]{padding:11px 16px}
-.choice>.joinrow{grid-column:1/-1;flex-wrap:nowrap;margin-top:4px}.joinrow input{flex:1 1 auto}.joinrow button{flex:none;padding:10px 16px}
-.choice .chmore{grid-column:1/-1;justify-self:start;font-weight:500;font-size:13.5px;color:var(--muted);text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
-.choice .chopts{grid-column:1/-1;padding:4px 0 2px}
-.choice .chopts .subact{width:auto;justify-content:flex-start;padding-left:0}
+/* Startseite: Name, drei große Knöpfe, Rest als leise Fußzeile (gilt auch mit Skins) */
+.namein{margin-top:18px;font-size:17px;padding:12px 14px}
+.hero .acctbar{margin-top:6px}.hero .acctbar .muted{display:none}
+.startbtns{display:flex;flex-direction:column;gap:10px;margin:22px 0 6px}
+.startbtns button.big{width:100%;font-size:17px;padding:14px 16px;border-radius:12px}
+.startbtns .joinrow{flex-wrap:nowrap;gap:10px}.startbtns .joinrow input{flex:1 1 auto;font-size:17px;padding:12px 14px;border-radius:12px}
+.startbtns .joinrow button.big{width:auto;flex:none}
+#roomlist h2{margin-top:22px}
+.startfoot{margin:26px 4px 8px;font-size:13.5px;color:var(--muted)}
+.startfoot details{margin:0 0 6px}.startfoot summary{font-size:13.5px}
+.startfoot .installhelp{margin:0}.startfoot .donatebar{align-items:flex-start;margin:12px 0 0}
+.startfoot .playcount,.startfoot .sitefoot{text-align:left}
+/* Chips in der Mitte: feste Höhe, damit Tisch und Karten darunter bei jedem Zug nicht springen */
+.p-chips>.row{min-height:46px}
+.p-chips .bar{flex-wrap:nowrap}.p-chips .bar>button{flex:none;white-space:nowrap}.p-chips .bar>.note{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ---------- Designs (data-skin), unabhängig von Hell/Dunkel ---------- */
 html[data-skin] [data-a="theme"]{display:none}
 .skinmenu{position:fixed;z-index:90;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;
@@ -673,27 +678,40 @@ html[data-skin="arcade"] .brand{font-family:inherit;font-style:normal;text-trans
   text-shadow:0 0 4px #ff2bd6,0 0 14px #ff2bd6}
 html[data-skin="arcade"] .toast{background:#10001e;color:#00f0ff;border:1px solid #00f0ff;box-shadow:0 0 16px #00f0ff}
 html[data-skin="arcade"] .cd-num{text-shadow:0 0 10px var(--gold),0 0 30px var(--gold)}
-/* Casino Vegas */
+/* Casino Vegas: roter Spieltisch (Filz mit Mahagoni-Rand und Goldlinie) in einem dunklen Saal, Gold nur als feine Kante */
 html:root[data-skin="vegas"]{
-  --bg:#3a070c; --bg2:#4a0a10; --panel:#22090b; --fg:#f8ecd0; --muted:#cfae7c; --line:#6e4b1d;
-  --card:#fffdf6; --card2:#f3ead3; --accent:#d4af37; --accent-fg:#1a0e00; --chip:#3a1612; --red:#c8102e;
-  --warn:#ffd700; --gold:#ffd700; --felt:#1f6b3a; --felt2:#0c3a1e; --felt-line:rgba(255,215,0,.3);
-  --shadow:0 4px 16px rgba(0,0,0,.5)}
-html[data-skin="vegas"] body{background:radial-gradient(ellipse at 50% 0,#7a1420,#2a0508 70%) fixed}
-html[data-skin="vegas"] .panel{border:1px solid #b8892d;box-shadow:inset 0 0 0 1px rgba(255,215,0,.15),0 6px 20px rgba(0,0,0,.45)}
-html[data-skin="vegas"] h2{color:#d4af37;font-family:Georgia,serif;letter-spacing:.14em}
-html[data-skin="vegas"] .felt{border:6px solid #5b3413;outline:3px dotted #ffe08a;outline-offset:-10px;animation:vgLights 1.2s steps(1) infinite}
-@keyframes vgLights{50%{outline-color:#b8892d}}
-html[data-skin="vegas"] button.primary{background:linear-gradient(#f6e27a,#d4af37 55%,#a67c00);border-color:#8a6500;color:#1a0e00;
-  box-shadow:0 2px 10px rgba(212,175,55,.45)}
-html[data-skin="vegas"] button:not(.primary){border-color:#8a6a2a}
-html[data-skin="vegas"] .card{border:1px solid #b8892d;color:#1b1b19}
-html[data-skin="vegas"] .card.red{color:#c8102e}
-html[data-skin="vegas"] .card.back{background:#8b0000 repeating-linear-gradient(45deg,rgba(255,215,0,.5) 0 1px,transparent 1px 7px),
-  repeating-linear-gradient(-45deg,rgba(255,215,0,.5) 0 1px,transparent 1px 7px)}
-html[data-skin="vegas"] .brand{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.6),0 2px 0 #5b3413}
-html[data-skin="vegas"] .toast{background:#22090b;color:#ffd700;border:1px solid #d4af37}
-@media (prefers-reduced-motion: reduce){html[data-skin="vegas"] .felt{animation:none}}
+  --bg:#12070a; --bg2:#1c0b0f; --panel:#1b0c10; --fg:#f3e6cc; --muted:#c2a57a; --line:#4a2a1c;
+  --card:#fffdf7; --card2:#f4ecd9; --accent:#c9a24a; --accent-fg:#1a0e00; --chip:#2a1418; --red:#c8102e;
+  --warn:#e6c35c; --gold:#d8b45a; --felt:#9b1b26; --felt2:#5a0c15; --felt-line:rgba(232,200,120,.28);
+  --shadow:0 10px 30px rgba(0,0,0,.55)}
+html[data-skin="vegas"] body{background:radial-gradient(1100px 700px at 50% -10%,#2a0f15,#12070a 70%) fixed,#12070a}
+html[data-skin="vegas"] .panel{border:1px solid rgba(216,180,90,.22);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+html[data-skin="vegas"] h1,html[data-skin="vegas"] h2{font-family:Georgia,"Times New Roman",serif}
+html[data-skin="vegas"] h2{color:var(--gold);text-transform:none;letter-spacing:0;font-weight:600;font-size:17px}
+/* Tisch: tiefroter Filz mit Lichtkegel, Holzrand, innen eine feine Goldlinie */
+html[data-skin="vegas"] .felt,html[data-skin="vegas"] .tv-felt{color:#f8ecd6;
+  background:radial-gradient(80% 140px at 50% 0,rgba(255,214,160,.18),transparent),
+    repeating-radial-gradient(circle at 30% 40%,rgba(0,0,0,.035) 0 1px,transparent 1px 3px),
+    radial-gradient(ellipse at 50% 35%,var(--felt),var(--felt2));
+  border:7px solid #3a1a0c;box-shadow:inset 0 0 0 2px rgba(216,180,90,.55),inset 0 0 40px rgba(0,0,0,.45),0 10px 30px rgba(0,0,0,.5)}
+html[data-skin="vegas"] .felt h2{color:rgba(248,236,214,.8)}
+html[data-skin="vegas"] .felt .card.empty{border-color:rgba(232,200,120,.35)}
+html[data-skin="vegas"] button{border-radius:10px}
+html[data-skin="vegas"] button:not(.primary){background:transparent;border-color:rgba(216,180,90,.35);color:var(--fg)}
+html[data-skin="vegas"] button:not(.primary):hover{border-color:var(--gold)}
+html[data-skin="vegas"] button.primary{background:linear-gradient(#ead28e,#c9a24a 55%,#9a7428);border-color:#7d5c1c;color:#1a0e00;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 8px rgba(0,0,0,.4)}
+html[data-skin="vegas"] input,html[data-skin="vegas"] select{background:#12070a;border-color:rgba(216,180,90,.3);color:var(--fg)}
+html[data-skin="vegas"] .card{border:1px solid rgba(120,80,20,.45);color:#1b1b19}
+html[data-skin="vegas"] .card.red{color:#b0101f}
+html[data-skin="vegas"] .card.back{background:repeating-linear-gradient(45deg,rgba(216,180,90,.45) 0 1px,transparent 1px 6px),
+  repeating-linear-gradient(-45deg,rgba(216,180,90,.45) 0 1px,transparent 1px 6px),#7a0f1a;border:2px solid #f4ecd9}
+html[data-skin="vegas"] .brand{font-family:Georgia,serif;font-style:normal;letter-spacing:.02em;
+  background:linear-gradient(#f3dc98,#c9a24a 60%,#8f6a22);-webkit-background-clip:text;background-clip:text;color:transparent}
+html[data-skin="vegas"] .brand.sm{-webkit-text-fill-color:currentColor;color:var(--gold);background:none}
+html[data-skin="vegas"] .endbar{background:#1b0c10;border:1px solid var(--gold)}
+html[data-skin="vegas"] .toast{background:#1b0c10;color:var(--gold);border:1px solid rgba(216,180,90,.5)}
+html[data-skin="vegas"] .pl.me{background:rgba(216,180,90,.1)}
 </style>
 </head>
 <body>
@@ -3118,14 +3136,12 @@ function inviteName(){var r=(openRooms||[]).filter(function(x){return x.code===i
 function countsHtml(){
   if(!playCounts)return '';
   var f=function(n){return Number(n).toLocaleString(T('de-DE',undefined));};
-  return '<p class="playcount">\ud83c\udccf '+T('Alle zusammen: ','All together: ')+'<b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?T('Hand','hand'):T('Hände','hands'))+T(' in Räumen',' in rooms')+' \u00b7 <b>'+
+  return '<p class="playcount">'+T('Alle zusammen: ','All together: ')+'<b>'+f(playCounts.mp)+'</b> '+(playCounts.mp===1?T('Hand','hand'):T('Hände','hands'))+T(' in Räumen',' in rooms')+' \u00b7 <b>'+
     f(playCounts.sp)+'</b>'+T(' im Singleplayer',' in singleplayer')+'</p>';
 }
 function roomsHtml(){
-  var pin='';   // Singleplayer hat einen eigenen Weg auf der Startseite
-  if(openRooms==null)return pin+(isOffline()?'':T('<p class="note">Lade offene Räume \u2026</p>','<p class="note">Loading open rooms \u2026</p>'));   // offline kommt keine Liste
-  if(!openRooms.length)return pin+T('<p class="note">Gerade keine offenen Räume.</p>','<p class="note">No open rooms right now.</p>');
-  return pin+'<div class="plist">'+openRooms.map(function(r){
+  if(!openRooms||!openRooms.length)return '';   // keine offenen Räume: Abschnitt ganz weglassen
+  return '<h2>'+T('Offene Räume','Open rooms')+'</h2><div class="plist">'+openRooms.map(function(r){
     var full=CFG.maxPlayers&&r.players>=CFG.maxPlayers;
     /* Eigener Platz in diesem Raum (#3): hervorheben und „Weiterspielen“ statt „Beitreten“ – nicht mit anderen Räumen verwechseln */
     var seat=mySeats.filter(function(x){return x.code===r.code;})[0];
@@ -3760,38 +3776,28 @@ function placeChat(){
 }
 if(window.addEventListener)window.addEventListener('resize',function(){placeChat();});
 
-var createOpts=false;   // Startseite: Zusatzoptionen zu „Raum erstellen“ aufgeklappt
 function joinChoice(main){
-  return '<div class="choice"><div class="ch-t"><h2>'+T('Raum beitreten','Join a room')+'</h2></div>'+
-    '<div class="row joinrow"><input id="code" maxlength="6" aria-label="'+T('Raumcode','Room code')+'" placeholder="'+T('Code, z.B. K7PR','Code, e.g. K7PR')+'" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'">'+
-      '<button class="'+(main?'primary':'')+'" data-a="join">'+T('Beitreten','Join')+'</button></div>'+
-    T('<button class="linkbtn small chmore" data-a="tvjoin" title="Dieses Gerät (PC, Fernseher, großer Monitor) zeigt nur den Tisch mit allen Spieler*innen – ohne eigenen Platz">Als Tisch beitreten (großer Bildschirm)</button>','<button class="linkbtn small chmore" data-a="tvjoin" title="This device (PC, TV, large monitor) only shows the table with all players – without a seat of its own">Join as table (big screen)</button>')+'</div>';
+  return '<div class="row joinrow"><input id="code" maxlength="6" aria-label="'+T('Raumcode','Room code')+'" placeholder="'+T('Raumcode','Room code')+'" style="text-transform:uppercase" value="'+esc(inviteCode||'')+'">'+
+    '<button class="big'+(main?' primary':'')+'" data-a="join">'+T('Beitreten','Join')+'</button></div>';
 }
 function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
   return '<div class="panel hero">'+
-    '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+moreBox(fxBtn()+themeBtn())+'</div></div>'+
+    '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+moreBox(fxBtn()+themeBtn()+
+      (KRA&&(KRA.lanGuest||KRA.mode==='lan'||KRA.mode==='join')?'':'<button class="small ghost" data-a="planopen">📅 '+T('Raum für später planen','Plan a room for later')+'</button>')+
+      '<button class="small ghost" data-a="tvjoin" title="'+T('Dieses Gerät (PC, Fernseher) zeigt nur den Tisch – Raumcode vorher eingeben','This device (PC, TV) only shows the table – enter the room code first')+'">📺 '+T('Als Tisch beitreten','Join as table')+'</button>')+'</div></div>'+
     placeBar()+bundleBanner()+offlineBanner()+(inviteCode?inviteHint():'')+
-    '<div class="field namef"><label class="lbl" for="name">'+T('Dein Name','Your name')+'</label>'+
-      '<input id="name" value="'+esc(myName||n)+'" maxlength="18" placeholder="Name"></div>'+acctBar()+
+    '<input id="name" class="namein" value="'+esc(myName||n)+'" maxlength="18" placeholder="'+T('Dein Name','Your name')+'" aria-label="'+T('Dein Name','Your name')+'">'+acctBar()+
     (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
     (uiNote?'<p class="info" style="margin-top:10px">'+esc(uiNote)+'</p>':'')+
-    seatsHtml()+plannedHtml()+
+    seatsHtml()+plannedHtml()+((planOpen||planShow)?planHtml():'')+
     /* Drei Wege ins Spiel; mit Einladungslink steht „Beitreten“ oben und ist die Hauptaktion */
-    '<div class="choices">'+(inviteCode?joinChoice(true):'')+
-    '<div class="choice"><div class="ch-t"><h2>'+T('Mit anderen spielen','Play with others')+'</h2><p class="note">'+T('Du bekommst einen Code und Link zum Teilen.','You get a code and a link to share.')+'</p></div>'+
-      '<button class="'+(inviteCode?'':'primary')+'" data-a="create">'+T('Raum erstellen','Create room')+'</button>'+
-      '<button class="linkbtn small chmore" data-a="createopts" aria-expanded="'+!!(createOpts||planOpen)+'">'+((createOpts||planOpen)?T('Optionen ausblenden','Hide options'):T('Name, privat, für später planen','Name, private, plan for later')+(newPriv?T(' (privat an)',' (private on)'):''))+'</button>'+
-      ((createOpts||planOpen)?'<div class="chopts"><div class="field"><label class="lbl" for="rname">'+T('Raumname (optional)','Room name (optional)')+'</label>'+
-        '<input id="rname" maxlength="30" placeholder="'+T('z.B. Freitagsrunde','e.g. Friday round')+'"></div>'+
-        '<label class="chk"><input type="checkbox" id="rpriv"'+(newPriv?' checked':'')+'><span>'+T('Privater Raum<span class="sub">Erscheint nicht unter „Offene Räume“ – Beitritt nur mit Code oder Link</span>','Private room<span class="sub">Not listed under “Open rooms” – join only with code or link</span>')+'</span></label>'+
-        planHtml()+'</div>':'')+
-    '</div>'+(inviteCode?'':joinChoice(false))+
-    '<div class="choice"><div class="ch-t"><h2>'+T('Allein üben','Practice alone')+'</h2><p class="note">'+T('Gegen 2–5 Bots, auch offline.','Against 2–5 bots, offline too.')+'</p></div>'+
-      '<button data-a="sp">'+T('Singleplayer starten','Start singleplayer')+'</button></div>'+
-    '</div>'+
-    '<h2>'+T('Offene Räume','Open rooms')+'</h2><div id="roomlist">'+roomsHtml()+'</div>'+
-    '<div class="hr"></div>'+
+    '<div class="startbtns">'+(inviteCode?joinChoice(true):'')+
+      '<button class="big'+(inviteCode?'':' primary')+'" data-a="create">'+T('Raum erstellen','Create room')+'</button>'+
+      (inviteCode?'':joinChoice(false))+
+      '<button class="big" data-a="sp">'+T('Allein üben','Practice alone')+'</button></div>'+
+    '<div id="roomlist">'+roomsHtml()+'</div>'+
+  '</div><div class="startfoot">'+
     T('<details><summary>So läuft eine Hand</summary><ol class="steps">','<details><summary>How a hand works</summary><ol class="steps">')+
     T('<li>Jeder bekommt '+(CFG.holeCards||2)+' verdeckte Handkarten.</li>','<li>Everyone gets '+(CFG.holeCards||2)+' face-down hole cards.</li>')+
     T('<li>4 Runden: erst nur Handkarten, dann 3, 4 und 5 Karten auf dem Tisch.</li>','<li>4 rounds: first only hole cards, then 3, 4 and 5 cards on the table.</li>')+
@@ -3800,8 +3806,7 @@ function startView(){
     T('<li>Haben alle geklopft, läuft ein 3-2-1-Countdown \u2013 bis dahin kann jeder noch zurücknehmen.</li>','<li>Once everyone has knocked, a 3-2-1 countdown runs \u2013 until then anyone can still take it back.</li>')+
     T('<li>Aufgedeckt wird zuerst der höchste Chip, danach ab Chip 1 aufwärts.</li>','<li>The highest chip is revealed first, then from chip 1 upwards.</li>')+
     T('</ol><p class="note" style="margin-top:8px">Karten liegen verschlüsselt auf dem Server. Das Geben ist auf drei Spieler verteilt, damit weder der Server noch ein anderer Browser fremde Karten kennt.</p></details>','</ol><p class="note" style="margin-top:8px">Cards are stored encrypted on the server. Dealing is split across three players so that neither the server nor another browser knows anyone else’s cards.</p></details>')+
-  '</div>'+
-  T('<div class="panel installhelp"><details><summary>\ud83d\udcf2 Als App speichern (auch offline spielbar)</summary>','<div class="panel installhelp"><details><summary>\ud83d\udcf2 Save as app (playable offline too)</summary>')+
+  T('<div class="installhelp"><details><summary>Als App speichern (auch offline spielbar)</summary>','<div class="panel installhelp"><details><summary>Save as app (playable offline too)</summary>')+
     T('<p><b>iPhone / iPad (Safari):</b> unten auf das Teilen-Symbol (Quadrat mit Pfeil) tippen \u2192 \u201eZum Home-Bildschirm\u201c \u2192 \u201eHinzufügen\u201c. Danach startet \u201eLetzte Runde\u201c wie eine App vom Home-Bildschirm.</p>','<p><b>iPhone / iPad (Safari):</b> tap the share icon (square with arrow) \u2192 \u201cAdd to Home Screen\u201d \u2192 \u201cAdd\u201d. Then \u201cLetzte Runde\u201d starts like an app from the home screen.</p>')+
     T('<p><b>Android (Chrome):</b> oben rechts auf \u22ee tippen \u2192 \u201eApp installieren\u201c bzw. \u201eZum Startbildschirm hinzufügen\u201c. Lange auf das Symbol drücken zeigt den Kurzbefehl \u201eSingleplayer\u201c.</p>','<p><b>Android (Chrome):</b> tap \u22ee at the top right \u2192 \u201cInstall app\u201d or \u201cAdd to Home screen\u201d. Long-pressing the icon shows the \u201cSingleplayer\u201d shortcut.</p>')+
     T('<p><b>Offline:</b> Einmal mit Internet öffnen \u2013 danach läuft der Singleplayer (inkl. Lernmodus und Statistik) auch ohne Netz, z. B. im Flugzeug. Räume mit anderen brauchen Internet.</p>','<p><b>Offline:</b> open it once with internet \u2013 afterwards singleplayer (incl. learning mode and statistics) works without a connection, e.g. on a plane. Rooms with others need internet.</p>')+
@@ -3810,10 +3815,10 @@ function startView(){
   (canDonate()?'<div class="donatebar"><button class="ghost spezibtn" data-a="donate">'+SPEZI+T('Kauf mir eine Spezi</button><span class="note">kostenlos, ohne Werbung</span></div>','Buy me a Spezi</button><span class="note">free, no ads</span></div>'):'')+
   '<div id="playcount">'+countsHtml()+'</div>'+
   '<p class="sitefoot">'+T('<a href="impressum.html">Impressum</a> \u00b7 <a href="impressum.html#datenschutz">Datenschutz</a>','<a href="impressum.html">Legal notice</a> \u00b7 <a href="impressum.html#privacy">Privacy</a>')+' \u00b7 '+langBtn()+' \u00b7 '+
-    '<a class="apkdl" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">\ud83e\udd16 '+T('Android-App (APK)','Android app (APK)')+'</a><span class="apkdl"> \u00b7 </span>'+
-    '<a class="apkdl" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">\ud83c\udf4e '+T('iPhone-App (App Store)','iPhone app (App Store)')+'</a><span class="apkdl"> \u00b7 </span>'+
+    '<a class="apkdl" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">'+T('Android-App (APK)','Android app (APK)')+'</a><span class="apkdl"> \u00b7 </span>'+
+    '<a class="apkdl" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">'+T('iPhone-App (App Store)','iPhone app (App Store)')+'</a><span class="apkdl"> \u00b7 </span>'+
     '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">GitHub (Open Source)</a> \u00b7 '+
-    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">'+T('Mehr von Simon','More by Simon')+'</a>'+(bundleOn()?'<br>'+bundleFoot():'')+'</p>';
+    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">'+T('Mehr von Simon','More by Simon')+'</a>'+(bundleOn()?'<br>'+bundleFoot():'')+'</p></div>';
 }
 
 function roomView(){
@@ -4025,7 +4030,7 @@ function countdownHtml(){
 function fmtAway(ms){var s=Math.floor(ms/1000);return s<60?s+' s':Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)+' min';}
 function themeBtn(){return '<button class="small ghost icon" data-a="skin" title="Design" aria-label="'+T('Design wählen','Choose design')+'">\ud83c\udfa8</button>'+'<button class="small ghost icon" data-a="theme" title="'+T('Hell/Dunkel','Light/dark')+'" aria-label="'+T('Hell/Dunkel umschalten','Toggle light/dark')+'">\u25d0</button>';}
 /* Sprache: Deutsch/Englisch (Simon 2026-10-21), gespeichert in kr.lang, sonst Gerätesprache */
-function langBtn(){return '<button class="linkbtn" data-a="lang" lang="'+T('en','de')+'">'+T('🌐 English','🌐 Deutsch')+'</button>';}
+function langBtn(){return '<button class="linkbtn" data-a="lang" lang="'+T('en','de')+'">'+T('English','Deutsch')+'</button>';}
 function phaseLabel(){
   var ph=phase();
   if(ph==='lobby')return 'Lobby \u00b7 Hand '+hand();
@@ -4310,7 +4315,6 @@ document.addEventListener('click',function(ev){
   else if(a==='sharelink')shareLink(el.getAttribute('data-code'));
   else if(a==='ics')icsDownload(el.getAttribute('data-code'));
   else if(a==='plan')planRoom();
-  else if(a==='createopts'){createOpts=!createOpts;if(!createOpts)planOpen=false;render();}
   else if(a==='planopen'){planOpen=!planOpen;planShow=null;render();}
   else if(a==='planlink'){var pc=el.getAttribute('data-code');planShow=planShow===pc?null:pc;render();}
   else if(a==='planclose'){planShow=null;render();}
