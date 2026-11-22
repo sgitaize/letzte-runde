@@ -818,6 +818,26 @@ html[data-skin="win95"] .flushwarn{font-size:12px;letter-spacing:0;text-transfor
 /* ---------- Arcade: Logo bleibt einzeilig, Text-Links ohne Neon-Rahmen ---------- */
 html[data-skin="arcade"] .hero .brand{font-size:clamp(20px,6.4vw,30px);white-space:nowrap}
 html[data-skin="arcade"] button.linkbtn{border:0;box-shadow:none;background:none;padding:0;color:inherit;text-shadow:none;min-height:0}
+
+/* ---------- Feinschliff Runde 2 (2026-11-22) ---------- */
+/* Chip-Hinweis: eine knappe Zeile statt Absatz (die Skala steht zusätzlich in der Leiste unten) */
+.p-chips .chiphint{margin:6px 0 0;font-size:12.5px;line-height:1.35}
+/* Nach der Hand: Ergebnis und „Neue Hand“ stehen in der Leiste unten → kein zweiter Knopf, keine doppelte eigene Hand (wie schon im Querformat) */
+.cols.is-done .p-reveal [data-a="start"],.cols.is-done .p-reveal [data-a="spnext"]{display:none}
+.cols.is-done .p-reveal .bar:has(>[data-a="start"],>[data-a="spnext"]):not(:has(button:not([data-a="start"]):not([data-a="spnext"]))){display:none}
+/* Host-Knopf „Hand abbrechen“ leise, damit er nicht neben „Bereit“ als zweite Hauptaktion wirkt */
+.p-chips .bar>[data-a="abort"]{margin-left:auto}
+html:not([data-skin="win95"]) .p-chips .bar>button[data-a="abort"].small{color:inherit;opacity:.7;border-color:transparent;background:transparent;box-shadow:none;text-shadow:none;font-size:12.5px}
+html:not([data-skin="win95"]) .p-chips .bar>button[data-a="abort"].small:hover{opacity:1;text-decoration:underline}
+/* Leiste unten: weicher Schatten (der breite Schatten wirkte auf hellem Grund wie ein Schmierfleck) */
+html:not([data-skin]) .endbar{box-shadow:0 6px 18px rgba(12,22,27,.22)}
+/* Flushwarnung: deutlich, aber nicht schreiend */
+.flushwarn{font-size:13px;font-weight:700;letter-spacing:.02em;padding:3px 10px}
+/* Hochformat: kein Leerraum zwischen Leiste und Chat */
+@media(max-width:899px),(orientation:portrait){.wrap.inroom{padding-bottom:12px}}
+/* Touch: Knöpfe in den Spielerzeilen und Reaktionen groß genug zum Treffen (≥ 32 px) */
+@media(pointer:coarse){.pl button.small{min-height:32px;min-width:32px}.reactbar .react-btn{min-height:34px;min-width:34px}
+  html[data-skin="win95"] .pl button.small,html[data-skin="win95"] .reactbar .react-btn{min-height:28px;min-width:28px}}
 </style>
 </head>
 <body>
@@ -2687,7 +2707,7 @@ function spView(){
     for(var k=1;k<=n;k++)if(!spHolder(k))free+='<div class="chip r'+st+'" data-chip="'+k+'">'+k+'</div>';
     var waiting=ps.filter(function(p){return !(sp.chips[p.id]&&sp.ready[p.id]);}).map(function(p){return p.id==='me'?T('dich','you'):p.name;});
     out='<div class="panel p-chips"><h2>'+T('Chips in der Mitte','Chips in the middle')+'</h2><div class="row">'+(free||T('<span class="note">alle vergeben</span>','<span class="note">all taken</span>'))+'</div>'+
-      T('<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+n+' = beste. Chip antippen zum Nehmen (auch von den Bots), eigenen Chip antippen legt ihn zurück.</p>','<p class="note" style="margin-top:8px">1 = worst cards, '+n+' = best. Tap a chip to take it (also from the bots), tap your own chip to put it back.</p>')+
+      T('<p class="note chiphint">1 = schwächste, '+n+' = stärkste Hand · antippen zum Nehmen, auch von Bots · eigenen Chip antippen legt ihn zurück</p>','<p class="note chiphint">1 = weakest, '+n+' = strongest hand · tap to take, also from bots · tap your own chip to put it back</p>')+
       '<div class="hr"></div><div class="bar"><button class="'+(sp.ready.me?'':'primary')+'" data-a="ready"'+(sp.chips.me?'':' disabled')+'>'+
       (sp.ready.me?T('Bereit zurücknehmen','Take back ready'):T('👊 Bereit','👊 Ready'))+'</button>'+
       (waiting.length?T('<span class="note">Warten auf: ','<span class="note">Waiting for: ')+esc(waiting.join(', '))+'</span>':T('<span class="note">Alle bereit</span>','<span class="note">All ready</span>'))+'</div></div>'+out;   // über dem Tisch
@@ -4024,7 +4044,7 @@ function roomView(){
     var free='';
     for(var n=1;n<=ps.length;n++) if(!chipHolder(n)) free+='<div class="chip r'+stage()+'" data-chip="'+n+'">'+n+'</div>';
     L=L.slice(0,beforeBoard)+'<div class="panel p-chips"><h2>'+T('Chips in der Mitte','Chips in the middle')+'</h2><div class="row">'+(free||T('<span class="note">alle vergeben</span>','<span class="note">all taken</span>'))+'</div>'+
-      T('<p class="note" style="margin-top:8px">1 = schlechteste Karten, '+ps.length+' = beste. Chip antippen zum Nehmen'+(optb('allowSteal')?' (auch von anderen)':'')+', eigenen Chip antippen legt ihn zurück.</p>','<p class="note" style="margin-top:8px">1 = worst cards, '+ps.length+' = best. Tap a chip to take it'+(optb('allowSteal')?' (also from others)':'')+', tap your own chip to put it back.</p>')+
+      T('<p class="note chiphint">1 = schwächste, '+ps.length+' = stärkste Hand · antippen zum Nehmen'+(optb('allowSteal')?', auch von anderen':'')+' · eigenen Chip antippen legt ihn zurück</p>','<p class="note chiphint">1 = weakest, '+ps.length+' = strongest hand · tap to take'+(optb('allowSteal')?', also from others':'')+' · tap your own chip to put it back</p>')+
       '<div class="hr"></div><div class="bar">'+
       (ps.indexOf(uid)>=0?'<button class="'+(isReady(m[uid])?'':'primary')+'" data-a="ready"'+(chipOf(uid)?'':' disabled')+'>'+
         (isReady(m[uid])?T('Bereit zurücknehmen','Take back ready'):T('\ud83d\udc4a Bereit','\ud83d\udc4a Ready'))+'</button>':'')+
