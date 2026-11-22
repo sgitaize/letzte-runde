@@ -756,6 +756,68 @@ html[data-skin="vegas"] .brand.sm{-webkit-text-fill-color:currentColor;color:var
 html[data-skin="vegas"] .endbar{background:#1b0c10;border:1px solid var(--gold)}
 html[data-skin="vegas"] .toast{background:#1b0c10;color:var(--gold);border:1px solid rgba(216,180,90,.5)}
 html[data-skin="vegas"] .pl.me{background:rgba(216,180,90,.1)}
+/* ---------- Feinschliff Bedienung (2026-11-22): gilt für alle Designs ---------- */
+/* Eigene Karten und eigener Chip stehen nebeneinander – auch auf dem Handy (vorher rutschte der Chip unter die Karten) */
+.mine-row{display:flex;align-items:flex-start;gap:12px 18px;flex-wrap:wrap}.mine-row .mychips{margin-top:0}
+/* Reaktionen: eine Zeile, kompakte Knöpfe; sind sie zu breit für den Kopf, rutschen sie als Ganzes unter den Titel */
+.panel>.spread:has(>.reactbar){flex-wrap:wrap;row-gap:6px}
+.reactbar{flex-wrap:nowrap;gap:4px}.reactbar .react-btn{min-width:32px;min-height:30px;padding:2px 6px;display:inline-flex;align-items:center;justify-content:center}
+/* Lobby: „Hand geben“ steht in der Leiste unten – kein zweiter gleicher Knopf im Spielerkasten */
+.inroom .p-players:has(~ .endbar.next [data-a="start"]) .bar>[data-a="start"]{display:none}
+/* Kopf im Raum: Knöpfe rechtsbündig; auf dem Handy eine Zeile unter dem Titel, Verlassen ganz rechts */
+@media(max-width:600px){.rhead>.spread>.row{flex:1 1 100%;justify-content:flex-start;gap:6px}.rhead>.spread>.row>[data-a="leave"]{margin-left:auto}}
+/* Ergebnis-Überschrift in der Schrift des Designs statt Georgia */
+.result .big{font-family:inherit}
+
+/* ---------- Windows 95: Ordnung im Layout ---------- */
+/* Symbol-Knöpfe (⋯, ✎, Reaktionen, Ton …) quadratisch statt 75 px breit; Textknöpfe bleiben 75 px wie im Original */
+html[data-skin="win95"] :is(button.icon,button.rename,.react-btn,.pl button.small,.seg button){min-width:23px;padding:2px 5px}
+html[data-skin="win95"] .reactbar .react-btn{min-width:26px;min-height:23px;font-size:13px;padding:1px 4px}
+/* Alles eckig wie unter Windows 95 – außer Chips, Karten (leicht gerundet wie bei Solitär) und Ringen */
+html[data-skin="win95"] :not(.chip,.mchip,.card,.ring,.ring *,.react-pop,.cd-num,svg,svg *){border-radius:0!important}
+/* Kopf im Raum: Titelleiste über die ganze Breite, darunter Raumname links und Knöpfe rechts */
+html[data-skin="win95"] .rhead>.spread{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:center}
+html[data-skin="win95"] .rhead .rtitle{display:contents}
+html[data-skin="win95"] .rhead .brand.sm{grid-column:1/-1;display:flex;align-items:center;gap:4px;margin:0 0 6px;padding:3px 6px}
+html[data-skin="win95"] .rhead h1{grid-column:1;margin:0;display:flex;align-items:center;gap:6px;font-size:13px}
+html[data-skin="win95"] .rhead .code{font-size:13px;font-weight:700;letter-spacing:.08em}
+html[data-skin="win95"] .rhead .rtitle>.note{grid-column:1}
+html[data-skin="win95"] .rhead>.spread>.row{grid-column:2;grid-row:2/span 2;align-self:center;flex-wrap:nowrap;gap:4px}
+@media(max-width:600px){html[data-skin="win95"] .rhead>.spread>.row{grid-column:1/-1;grid-row:auto;margin-top:8px}}
+/* Kästen mit Titel und Reaktionen (Spieler): Titelleiste volle Breite, Reaktionen als kleine Werkzeugleiste darunter rechts */
+html[data-skin="win95"] .panel>.spread:has(>.reactbar)>h2{flex:1 1 100%;margin:0}
+html[data-skin="win95"] .panel>.spread:has(>.reactbar)>.reactbar{margin-left:auto;gap:2px}
+html[data-skin="win95"] .panel h2{display:flex;align-items:center;min-height:20px;margin:0 0 10px}
+/* Eine Schriftgröße: Handname, Tags, Tipp-Zeile in 12 px; Ergebnis als fette Zeile statt großer Serifenschrift */
+html[data-skin="win95"] :is(.handname,.tag,.tag.hand,.tag.res,.say,.ranking ol,.cd-lbl){font-size:12px}
+html[data-skin="win95"] .handname b{font-weight:700}
+html[data-skin="win95"] .result .big{font-size:14px;font-weight:700}
+html[data-skin="win95"] .result{padding:8px 10px}
+/* Tags (du, Host, 🤖, Handname) wie Statusfelder: flach eingelassen statt Pillen */
+html[data-skin="win95"] .tag{border:0;background:#c0c0c0;color:#000;padding:1px 5px;box-shadow:inset 1px 1px #808080,inset -1px -1px #fff}
+html[data-skin="win95"] .tag.res.bad,html[data-skin="win95"] .tag.off{color:#c00000}
+html[data-skin="win95"] .tag.res.ok{color:#000080}
+/* Startseite als Dialogfenster: schmal, mittig; alle Bedienelemente in der Gruppe auf einer Kante */
+html[data-skin="win95"] .wrap:has(>.hero),html[data-skin="win95"] .hero,html[data-skin="win95"] .startfoot{max-width:460px;margin-left:auto;margin-right:auto}
+html[data-skin="win95"] .startbtns{align-items:stretch}
+html[data-skin="win95"] .startbtns button.big{width:100%;min-height:26px}
+html[data-skin="win95"] .startbtns .joinrow{display:flex;gap:6px}html[data-skin="win95"] .startbtns .joinrow input{flex:1 1 auto;width:auto}
+html[data-skin="win95"] .startbtns .joinrow button.big{width:110px;flex:none}
+html[data-skin="win95"] .namein{min-height:23px}
+html[data-skin="win95"] .startfoot .sitefoot{color:#fff}
+/* Leiste „Nächster Schritt“: Text und Knopf auf einer Linie */
+html[data-skin="win95"] .endbar.next{padding:6px 8px;align-items:center}html[data-skin="win95"] .endbar.next .res .note{font-size:11px}
+
+html[data-skin="win95"] .rhead>.spread{row-gap:0;align-items:start}html[data-skin="win95"] .rhead .rtitle>.note{margin:2px 0 0}
+html[data-skin="win95"] .rhead>.spread>.row{align-self:end}
+html[data-skin="win95"] .startfoot button.linkbtn,html[data-skin="win95"] .sitefoot button.linkbtn{min-width:0;min-height:0;padding:0;box-shadow:none;background:none}
+html[data-skin="win95"] .inroom :is(p,.result,.result div){font-size:12px}
+html[data-skin="win95"] .inroom .result .big{font-size:14px}
+html[data-skin="win95"] .flushwarn{font-size:12px;letter-spacing:0;text-transform:none}
+
+/* ---------- Arcade: Logo bleibt einzeilig, Text-Links ohne Neon-Rahmen ---------- */
+html[data-skin="arcade"] .hero .brand{font-size:clamp(20px,6.4vw,30px);white-space:nowrap}
+html[data-skin="arcade"] button.linkbtn{border:0;box-shadow:none;background:none;padding:0;color:inherit;text-shadow:none;min-height:0}
 </style>
 </head>
 <body>
@@ -4124,7 +4186,7 @@ function playerList(inHand){
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
       '<div class="nm">'+esc(p.name||T('Spieler','Player'))+(isMuted(id)?' <span class="tag" title="'+T('stummgeschaltet','muted')+'">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">'+T('du','you')+'</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+nmRes(cards,verdict)+'</div>'+
-      (m[id]&&!isOnline(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
+      (m[id]&&!isOnline(id)&&!isBotP(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
       (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?T('<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04<span class="tx"> offen</span></span>','<span class="tag open" title="unsure \u2013 gives up the chip without a fight">\ud83d\udd04<span class="tx"> open</span></span>'):'')+
       (inHand&&ph==='play'?(isReady(p)?T('<span class="tag ok" title="bereit">\ud83d\udc4a</span>','<span class="tag ok" title="ready">\ud83d\udc4a</span>'):'<span class="tag">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa '+T('Platz übernehmen','Take seat')+'</button>':'')+
