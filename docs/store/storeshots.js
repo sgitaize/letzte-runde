@@ -119,11 +119,12 @@ async function scenario(send, dev) {
   await sleep(2500);
   if (dev.w < 600) await scrollTo('.p-players', 8); else await js('window.scrollTo(0,0);1');
   await shoot('room');   // Handy: Mitspielende mit Sprüchen und Chat statt noch einmal dem Tisch
+  await js('window.scrollTo(0,0);1'); await shoot('t-plain');   // für das Design-Bild
   /* Dieselbe Szene in anderen Designs */
-  for (const sk of ['vegas', 'win95']) {
+  for (const sk of ['vegas', 'win95', 'arcade']) {
     await js('localStorage.setItem("kr.skin",' + JSON.stringify(sk) + ');document.documentElement.setAttribute("data-skin",' + JSON.stringify(sk) + ');1');
     await click('[data-a="skin"]'); await sleep(200); await click('[data-a="skinset"][data-v="' + sk + '"]'); await sleep(900);
-    await js('window.scrollTo(0,0);1'); await shoot(sk);
+    await js('window.scrollTo(0,0);1'); await shoot(sk); await shoot('t-' + sk);
   }
   await js('localStorage.removeItem("kr.skin");1');
 }
@@ -141,6 +142,28 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.ki
   await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de",acct:"https://letzterunde.aize-it.de"};' });
   for (const dev of DEVICES) await scenario(send, dev);
 
+  /* Design-Bild (Simon 2026-11-22): einzige Überschrift im Set – dieselbe Szene in allen vier Designs, 2 × 2, Name darunter */
+  if (SCENES.includes('themes')) for (const dev of DEVICES) {
+    const phone = dev.w < 600, de = !EN;
+    const tiles = [['plain', de ? 'Schlicht' : 'Plain'], ['vegas', 'Casino Vegas'], ['arcade', 'Arcade'], ['win95', 'Windows 95']];
+    const img = (k) => 'data:image/png;base64,' + fs.readFileSync(path.join(RAW, dev.name + '-t-' + k + '.png')).toString('base64');
+    const html = '<!doctype html><meta charset="utf-8"><style>' +
+      '@font-face{font-family:B;src:url(data:font/woff2;base64,' + fs.readFileSync(path.join(TMP, 'public', 'fonts', 'bricolage-latin.woff2')).toString('base64') + ') format("woff2");font-weight:200 800;font-stretch:75% 100%}' +
+      'html,body{margin:0;width:' + dev.w + 'px;height:' + dev.h + 'px;overflow:hidden;background:#e4ebe5;color:#16241b}' +
+      'h1{font-family:B,system-ui,sans-serif;font-weight:800;font-stretch:78%;letter-spacing:-.015em;line-height:1;text-align:center;margin:0;' +
+        'font-size:' + (phone ? 50 : 76) + 'px;padding-top:' + (phone ? 64 : 84) + 'px}' +
+      '.g{display:grid;grid-template-columns:1fr 1fr;gap:' + (phone ? '22px 16px' : '34px 30px') + ';padding:' + (phone ? '40px 22px 0' : '56px 64px 0') + '}' +
+      '.t{margin:0}.t div{height:' + (phone ? 340 : 500) + 'px;border-radius:' + (phone ? 20 : 26) + 'px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.06),0 10px 26px rgba(22,36,27,.16);background:#fff}' +
+      '.t img{display:block;' + (phone ? 'width:100%' : 'width:132%;margin-left:-16%') + '}' +   // iPad: Seite ist 780 px breit und mittig → auf den Inhalt zuschneiden
+      '.t figcaption{font-family:B,system-ui,sans-serif;font-weight:650;font-stretch:90%;text-align:center;margin-top:' + (phone ? 10 : 14) + 'px;font-size:' + (phone ? 19 : 26) + 'px;color:#3d5145}' +
+      '</style><body><h1>' + (de ? 'Vier Designs' : 'Four designs') + '</h1><div class="g">' +
+      tiles.map(([k, n]) => '<figure class="t"><div><img src="' + img(k) + '"></div><figcaption>' + n + '</figcaption></figure>').join('') + '</div></body>';
+    const hf = path.join(RAW, 'themes.html'); fs.writeFileSync(hf, html);
+    await send('Emulation.setDeviceMetricsOverride', { width: dev.w, height: dev.h, deviceScaleFactor: dev.dsf, mobile: false });
+    await send('Page.navigate', { url: 'file://' + hf }); await sleep(1500);
+    const r = await send('Page.captureScreenshot', { format: 'png' });
+    fs.writeFileSync(path.join(RAW, dev.name + '-themes.png'), Buffer.from(r.result.data, 'base64')); console.log(dev.name, 'themes');
+  }
   /* Bilder übernehmen: 01-play.png … in Store-Reihenfolge */
   for (const dev of DEVICES) {
     const dir = path.join(OUT, dev.name); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
