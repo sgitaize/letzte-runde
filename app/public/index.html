@@ -838,6 +838,30 @@ html:not([data-skin]) .endbar{box-shadow:0 6px 18px rgba(12,22,27,.22)}
 /* Touch: Knöpfe in den Spielerzeilen und Reaktionen groß genug zum Treffen (≥ 32 px) */
 @media(pointer:coarse){.pl button.small{min-height:32px;min-width:32px}.reactbar .react-btn{min-height:34px;min-width:34px}
   html[data-skin="win95"] .pl button.small,html[data-skin="win95"] .reactbar .react-btn{min-height:28px;min-width:28px}}
+
+/* ---------- Fußzeile der Startseite geordnet ---------- */
+.getapp{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.getapp .note{margin-right:2px}
+.appbtn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line);border-radius:99px;color:var(--fg);text-decoration:none;font-size:13px;font-weight:600;background:var(--panel)}
+.appbtn:hover{border-color:var(--muted)}
+.startfoot .sitefoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:18px 0 6px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px}
+.footlinks{display:flex;flex-wrap:wrap;gap:4px 14px}
+.footlinks a{color:var(--muted);text-decoration:none}.footlinks a:hover{color:var(--fg);text-decoration:underline}
+.langseg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12px;font-weight:650}
+.langseg>*{display:flex;align-items:center;padding:4px 10px;line-height:1.3}
+.langseg>span{background:var(--fg);color:var(--bg)}
+.langseg>button.linkbtn.linkbtn{color:var(--muted);text-decoration:none;font-weight:650;padding:4px 10px;border-radius:0;min-width:0;min-height:0}
+.langseg button.linkbtn:hover{color:var(--fg)}
+.bundlefoot{flex:1 1 100%;font-size:12px}
+html[data-skin="win95"] .appbtn{background:#c0c0c0;color:#000;border:0;font-weight:400;font-size:12px;padding:3px 10px;box-shadow:inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf}
+html[data-skin="win95"] .startfoot .sitefoot{border-top:1px solid #005050}
+html[data-skin="win95"] .footlinks a{color:#fff;text-decoration:underline}
+html[data-skin="win95"] .langseg{border:0;box-shadow:inset 1px 1px #808080,inset -1px -1px #fff;background:#c0c0c0}
+html[data-skin="win95"] .langseg>span{background:#000080;color:#fff}html[data-skin="win95"] .startfoot .langseg>button.linkbtn{color:#000;padding:3px 10px;text-decoration:none}
+html[data-skin="win95"] .startfoot a.appbtn{color:#000;text-decoration:none}
+html[data-skin="arcade"] .appbtn{border-color:#00f0ff;color:#00f0ff;background:transparent}
+html[data-skin="arcade"] .langseg{border-color:#00f0ff}html[data-skin="arcade"] .langseg>span{background:#00f0ff;color:#001418}
+html[data-skin="vegas"] .appbtn{border-color:rgba(216,180,90,.45)}html[data-skin="vegas"] .langseg{border-color:rgba(216,180,90,.45)}html[data-skin="vegas"] .langseg>span{background:var(--gold);color:#1b1407}
 </style>
 </head>
 <body>
@@ -3947,12 +3971,16 @@ function startView(){
     T('<p><b>Aktualisieren:</b> passiert automatisch \u2013 jedes Mal, wenn du die App mit Internet öffnest, holt sie sich die neueste Version. Klappt das mal nicht: App ganz schließen (aus der App-Übersicht wischen) und neu öffnen oder oben auf das Logo tippen.</p>','<p><b>Updating:</b> happens automatically \u2013 every time you open the app with internet it fetches the latest version. If that doesn’t work: close the app completely (swipe it away) and reopen it, or tap the logo at the top.</p>')+
   '</details></div>'+
   (canDonate()?'<div class="donatebar"><button class="ghost spezibtn" data-a="donate">'+SPEZI+T('Kauf mir eine Spezi</button><span class="note">kostenlos, ohne Werbung</span></div>','Buy me a Spezi</button><span class="note">free, no ads</span></div>'):'')+
+  /* Fußzeile geordnet (2026-11-22): Apps als zwei Knöpfe (nur im Browser), darunter eine ruhige Zeile Rechtliches + Sprache */
+  '<div class="getapp apkdl"><span class="note">'+T('Als App:','As an app:')+'</span>'+
+    '<a class="appbtn" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">iPhone</a>'+
+    '<a class="appbtn" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">Android (APK)</a></div>'+
   '<div id="playcount">'+countsHtml()+'</div>'+
-  '<p class="sitefoot">'+T('<a href="impressum.html">Impressum</a> \u00b7 <a href="impressum.html#datenschutz">Datenschutz</a>','<a href="impressum.html">Legal notice</a> \u00b7 <a href="impressum.html#privacy">Privacy</a>')+' \u00b7 '+langBtn()+' \u00b7 '+
-    '<a class="apkdl" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">'+T('Android-App (APK)','Android app (APK)')+'</a><span class="apkdl"> \u00b7 </span>'+
-    '<a class="apkdl" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">'+T('iPhone-App (App Store)','iPhone app (App Store)')+'</a><span class="apkdl"> \u00b7 </span>'+
-    '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">GitHub (Open Source)</a> \u00b7 '+
-    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">'+T('Mehr von Simon','More by Simon')+'</a>'+(bundleOn()?'<br>'+bundleFoot():'')+'</p></div>';
+  '<div class="sitefoot"><nav class="footlinks">'+T('<a href="impressum.html">Impressum</a><a href="impressum.html#datenschutz">Datenschutz</a>','<a href="impressum.html">Legal notice</a><a href="impressum.html#privacy">Privacy</a>')+
+    '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">Open Source</a>'+
+    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">'+T('Ein Spiel von Simon','A game by Simon')+'</a></nav>'+
+    '<div class="langseg" role="group" aria-label="'+T('Sprache','Language')+'">'+(T('de','en')==='de'?'<span aria-current="true">DE</span>'+langBtn('EN'):langBtn('DE')+'<span aria-current="true">EN</span>')+'</div>'+
+    (bundleOn()?'<div class="bundlefoot">'+bundleFoot()+'</div>':'')+'</div></div>';
 }
 
 function roomView(){
@@ -4164,7 +4192,7 @@ function countdownHtml(){
 function fmtAway(ms){var s=Math.floor(ms/1000);return s<60?s+' s':Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)+' min';}
 function themeBtn(){return '<button class="small ghost icon" data-a="skin" title="Design" aria-label="'+T('Design wählen','Choose design')+'">\ud83c\udfa8</button>'+'<button class="small ghost icon" data-a="theme" title="'+T('Hell/Dunkel','Light/dark')+'" aria-label="'+T('Hell/Dunkel umschalten','Toggle light/dark')+'">\u25d0</button>';}
 /* Sprache: Deutsch/Englisch (Simon 2026-10-21), gespeichert in kr.lang, sonst Gerätesprache */
-function langBtn(){return '<button class="linkbtn" data-a="lang" lang="'+T('en','de')+'">'+T('English','Deutsch')+'</button>';}
+function langBtn(lbl){return '<button class="linkbtn" data-a="lang" lang="'+T('en','de')+'" aria-label="'+T('English','Deutsch')+'">'+(lbl||T('English','Deutsch'))+'</button>';}
 function phaseLabel(){
   var ph=phase();
   if(ph==='lobby')return 'Lobby \u00b7 Hand '+hand();
