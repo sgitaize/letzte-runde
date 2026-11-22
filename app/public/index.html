@@ -876,6 +876,9 @@ html[lang="en"] .say::before{content:"“"}html[lang="en"] .say::after{content:"
 html:not([data-skin="win95"]) .pl .tag.hand{border:0;background:none;padding:0;font-size:12.5px;font-weight:650;color:var(--fg);white-space:normal}
 html:not([data-skin="win95"]) .pl .tag.res{border:0;background:none;padding:0;font-size:12.5px}
 html:not([data-skin]) [data-a="addbot"]::before{content:"+ "}
+.p-chips>.row{align-items:center}
+.p-chips:has(>.row>.note) .chiphint{display:none}   /* alle Chips vergeben: Hinweis zum Nehmen überflüssig */
+.statsline a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -2733,7 +2736,7 @@ function spView(){
       (c?'<div class="chip r'+(ph==='play'?st:4)+(clickable?'':' static')+(id==='me'?' mine':'')+'"'+(clickable?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">–</div>')+
       '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag bot">Bot</span>':' <span class="tag you">'+T('du','you')+'</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
         (say?'<div class="say">'+esc(say.t)+'</div>':'')+nmRes(cards,verdict)+'</div>'+
-      (ph==='play'&&p.bot&&p.open&&c?T('<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure – gives up the chip without a fight">🔄<span class="tx"> open</span></span>'):'')+
+      (ph==='play'&&p.bot&&p.open&&c?T('<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure – gives up the chip without a fight">open</span>'):'')+
       (ph==='play'?(sp.ready[id]&&c?T('<span class="tag ok">bereit</span>','<span class="tag ok">ready</span>'):'<span class="tag wait">…</span>'):'')+
       ((cards||verdict)?'<div class="plx">'+cards+verdict+'</div>':'')+'</div>';
   });
@@ -3049,7 +3052,7 @@ function offlineBanner(){
   /* In der App steht „Server offline“ / „Kein Internet“ schon in der Leiste darüber → hier nur noch, was jetzt geht */
   var head=KRA&&KRA.app&&!KRA.lanGuest?'':noNet()?T('📴 <b>Offline</b> – ','📴 <b>Offline</b> – '):T('📴 <b>Server nicht erreichbar</b> – ','📴 <b>Server unreachable</b> – ');
   return '<div class="panel offline"><p class="info">'+head+T('Räume gehen gerade nicht, der Singleplayer schon.','Rooms don’t work right now, singleplayer does.')+'</p>'+
-    T('<div class="bar"><button class="primary" data-a="sp">🤖 Singleplayer spielen</button>','<div class="bar"><button class="primary" data-a="sp">🤖 Play singleplayer</button>')+
+    T('<div class="bar"><button class="primary" data-a="sp">Singleplayer spielen</button>','<div class="bar"><button class="primary" data-a="sp">Play singleplayer</button>')+
     (KRA&&KRA.app?T('<button data-a="place">📶 Im WLAN spielen</button>','<button data-a="place">📶 Play on Wi-Fi</button>'):'')+'</div></div>';
 }
 
@@ -4248,7 +4251,7 @@ function playerList(inHand){
       '<div class="nm">'+esc(p.name||T('Spieler','Player'))+(isMuted(id)?' <span class="tag" title="'+T('stummgeschaltet','muted')+'">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">'+T('du','you')+'</span>':'')+(p.bot?' <span class="tag bot">Bot</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+nmRes(cards,verdict)+'</div>'+
       (m[id]&&!isOnline(id)&&!isBotP(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
-      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?T('<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure \u2013 gives up the chip without a fight">\ud83d\udd04<span class="tx"> open</span></span>'):'')+
+      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?T('<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure \u2013 gives up the chip without a fight">open</span>'):'')+
       (inHand&&ph==='play'?(isReady(p)?T('<span class="tag ok">bereit</span>','<span class="tag ok">ready</span>'):'<span class="tag wait">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa '+T('Platz übernehmen','Take seat')+'</button>':'')+
       (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa '+T('Platz übernehmen','Take seat')+'</button>':

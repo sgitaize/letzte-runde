@@ -1,5 +1,5 @@
 /* App-Store-Bilder: echte Spielszenen in Chrome (wie in der App: window.KR_APP, helles Design)
-   und daraus die Store-Motive (Überschrift im Stil des Spiels über dem Screenshot).
+   und daraus die Store-Bilder (echte Bildschirmfotos, seit 2026-11 ohne Überschrift/Rahmen).
    Startet einen lokalen Server (Port 3984) aus einer Wegwerf-Kopie von app/.
    Nutzung: CHROME=<pfad> node --experimental-websocket docs/store/storeshots.js
    Ergebnis: docs/store/screenshots/{iphone,ipad,android,android-tablet}/0N-<szene>.png (iPhone 6.9″ 1320×2868, iPad 13″ 2064×2752, Android 1080×1920 / 1800×3200) */
@@ -30,20 +30,9 @@ const DEVICES = [
   { name: 'android', w: 360, h: 640, dsf: 3 },     // 1080 × 1920 (Play: höchstens 2:1)
   { name: 'android-tablet', w: 900, h: 1600, dsf: 2 }   // 1800 × 3200
 ].filter((d) => !process.env.DEVICES || process.env.DEVICES.split(',').includes(d.name));   // z. B. DEVICES=android,android-tablet
-/* Reihenfolge = Reihenfolge im Store */
-const SCENES = EN ? [
-  { id: 'play', title: 'Team poker', sub: 'Rank your hands from weakest to strongest – without talking about them.' },
-  { id: 'win', title: 'Win together', sub: 'Get the order right and you all win. Otherwise you all lose.' },
-  { id: 'room', title: 'Open a room, share the link', sub: 'With friends in the app or the browser – bots fill empty seats.' },
-  { id: 'start', title: 'Just start playing', sub: 'No account, no ads. Practise alone or on Wi-Fi without internet.' },
-  { id: 'stats', title: 'Get better', sub: 'Statistics and a leaderboard with friends – on all your devices.' }
-] : [
-  { id: 'play', title: 'Pokern im Team', sub: 'Ordnet eure Hände von schwach bis stark – ohne darüber zu reden.' },
-  { id: 'win', title: 'Gemeinsam gewinnen', sub: 'Stimmt die Reihenfolge, gewinnt ihr alle. Sonst verliert ihr alle.' },
-  { id: 'room', title: 'Raum auf, Link raus', sub: 'Mit Freunden in der App oder im Browser – Bots füllen freie Plätze.' },
-  { id: 'start', title: 'Einfach loslegen', sub: 'Ohne Konto, ohne Werbung. Allein üben oder im WLAN ohne Internet.' },
-  { id: 'stats', title: 'Werdet besser', sub: 'Statistik und Bestenliste mit Freunden – auf allen Geräten.' }
-];
+/* Reihenfolge = Reihenfolge im Store. Seit 2026-11 (Simon): echte Bildschirmfotos ohne Banner/Überschrift/Gerätrahmen – wenige, dafür gute.
+   play: laufende Hand (Runde 3, Chips verteilt) · win: gemeinsam gewonnen · room: Raum mit Freunden und Chat · vegas/win95: dieselbe Szene in einem anderen Design */
+const SCENES = (process.env.SCENES || 'play,win,room,vegas').split(',');
 
 let srv, chrome;
 async function connect(url) {
@@ -74,7 +63,7 @@ async function scenario(send, dev) {
   await send('Emulation.setDeviceMetricsOverride', { width: dev.w, height: dev.h, deviceScaleFactor: dev.dsf, mobile: dev.w < 600 });
   await send('Page.navigate', { url: URL0 });
   await until('!!document.querySelector(\'[data-a="sp"]\')');
-  await js('localStorage.clear();localStorage.setItem("kr.name","Simon");localStorage.setItem("kr.sp.bots","3");' + (EN ? 'localStorage.setItem("kr.lang","en");' : '') + '1');
+  await js('localStorage.clear();localStorage.setItem("kr.name","Simon");localStorage.setItem("kr.sp.bots","3");' + (EN ? 'localStorage.setItem("kr.lang","en");' : 'localStorage.setItem("kr.lang","de");') + '1');
   await send('Page.reload'); await until('!!document.querySelector(\'[data-a="sp"]\')');
   await js('document.getElementById("name").value="Simon";var pc=document.getElementById("playcount");if(pc)pc.style.display="none";1');   // Zähler des Wegwerf-Servers (0) nicht zeigen
   await shoot('start');
@@ -96,7 +85,7 @@ async function scenario(send, dev) {
   const SHOT = { me: ['Qd', '3h'].map(cd), b: [['Ks', '6s'], ['9h', '7h'], ['3s', '8c']].map((h) => h.map(cd)), board: ['Qc', 'Qs', '7c', 'Kd', '2d'].map(cd) };
   await deal(SHOT.me, SHOT.b, SHOT.board, 3);
   await insist(4); await sleep(1500);
-  await scrollTo('.p-board'); await shoot('play');
+  await js('window.scrollTo(0,0);1'); await shoot('play');
   let won = false;
   for (let t = 0; t < 6 && !won; t++) {
     if (t) await deal(SHOT.me, SHOT.b, SHOT.board, 4); else { await js('__kr.spReady();1'); await until('__kr.sp().stage===4', 20000); }
@@ -104,16 +93,14 @@ async function scenario(send, dev) {
     won = await finish(); console.log(dev.name, 'Screenshot-Hand', t + 1, won ? 'gewonnen' : 'daneben');
   }
   if (!won) throw new Error('Screenshot-Hand nicht gewonnen');
-  await scrollTo('.p-board'); await shoot('win');
+  await js('window.scrollTo(0,0);1'); await shoot('win');
   /* Statistik: ein paar weitere Hände, jeweils mit dem richtigen Platz */
-  for (let h = 0; h < 6; h++) {
+  for (let h = 0; h < (SCENES.includes('stats') ? 6 : 0); h++) {
     await js('__kr.spNewHand();__kr.spStage(4);1'); await sleep(300);
     await insist(await js(rankMe));
     console.log(dev.name, 'Hand', h + 2, (await finish()) ? 'gewonnen' : 'daneben');
   }
-  await click('[data-a="stats"]'); await sleep(800);
-  await scrollTo('.stats'); await shoot('stats');
-  await click('[data-a="stats"]');
+  if (SCENES.includes('stats')) { await click('[data-a="stats"]'); await sleep(800); await scrollTo('.stats'); await shoot('stats'); await click('[data-a="stats"]'); }
 
   /* Raum mit 3 Bots und Chat, Runde 2 */
   await click('[data-a="leave"]'); await sleep(600);
@@ -130,26 +117,15 @@ async function scenario(send, dev) {
   for (let i = 0; i < 400 && (await stage()) < 2; i++) { await js(step); await sleep(300); }
   for (let i = 0; i < 40 && !(await js('!!document.querySelector(".pl.me .chip:not(.ph)")')); i++) { await js(step); await sleep(300); }
   await sleep(2500);
-  await scrollTo(dev.w < 600 ? '.p-board' : 'body'); await shoot('room');
-}
-
-/* Store-Motiv: Filz-Grün mit Überschrift (Logo-Schrift), darunter der Screenshot als „Gerät“ */
-function composeHtml(dev, sc, img) {
-  const phone = dev.w < 600;
-  return '<!doctype html><meta charset="utf-8"><style>' +
-    'html,body{margin:0;width:' + dev.w + 'px;height:' + dev.h + 'px;overflow:hidden}' +
-    'body{background:radial-gradient(ellipse at 50% 0%,#2a7553 0%,#1f5a41 40%,#16452f 100%);font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;color:#eef5f0;position:relative}' +
-    'body:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 10%,rgba(255,255,255,.06),transparent 40%);pointer-events:none}' +
-    '.head{position:absolute;left:0;right:0;top:' + (phone ? 54 : 70) + 'px;text-align:center;padding:0 ' + (phone ? 28 : 90) + 'px}' +
-    '.logo{width:' + (phone ? 46 : 62) + 'px;height:auto;display:block;margin:0 auto ' + (phone ? 10 : 14) + 'px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3))}' +
-    'h1{font-family:Georgia,"Iowan Old Style",serif;font-style:italic;font-weight:700;font-size:' + (phone ? 40 : 58) + 'px;line-height:1.08;margin:0 0 ' + (phone ? 12 : 16) + 'px;letter-spacing:-.01em;text-shadow:0 2px 10px rgba(0,0,0,.25)}' +
-    'p{font-size:' + (phone ? 19 : 25) + 'px;line-height:1.35;margin:0 auto;max-width:' + (phone ? 360 : 700) + 'px;color:rgba(238,245,240,.88)}' +
-    '.dev{position:absolute;left:50%;transform:translateX(-50%);top:' + (phone ? 262 : 300) + 'px;width:' + (phone ? 82 : 78) + '%;' +
-      'border-radius:' + (phone ? 44 : 34) + 'px;overflow:hidden;border:' + (phone ? 9 : 12) + 'px solid #0d0f0e;background:#0d0f0e;' +
-      'box-shadow:0 30px 60px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.08)}' +
-    '.dev img{display:block;width:100%;border-radius:' + (phone ? 35 : 22) + 'px}' +
-    '</style><body><div class="head"><img class="logo" src="' + URL0 + 'logo.svg"><h1>' + sc.title + '</h1><p>' + sc.sub + '</p></div>' +
-    '<div class="dev"><img src="data:image/png;base64,' + img.toString('base64') + '"></div></body>';
+  if (dev.w < 600) await scrollTo('.p-players', 8); else await js('window.scrollTo(0,0);1');
+  await shoot('room');   // Handy: Mitspielende mit Sprüchen und Chat statt noch einmal dem Tisch
+  /* Dieselbe Szene in anderen Designs */
+  for (const sk of ['vegas', 'win95']) {
+    await js('localStorage.setItem("kr.skin",' + JSON.stringify(sk) + ');document.documentElement.setAttribute("data-skin",' + JSON.stringify(sk) + ');1');
+    await click('[data-a="skin"]'); await sleep(200); await click('[data-a="skinset"][data-v="' + sk + '"]'); await sleep(900);
+    await js('window.scrollTo(0,0);1'); await shoot(sk);
+  }
+  await js('localStorage.removeItem("kr.skin");1');
 }
 
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.kill('SIGKILL'); } catch (e) {} try { srv.kill('SIGKILL'); } catch (e) {} process.exit(1); });
@@ -165,18 +141,10 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.ki
   await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.KR_APP={app:true,mode:"online",origin:"https://letzterunde.aize-it.de",acct:"https://letzterunde.aize-it.de"};' });
   for (const dev of DEVICES) await scenario(send, dev);
 
-  /* Motive setzen */
+  /* Bilder übernehmen: 01-play.png … in Store-Reihenfolge */
   for (const dev of DEVICES) {
     const dir = path.join(OUT, dev.name); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-    await send('Emulation.setDeviceMetricsOverride', { width: dev.w, height: dev.h, deviceScaleFactor: dev.dsf, mobile: false });
-    for (let i = 0; i < SCENES.length; i++) {
-      const sc = SCENES[i], f = path.join(RAW, dev.name + '-' + sc.id + '.png'), html = path.join(RAW, 'c.html');
-      fs.writeFileSync(html, composeHtml(dev, sc, fs.readFileSync(f)));
-      await send('Page.navigate', { url: 'file://' + html }); await sleep(900);
-      const r = await send('Page.captureScreenshot', { format: 'png' });
-      const outf = path.join(dir, '0' + (i + 1) + '-' + sc.id + '.png');
-      fs.writeFileSync(outf, Buffer.from(r.result.data, 'base64')); console.log(outf);
-    }
+    SCENES.forEach((id, i) => { const f = path.join(RAW, dev.name + '-' + id + '.png'); if (!fs.existsSync(f)) throw new Error('fehlt: ' + f); fs.copyFileSync(f, path.join(dir, '0' + (i + 1) + '-' + id + '.png')); console.log(path.join(dir, '0' + (i + 1) + '-' + id + '.png')); });
   }
 })().catch((e) => { console.error(e); process.exitCode = 1; })
   .finally(() => {
