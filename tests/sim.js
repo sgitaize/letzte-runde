@@ -234,7 +234,7 @@ const post=(a,code,body,key)=>fetch(BASE+'api?a='+a+'&room='+code,{method:'POST'
       ok(/class="pl me"[^]*?<div class="nm">Anna/.test(hA),'Eigene Zeile farbig markiert');
       ok(hA.includes('Rangfolge der Hände')&&(hA.match(/card xs/g)||[]).length===50,'Ausklappbare Rangfolge mit Beispielkarten (10 × 5)');
       ok(!/Flop|Turn|River/.test(txt(hA))&&hA.includes('Runde 1 von 4'),'Keine Rundennamen, Überschrift „Runde 1 von 4“');
-      ok(hA.includes('\u{1F44A} Bereit')&&!/>Set</.test(hA),'Knopf heißt „👊 Bereit“ statt „Set“');
+      ok(hA.includes('>Bereit<')&&!/>Set</.test(hA),'Knopf heißt „👊 Bereit“ statt „Set“');
       ok(/class="mychips"[^]*?chip big static r1 now">1</.test(hA),'Eigener Chip groß unter „Deine Karten“ (Runde 1, weiß)');
     }
     P.forEach(x=>x.__kr.toggleReady());

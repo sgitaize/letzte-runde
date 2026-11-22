@@ -135,7 +135,7 @@ let srv;
   A.K.addBot(); await until(() => A.K.S().players.length === 3, 'Bot 1');
   A.K.addBot(); await until(() => A.K.S().players.length === 4 && B.K.S().players.length === 4, 'Bot 2');
   const [b1, b2] = bots(A);
-  ok(b1 && b2 && /🤖/.test(A.els.app.innerHTML), 'Zwei Bots im Raum, mit 🤖 markiert');
+  ok(b1 && b2 && /class="tag bot"/.test(A.els.app.innerHTML), 'Zwei Bots im Raum, als Bot markiert');
   ok(A.K.online().includes(b1) && A.K.hostId() === A.K.uid() && A.K.driverId() === A.K.uid(), 'Bots gelten als anwesend, Host/Ablauf bleibt bei Anna');
   r = await post('set', code + '&path=players/' + b1, { name: 'Übernommen' }, B.ls['kr.sk']);
   ok(r.status === 403, 'Bot-Platz nicht übernehmbar (403)');

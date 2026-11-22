@@ -862,6 +862,20 @@ html[data-skin="win95"] .startfoot a.appbtn{color:#000;text-decoration:none}
 html[data-skin="arcade"] .appbtn{border-color:#00f0ff;color:#00f0ff;background:transparent}
 html[data-skin="arcade"] .langseg{border-color:#00f0ff}html[data-skin="arcade"] .langseg>span{background:#00f0ff;color:#001418}
 html[data-skin="vegas"] .appbtn{border-color:rgba(216,180,90,.45)}html[data-skin="vegas"] .langseg{border-color:rgba(216,180,90,.45)}html[data-skin="vegas"] .langseg>span{background:var(--gold);color:#1b1407}
+
+/* ---------- Weniger Deko (2026-11-22): Menü ohne Emoji-Symbole, Status als Wort statt Pille ---------- */
+.moremenu>button.icon{font-size:0;gap:0}.moremenu>button.icon[aria-label]::after{font-size:14.5px}
+html[data-skin="win95"] .moremenu>button.icon[aria-label]::after{font-size:12px}
+html:not([data-skin="win95"]) .pl .tag:not(.you):not(.here):not(.hand):not(.res){border:0;background:none;padding:0 2px;font-size:12px;color:var(--muted)}
+html:not([data-skin="win95"]) .pl .tag.ok{color:var(--accent);font-weight:650}
+html:not([data-skin="win95"]) .pl .tag.open{color:var(--gold);font-style:italic}
+html:not([data-skin="win95"]) .pl .tag.bot{font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.inroom .p-players .tag.open .tx{display:inline}
+.say{font-style:normal;opacity:1;color:var(--muted)}.say::before{content:"„"}.say::after{content:"“"}
+html[lang="en"] .say::before{content:"“"}html[lang="en"] .say::after{content:"”"}
+html:not([data-skin="win95"]) .pl .tag.hand{border:0;background:none;padding:0;font-size:12.5px;font-weight:650;color:var(--fg);white-space:normal}
+html:not([data-skin="win95"]) .pl .tag.res{border:0;background:none;padding:0;font-size:12.5px}
+html:not([data-skin]) [data-a="addbot"]::before{content:"+ "}
 </style>
 </head>
 <body>
@@ -1781,7 +1795,7 @@ function botifyConfirm(){
 /* Bots füllen den Raum auf (laufen auf dem Server); nur der Host, nur zwischen den Händen */
 function addBotBtn(){
   if(!isHost()||watching||(CFG.maxPlayers&&S.players.length>=CFG.maxPlayers))return '';
-  return T('<button class="ghost" data-a="addbot" title="Bot als Mitspieler hinzufügen">\ud83e\udd16 Bot hinzufügen</button>','<button class="ghost" data-a="addbot" title="Add a bot as a player">\ud83e\udd16 Add bot</button>');
+  return T('<button class="ghost" data-a="addbot" title="Bot als Mitspieler hinzufügen">Bot hinzufügen</button>','<button class="ghost" data-a="addbot" title="Add a bot as a player">Add bot</button>');
 }
 function addBot(){
   if(!isHost()||watching||(phase()!=='lobby'&&phase()!=='done'))return;
@@ -2300,7 +2314,7 @@ function planHtml(){
       '<div class="field"><label class="lbl">Start</label><input id="stime" type="datetime-local" value="'+def+'"></div></div>'+
       T('<p class="note" style="margin-top:6px">Du bekommst einen Link. Beitreten geht erst ab der Startzeit, wer dann als Erster drin ist, wird Host.</p>','<p class="note" style="margin-top:6px">You get a link. Joining works from the start time; whoever is in first becomes host.</p>')+
       T('<div class="bar"><button class="primary" data-a="plan">Planen &amp; Link erstellen</button><button class="ghost" data-a="planopen">Abbrechen</button></div>','<div class="bar"><button class="primary" data-a="plan">Plan &amp; create link</button><button class="ghost" data-a="planopen">Cancel</button></div>')
-    :T('<button class="ghost small subact" data-a="planopen">📅 Raum für später planen</button>','<button class="ghost small subact" data-a="planopen">📅 Plan a room for later</button>'));
+    :T('<button class="ghost small subact" data-a="planopen">Raum für später planen</button>','<button class="ghost small subact" data-a="planopen">Plan a room for later</button>'));
 }
 
 /* ---------- Einzelspieler: Übungsraum gegen Bots (läuft komplett im Browser, kein Server) ---------- */
@@ -2360,7 +2374,7 @@ function spNewHand(){
 }
 /* Flushgefahr (Simon 2026-10-01): ab 3 Karten einer Farbe auf dem Tisch immer rot unter den Karten, auch ohne Lernmodus */
 function flushSuit(vis){var n=[0,0,0,0];vis.forEach(function(c){n[Math.floor(c/13)]++;});var m=Math.max.apply(null,n);return m>=3?{s:n.indexOf(m),n:m}:null;}
-function flushWarn(vis){var f=flushSuit(vis);return f?'<div class="flushwarn">'+T('⚠ FLUSHGEFAHR · '+f.n+'× '+SUITS[f.s]+' auf dem Tisch'+(f.n>=4?' – eine '+SUITS[f.s]+' reicht':''),'⚠ FLUSH DANGER · '+f.n+'× '+SUITS[f.s]+' on the table'+(f.n>=4?' – one '+SUITS[f.s]+' is enough':''))+'</div>':'';}
+function flushWarn(vis){var f=flushSuit(vis);return f?'<div class="flushwarn">'+T('Flushgefahr: '+f.n+'× '+SUITS[f.s]+' auf dem Tisch'+(f.n>=4?' – eine '+SUITS[f.s]+' reicht':''),'Flush danger: '+f.n+'× '+SUITS[f.s]+' on the table'+(f.n>=4?' – one '+SUITS[f.s]+' is enough':''))+'</div>':'';}
 function spVisible(st){return sp.board.slice(0,st>=4?5:st===3?4:st===2?3:0);}
 function spStage(st){
   sp.phase='play';sp.stage=st;sp.chips={};sp.ready={};sp.cd=null;sp.cdShown=null;sp.moves={};sp.contest={};sp.stable={};sp.insist={};sp.lostMe=null;sp.meFixed=null;
@@ -2619,7 +2633,7 @@ function mpStep(){
   if(ph==='lobby'){
     if(preStart())return {t:T('⏳ Wartebereich','⏳ Waiting area'),sub:T('Los geht’s ','Starts ')+esc(fmtWhen(num(S.room.startsAt)))};
     if(!isHost())return {t:T('Warten, bis '+esc(pname(hostId()))+' die Hand gibt','Waiting for '+esc(pname(hostId()))+' to deal'),sub:n+T(' Spieler*innen im Raum',' players in the room')};
-    if(n<need)return {t:T('Noch '+(need-n)+' Mitspieler*in'+(need-n>1?'nen':'')+' nötig',(need-n)+' more player'+(need-n>1?'s':'')+' needed'),sub:T('Link schicken oder Bots dazuholen','Send the link or add bots'),act:'invite',actTxt:T('🔗 Einladen','🔗 Invite')};
+    if(n<need)return {t:T('Noch '+(need-n)+' Mitspieler*in'+(need-n>1?'nen':'')+' nötig',(need-n)+' more player'+(need-n>1?'s':'')+' needed'),sub:T('Link schicken oder Bots dazuholen','Send the link or add bots'),act:'invite',actTxt:T('Einladen','🔗 Invite')};
     return {t:T('Alle da? Dann geben','Everyone here? Then deal'),sub:n+T(' Spieler*innen',' players'),act:'start',actTxt:T('Hand geben ▶','Deal ▶')};
   }
   if(ph==='deal')return {t:T('Karten werden gegeben …','Dealing cards …')};
@@ -2627,7 +2641,7 @@ function mpStep(){
   if(ph==='play'){
     var c=chipOf(uid),wait=ps.filter(function(id){return !isReady(m[id]);});
     if(!c)return {t:T('Runde ','Round ')+stage()+T(': Nimm einen Chip',': take a chip'),sub:T('1 = schwächste, '+ps.length+' = stärkste Hand','1 = weakest, '+ps.length+' = strongest hand'),go:'.p-chips',goTxt:T('Zu den Chips','To the chips')};
-    if(!isReady(m[uid]))return {t:T('Chip '+c+' passt? Dann klopfen','Chip '+c+' fits? Then knock'),sub:T('du kannst ihn noch tauschen','you can still swap it'),go:'.p-mine',goTxt:T('Deine Karten','Your cards'),act:'ready',actTxt:T('👊 Bereit','👊 Ready')};
+    if(!isReady(m[uid]))return {t:T('Chip '+c+' passt? Dann klopfen','Chip '+c+' fits? Then knock'),sub:T('du kannst ihn noch tauschen','you can still swap it'),go:'.p-mine',goTxt:T('Deine Karten','Your cards'),act:'ready',actTxt:T('Bereit','Ready')};
     return {t:T('✓ Bereit – warten auf ','✓ Ready – waiting for ')+names(wait),sub:'Chip '+c+T(' · zurücknehmen geht noch',' · you can still take it back'),go:'.p-players',goTxt:T('Spieler','Players')};
   }
   if(ph==='guess'){
@@ -2650,7 +2664,7 @@ function spStep(){
     if(sp.cd)return null;
     var wait=sp.players.filter(function(p){return !(sp.chips[p.id]&&sp.ready[p.id]);}).map(function(p){return p.id==='me'?T('dich','you'):esc(p.name);});
     if(!sp.chips.me)return {t:T('Runde ','Round ')+sp.stage+T(': Nimm einen Chip',': take a chip'),sub:T('1 = schwächste, '+sp.players.length+' = stärkste Hand','1 = weakest, '+sp.players.length+' = strongest hand'),go:'.p-chips',goTxt:T('Zu den Chips','To the chips')};
-    if(!sp.ready.me)return {t:T('Chip '+sp.chips.me+' passt? Dann klopfen','Chip '+sp.chips.me+' fits? Then knock'),sub:T('du kannst ihn noch tauschen','you can still swap it'),go:'.p-mine',goTxt:T('Deine Karten','Your cards'),act:'ready',actTxt:T('👊 Bereit','👊 Ready')};
+    if(!sp.ready.me)return {t:T('Chip '+sp.chips.me+' passt? Dann klopfen','Chip '+sp.chips.me+' fits? Then knock'),sub:T('du kannst ihn noch tauschen','you can still swap it'),go:'.p-mine',goTxt:T('Deine Karten','Your cards'),act:'ready',actTxt:T('Bereit','Ready')};
     return {t:T('✓ Bereit – warten auf ','✓ Ready – waiting for ')+wait.join(', '),go:'.p-players',goTxt:T('Spieler','Players')};
   }
   if(sp.phase==='guess'){
@@ -2717,10 +2731,10 @@ function spView(){
     var say=sp.bubble[id];
     pl+='<div class="pl'+(id==='me'?' me':'')+(rx?(rx.ok?' res-ok':' res-bad'):'')+'">'+
       (c?'<div class="chip r'+(ph==='play'?st:4)+(clickable?'':' static')+(id==='me'?' mine':'')+'"'+(clickable?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">–</div>')+
-      '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag">🤖</span>':' <span class="tag you">'+T('du','you')+'</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
-        (say?'<div class="say">💬 '+esc(say.t)+'</div>':'')+nmRes(cards,verdict)+'</div>'+
-      (ph==='play'&&p.bot&&p.open&&c?T('<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">🔄<span class="tx"> offen</span></span>','<span class="tag open" title="unsure – gives up the chip without a fight">🔄<span class="tx"> open</span></span>'):'')+
-      (ph==='play'?(sp.ready[id]&&c?T('<span class="tag ok" title="bereit">👊</span>','<span class="tag ok" title="ready">👊</span>'):'<span class="tag">'+(p.bot?'🤔':'…')+'</span>'):'')+
+      '<div class="nm">'+esc(p.name)+(p.bot?' <span class="tag bot">Bot</span>':' <span class="tag you">'+T('du','you')+'</span>')+reactHtml(id)+(hist?'<span class="hist">'+hist+'</span>':'')+
+        (say?'<div class="say">'+esc(say.t)+'</div>':'')+nmRes(cards,verdict)+'</div>'+
+      (ph==='play'&&p.bot&&p.open&&c?T('<span class="tag open" title="unsicher – gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure – gives up the chip without a fight">🔄<span class="tx"> open</span></span>'):'')+
+      (ph==='play'?(sp.ready[id]&&c?T('<span class="tag ok">bereit</span>','<span class="tag ok">ready</span>'):'<span class="tag wait">…</span>'):'')+
       ((cards||verdict)?'<div class="plx">'+cards+verdict+'</div>':'')+'</div>';
   });
   var Ins=spInsight?insightHtml():'';
@@ -2733,7 +2747,7 @@ function spView(){
     out='<div class="panel p-chips"><h2>'+T('Chips in der Mitte','Chips in the middle')+'</h2><div class="row">'+(free||T('<span class="note">alle vergeben</span>','<span class="note">all taken</span>'))+'</div>'+
       T('<p class="note chiphint">1 = schwächste, '+n+' = stärkste Hand · antippen zum Nehmen, auch von Bots · eigenen Chip antippen legt ihn zurück</p>','<p class="note chiphint">1 = weakest, '+n+' = strongest hand · tap to take, also from bots · tap your own chip to put it back</p>')+
       '<div class="hr"></div><div class="bar"><button class="'+(sp.ready.me?'':'primary')+'" data-a="ready"'+(sp.chips.me?'':' disabled')+'>'+
-      (sp.ready.me?T('Bereit zurücknehmen','Take back ready'):T('👊 Bereit','👊 Ready'))+'</button>'+
+      (sp.ready.me?T('Bereit zurücknehmen','Take back ready'):T('Bereit','Ready'))+'</button>'+
       (waiting.length?T('<span class="note">Warten auf: ','<span class="note">Waiting for: ')+esc(waiting.join(', '))+'</span>':T('<span class="note">Alle bereit</span>','<span class="note">All ready</span>'))+'</div></div>'+out;   // über dem Tisch
   }
   if(ph==='guess'){
@@ -2999,7 +3013,7 @@ function sayOf(id){var q=(S.say||{})[id];return q&&typeof q.t==='string'&&Date.n
 function isOpenBot(id,h,c){var o=(S.open||{})[id];return !!(o&&o.hand===h&&o.stage===stage()&&o.chip===c);}
 /* Handname + Ergebnis zusätzlich unter dem Namen (nur im Querformat sichtbar, dort stehen die Karten neben dem Namen) */
 function nmRes(cards,verdict){var h=(cards.match(/<span class="tag hand">.*?<\/span>/)||[''])[0];return (h||verdict)?'<div class="nmres">'+h+verdict+'</div>':'';}
-function sayHtml(id){var t=isMuted(id)?'':sayOf(id);return t?'<div class="say" title="'+esc(t)+'">\ud83d\udcac '+esc(t)+'</div>':'';}
+function sayHtml(id){var t=isMuted(id)?'':sayOf(id);return t?'<div class="say" title="'+esc(t)+'">'+esc(t)+'</div>':'';}
 function reactHtml(id){var e=isMuted(id)?'':reactOf(id);return e?T('<span class="react-pop" title="Reaktion">','<span class="react-pop" title="Reaction">')+e+'</span>':'';}
 function reactBar(){
   if(!sp&&(watching||!joined||!code))return '';
@@ -3044,7 +3058,7 @@ var tvInsight=false;try{tvInsight=localStorage.getItem('kr.tv.insight')==='1';}c
 function tvToggleInsight(){tvInsight=!tvInsight;try{localStorage.setItem('kr.tv.insight',tvInsight?'1':'0');}catch(e){}render();}
 var spInsight=false;try{spInsight=localStorage.getItem('kr.sp.insight')==='1';}catch(e){}
 function spToggleInsight(){spInsight=!spInsight;try{localStorage.setItem('kr.sp.insight',spInsight?'1':'0');}catch(e){}render();}
-function spInsightBtn(){return '<button class="small '+(spInsight?'primary':'ghost')+'" data-a="spinsight" title="'+T('Insight: Positionswechsel als Grafik','Insight: position changes as a chart')+'">📈 Insight'+(spInsight?T(' an',' on'):'')+'</button>';}
+function spInsightBtn(){return '<button class="small '+(spInsight?'primary':'ghost')+'" data-a="spinsight" title="'+T('Insight: Positionswechsel als Grafik','Insight: position changes as a chart')+'">Insight'+(spInsight?T(' an',' on'):'')+'</button>';}
 var SERIES=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300'];   // feste Reihenfolge je Sitzplatz (Farbe folgt dem Spieler, nicht dem Rang)
 function insightHtml(act){
   var ps=sp.players,n=ps.length,ph=sp.phase,last=ph==='play'?sp.stage:4,done=ph==='done'&&sp.res,cols=done?5:4;
@@ -3074,7 +3088,7 @@ function insightHtml(act){
 /* ---------- Lernmodus im Übungsraum: erklärt, was die eigene Hand wert ist und warum etwas anders gehört ---------- */
 var spLearn=false;try{spLearn=localStorage.getItem('kr.sp.learn')==='1';}catch(e){}
 function spToggleLearn(){spLearn=!spLearn;try{localStorage.setItem('kr.sp.learn',spLearn?'1':'0');}catch(e){}render();}
-function spLearnBtn(){return '<button class="small '+(spLearn?'primary':'ghost')+'" data-a="splearn" title="'+T('Lernmodus: Tipps und Erklärungen','Learning mode: tips and explanations')+'">🎓 '+T('Lernmodus','Learning mode')+(spLearn?T(' an',' on'):'')+'</button>';}
+function spLearnBtn(){return '<button class="small '+(spLearn?'primary':'ghost')+'" data-a="splearn" title="'+T('Lernmodus: Tipps und Erklärungen','Learning mode: tips and explanations')+'">'+T('Lernmodus','Learning mode')+(spLearn?T(' an',' on'):'')+'</button>';}
 /* Einschätzung der eigenen Hand je Runde (gleiches Verfahren wie die Bots, einmal pro Runde gerechnet) */
 function spCoachEst(r){
   r=r||sp.stage;var k=sp.hand+'.'+r;sp.coach=sp.coach||{};
@@ -3265,7 +3279,7 @@ function spCoach(){
   var body='';
   try{body=sp.phase==='play'?coachPlay():sp.phase==='guess'?coachGuess():sp.phase==='done'?coachDone():'';}catch(e){console.error(e);return null;}
   /* zweimal: links unter dem Tisch (Hochformat), rechts in der Insight-Spalte (Querformat) – CSS blendet je eines aus */
-  var box=function(cls){return '<div class="panel coach p-coach '+cls+'" role="note"><div class="spread"><h2>🎓 '+T('Lernmodus','Learning mode')+'</h2><button class="small ghost" data-a="splearn">'+T('aus','off')+'</button></div>'+body+'</div>';};
+  var box=function(cls){return '<div class="panel coach p-coach '+cls+'" role="note"><div class="spread"><h2>'+T('Lernmodus','Learning mode')+'</h2><button class="small ghost" data-a="splearn">'+T('aus','off')+'</button></div>'+body+'</div>';};
   return {l:box('coach-l'),r:box('coach-r')};
 }
 
@@ -3555,7 +3569,7 @@ function acctDelete(){
 function acctBar(){
   if(KRA&&KRA.lanGuest)return '';   // WLAN-Gast: Konten gibt es nur online
   return '<div class="acctbar">'+(ACC?'<span>👤 <b>'+esc(ACC.name)+'</b></span><button class="small ghost" data-a="acct">'+T('Konto &amp; Statistik','Account &amp; statistics')+'</button>'+(acctFr&&acctFr.incoming.length?'<button class="small primary" data-a="acctfr">📨 '+acctFr.incoming.length+T(' Freundschaftsanfrage'+(acctFr.incoming.length>1?'n':''),' friend request'+(acctFr.incoming.length>1?'s':''))+'</button>':''):
-    T('<button class="small ghost" data-a="acct">👤 Anmelden / Konto erstellen</button><span class="muted small">Statistik auf allen Geräten</span>','<button class="small ghost" data-a="acct">👤 Log in / create account</button><span class="muted small">Statistics on all devices</span>'))+'</div>';
+    T('<button class="small ghost" data-a="acct">Anmelden</button><span class="muted small">Statistik auf allen Geräten</span>','<button class="small ghost" data-a="acct">Log in</button><span class="muted small">Statistics on all devices</span>'))+'</div>';
 }
 function acctField(id,lbl,type,val,ac){
   return '<div class="field"><label class="lbl" for="'+id+'">'+lbl+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(val||'')+'"'+
@@ -3741,7 +3755,7 @@ function calcStats(list){
 function pct(a,b){return b?Math.round(a*100/b)+' %':'\u2013';}
 function statsLine(list){
   var st=calcStats(list||S.stats);if(!st.hands)return '';
-  return '<p class="note statsline">📊 '+st.wins+T(' von ',' of ')+st.hands+T(' Händen richtig (',' hands correct (')+pct(st.wins,st.hands)+')'+(st.part?', '+st.part+T(' fast',' almost'):'')+
+  return '<p class="note statsline">'+st.wins+T(' von ',' of ')+st.hands+T(' Händen richtig (',' hands correct (')+pct(st.wins,st.hands)+')'+(st.part?', '+st.part+T(' fast',' almost'):'')+
     (st.streak>1?T(' \u00b7 Serie: ',' \u00b7 streak: ')+st.streak+' \u2713':'')+' \u00b7 <a href="#" data-a="stats">'+T('Statistik','Statistics')+'</a></p>';
 }
 /* Grafik-Bausteine der Statistik: Ring (Anteil), Balken, Verlauf – Zahlen gibt es ausklappbar darunter */
@@ -3765,7 +3779,7 @@ function trendSvg(list){
 function statsPanel(list,usage,bare){
   list=list||S.stats;
   var st=calcStats(list);
-  var out=bare?'<div class="stats">':'<div class="panel stats"><div class="spread"><h2>📊 '+T('Statistik','Statistics')+'</h2><button class="small ghost" data-a="stats">'+T('Schließen','Close')+'</button></div>';
+  var out=bare?'<div class="stats">':'<div class="panel stats"><div class="spread"><h2>'+T('Statistik','Statistics')+'</h2><button class="small ghost" data-a="stats">'+T('Schließen','Close')+'</button></div>';
   if(!st.hands)return out+T('<p class="note">Noch keine fertige Hand in diesem Raum.</p></div>','<p class="note">No finished hand in this room yet.</p></div>');
   out+='<div class="rings">'+ringSvg(st.wins,st.hands,st.wins+T(' von ',' of ')+st.hands+T(' richtig',' correct')+(st.part?'<br>+ '+st.part+T(' fast richtig',' almost'):''))+
     (st.guesses?ringSvg(st.hits,st.of,T('Tipp-Treffer','Guess hits'),'var(--gold)'):'')+
@@ -3942,8 +3956,8 @@ function startView(){
   var n='';try{n=localStorage.getItem('kr.name')||'';}catch(e){}
   return '<div class="panel hero">'+
     '<div class="spread"><h1 class="brand" data-a="reload" role="button" tabindex="0" title="'+T('Seite neu laden','Reload page')+'"><img class="logo" src="logo.svg" alt="">Letzte Runde</h1><div class="row">'+moreBox(fxBtn()+themeBtn()+
-      (KRA&&(KRA.lanGuest||KRA.mode==='lan'||KRA.mode==='join')?'':'<button class="small ghost" data-a="planopen">📅 '+T('Raum für später planen','Plan a room for later')+'</button>')+
-      '<button class="small ghost" data-a="tvjoin" title="'+T('Dieses Gerät (PC, Fernseher) zeigt nur den Tisch – Raumcode vorher eingeben','This device (PC, TV) only shows the table – enter the room code first')+'">📺 '+T('Als Tisch beitreten','Join as table')+'</button>')+'</div></div>'+
+      (KRA&&(KRA.lanGuest||KRA.mode==='lan'||KRA.mode==='join')?'':'<button class="small ghost" data-a="planopen">'+T('Raum für später planen','Plan a room for later')+'</button>')+
+      '<button class="small ghost" data-a="tvjoin" title="'+T('Dieses Gerät (PC, Fernseher) zeigt nur den Tisch – Raumcode vorher eingeben','This device (PC, TV) only shows the table – enter the room code first')+'">'+T('Als Tisch beitreten','Join as table')+'</button>')+'</div></div>'+
     placeBar()+bundleBanner()+offlineBanner()+(inviteCode?inviteHint():'')+
     '<input id="name" class="namein" value="'+esc(myName||n)+'" maxlength="18" placeholder="'+T('Dein Name','Your name')+'" aria-label="'+T('Dein Name','Your name')+'">'+acctBar()+
     (uiErr?'<p class="err" style="margin-top:10px">'+esc(uiErr)+'</p>':'')+
@@ -3977,8 +3991,7 @@ function startView(){
     '<a class="appbtn" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">Android (APK)</a></div>'+
   '<div id="playcount">'+countsHtml()+'</div>'+
   '<div class="sitefoot"><nav class="footlinks">'+T('<a href="impressum.html">Impressum</a><a href="impressum.html#datenschutz">Datenschutz</a>','<a href="impressum.html">Legal notice</a><a href="impressum.html#privacy">Privacy</a>')+
-    '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">Open Source</a>'+
-    '<a href="https://simongutjahr.de" target="_blank" rel="noopener">'+T('Ein Spiel von Simon','A game by Simon')+'</a></nav>'+
+    '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">Open Source</a>'+'</nav>'+
     '<div class="langseg" role="group" aria-label="'+T('Sprache','Language')+'">'+(T('de','en')==='de'?'<span aria-current="true">DE</span>'+langBtn('EN'):langBtn('DE')+'<span aria-current="true">EN</span>')+'</div>'+
     (bundleOn()?'<div class="bundlefoot">'+bundleFoot()+'</div>':'')+'</div></div>';
 }
@@ -3992,7 +4005,7 @@ function roomView(){
     '<div class="note">'+esc(phaseLabel())+(roomPrivate()?T(' \u00b7 🔒 privat',' \u00b7 🔒 private'):'')+(preStart()?' \u00b7 Start '+esc(fmtWhen(num(S.room.startsAt))):'')+(watching?' \u00b7 <span class="tag">'+T('Zuschauer','Spectator')+'</span>':'')+'</div></div>'+
     '<div class="row">'+voiceBtns()+'<button class="small ghost" data-a="invite">'+T('Einladen','Invite')+'</button>'+moreBox(fxBtn()+themeBtn()+
       '<button class="small ghost icon" data-a="stats" title="'+T('Statistik','Statistics')+'" aria-label="'+T('Statistik','Statistics')+'">📊</button>'+(phase()!=='lobby'?spInsightBtn():'')+
-      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?T('Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden','Table is hidden (a big screen shows it) – tap to show'):T('Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt','Hide the table when a big screen shows it'))+'">'+(hideTable?T('🃏 Tisch einblenden','🃏 Show table'):T('📺 Tisch ausblenden','📺 Hide table'))+'</button>':'')+
+      (!watching?'<button class="small '+(hideTable?'primary':'ghost')+'" data-a="notable" title="'+(hideTable?T('Tisch ist ausgeblendet (ein großer Bildschirm zeigt ihn) – antippen zum Einblenden','Table is hidden (a big screen shows it) – tap to show'):T('Tisch ausblenden, wenn ein großer Bildschirm den Tisch zeigt','Hide the table when a big screen shows it'))+'">'+(hideTable?T('Tisch einblenden','Show table'):T('Tisch ausblenden','Hide table'))+'</button>':'')+
       (isHost()&&!watching?'<button class="small ghost danger" data-a="close">'+T('Raum schließen','Close room')+'</button>':''))+
       '<button class="small ghost" data-a="leave">'+T('Verlassen','Leave')+'</button></div></div>'+
     (watching?'<div class="hr"></div><div class="row"><div class="field"><label class="lbl">'+T('Dein Name','Your name')+'</label>'+
@@ -4075,7 +4088,7 @@ function roomView(){
       T('<p class="note chiphint">1 = schwächste, '+ps.length+' = stärkste Hand · antippen zum Nehmen'+(optb('allowSteal')?', auch von anderen':'')+' · eigenen Chip antippen legt ihn zurück</p>','<p class="note chiphint">1 = weakest, '+ps.length+' = strongest hand · tap to take'+(optb('allowSteal')?', also from others':'')+' · tap your own chip to put it back</p>')+
       '<div class="hr"></div><div class="bar">'+
       (ps.indexOf(uid)>=0?'<button class="'+(isReady(m[uid])?'':'primary')+'" data-a="ready"'+(chipOf(uid)?'':' disabled')+'>'+
-        (isReady(m[uid])?T('Bereit zurücknehmen','Take back ready'):T('\ud83d\udc4a Bereit','\ud83d\udc4a Ready'))+'</button>':'')+
+        (isReady(m[uid])?T('Bereit zurücknehmen','Take back ready'):T('Bereit','Ready'))+'</button>':'')+
       waitingHtml(ps.filter(function(id){return !isReady(m[id]);}),T('Alle bereit','All ready'))+
       (isHost()?'<button class="small ghost" data-a="abort">'+T('Hand abbrechen','Abort hand')+'</button>':'')+
       '</div></div>'+L.slice(beforeBoard);
@@ -4119,7 +4132,7 @@ function tvSeat(id,i,n){
   if(rv&&(ph==='reveal'||ph==='done'))cards=cardsHtml(rv)+'';
   else for(z=0;z<HC();z++)cards+=backHtml();
   var chip=c!=null?'<div class="chip static r'+(ph==='play'?stage():4)+'">'+c+'</div>':'<div class="chip ph static">–</div>';
-  var status=ph==='play'?(isReady(p)?T('<span class="tag ok">👊 bereit</span>','<span class="tag ok">👊 ready</span>'):T('<span class="tag">… überlegt</span>','<span class="tag">… thinking</span>')):
+  var status=ph==='play'?(isReady(p)?T('<span class="tag ok">bereit</span>','<span class="tag ok">ready</span>'):T('<span class="tag">… überlegt</span>','<span class="tag">… thinking</span>')):
     ph==='guess'&&id===main().target?T('<span class="tag gold">wird getippt</span>','<span class="tag gold">being guessed</span>'):
     ph==='guess'?((S.guess&&S.guess.confirmed||{})[id]?T('<span class="tag ok">✓ Tipp</span>','<span class="tag ok">✓ guess</span>'):T('<span class="tag">… tippt</span>','<span class="tag">… guessing</span>')):
     cur===id?T('<span class="tag gold">ist dran</span>','<span class="tag gold">their turn</span>'):'';
@@ -4140,7 +4153,7 @@ function tvView(){
   var ph=phase(),ps=parts(),h=hand();
   var top='<div class="tv-top"><div class="brand sm"><img class="logo" src="logo.svg" alt="">Letzte Runde</div>'+
     '<div class="tv-title">'+(roomName()?esc(roomName())+' ':T('Raum ','Room '))+'<span class="code">'+esc(code)+'</span><span class="note"> · '+esc(phaseLabel())+'</span></div>'+
-    '<div class="row"><button class="small '+(tvInsight?'primary':'ghost')+'" data-a="tvinsight" title="'+T('Insight: Positionswechsel als Grafik','Insight: position changes as a chart')+'">📈 Insight'+(tvInsight?T(' an',' on'):'')+'</button>'+fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="tvfs" title="'+T('Vollbild','Fullscreen')+'" aria-label="'+T('Vollbild','Fullscreen')+'">⤢</button>'+
+    '<div class="row"><button class="small '+(tvInsight?'primary':'ghost')+'" data-a="tvinsight" title="'+T('Insight: Positionswechsel als Grafik','Insight: position changes as a chart')+'">Insight'+(tvInsight?T(' an',' on'):'')+'</button>'+fxBtn()+themeBtn()+'<button class="small ghost icon" data-a="tvfs" title="'+T('Vollbild','Fullscreen')+'" aria-label="'+T('Vollbild','Fullscreen')+'">⤢</button>'+
     '<button class="small ghost" data-a="leave">'+T('Verlassen','Leave')+'</button></div></div>';
   var out=top+(uiErr?'<p class="err">'+esc(uiErr)+'</p>':'')+(cd.key?countdownHtml():'');
   if(ph==='lobby'||ph==='deal'){
@@ -4232,11 +4245,11 @@ function playerList(inHand){
     out+='<div class="pl'+(id===uid?' me':'')+(rx&&rx.hand?(rx.ok?' res-ok':' res-bad'):'')+'">'+
       (inHand?(c?'<div class="chip r'+(ph==='play'?stage():4)+((ph==='play'&&(id===uid||optb('allowSteal')))?'':' static')+(id===uid?' mine':'')+'"'+
         ((ph==='play'&&(id===uid||optb('allowSteal')))?' data-chip="'+c+'"':'')+'>'+c+'</div>':'<div class="chip ph static">\u2013</div>'):'')+
-      '<div class="nm">'+esc(p.name||T('Spieler','Player'))+(isMuted(id)?' <span class="tag" title="'+T('stummgeschaltet','muted')+'">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">'+T('du','you')+'</span>':'')+(p.bot?' <span class="tag" title="Bot">\ud83e\udd16</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
+      '<div class="nm">'+esc(p.name||T('Spieler','Player'))+(isMuted(id)?' <span class="tag" title="'+T('stummgeschaltet','muted')+'">\ud83d\udd07</span>':'')+(id===uid?' <span class="tag you">'+T('du','you')+'</span>':'')+(p.bot?' <span class="tag bot">Bot</span>':'')+frTag(id)+voiceTag(id)+reactHtml(id)+
         (id===hostId()?' <span class="tag">Host</span>':'')+(inHand?histHtml(id):'')+sayHtml(id)+nmRes(cards,verdict)+'</div>'+
       (m[id]&&!isOnline(id)&&!isBotP(id)?'<span class="tag off">offline'+(away[id]!=null?' '+fmtAway(away[id]):'')+'</span>':'')+
-      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?T('<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">\ud83d\udd04<span class="tx"> offen</span></span>','<span class="tag open" title="unsure \u2013 gives up the chip without a fight">\ud83d\udd04<span class="tx"> open</span></span>'):'')+
-      (inHand&&ph==='play'?(isReady(p)?T('<span class="tag ok" title="bereit">\ud83d\udc4a</span>','<span class="tag ok" title="ready">\ud83d\udc4a</span>'):'<span class="tag">\u2026</span>'):'')+
+      (inHand&&ph==='play'&&c&&isOpenBot(id,h,c)?T('<span class="tag open" title="unsicher \u2013 gibt den Chip ohne Streit ab">offen</span>','<span class="tag open" title="unsure \u2013 gives up the chip without a fight">\ud83d\udd04<span class="tx"> open</span></span>'):'')+
+      (inHand&&ph==='play'?(isReady(p)?T('<span class="tag ok">bereit</span>','<span class="tag ok">ready</span>'):'<span class="tag wait">\u2026</span>'):'')+
       (watching&&isBotP(id)&&(ph==='lobby'||ph==='done')?'<button class="small primary" data-replace="'+esc(id)+'">\u21aa '+T('Platz übernehmen','Take seat')+'</button>':'')+
       (watching&&m[id]&&idle.indexOf(id)>=0?'<button class="small primary" data-take="'+esc(id)+'">\u21aa '+T('Platz übernehmen','Take seat')+'</button>':
         (watching&&m[id]&&!isOnline(id)?'<span class="note">'+(id===hostId()?T('Host \u2013 Rolle wandert nach '+Math.round(HOSTMOVE_MS/60000)+' min weiter','Host \u2013 role moves on after '+Math.round(HOSTMOVE_MS/60000)+' min'):
