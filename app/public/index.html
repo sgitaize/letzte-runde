@@ -879,6 +879,8 @@ html:not([data-skin]) [data-a="addbot"]::before{content:"+ "}
 .p-chips>.row{align-items:center}
 .p-chips:has(>.row>.note) .chiphint{display:none}   /* alle Chips vergeben: Hinweis zum Nehmen überflüssig */
 .statsline a{color:var(--accent)}
+.getapp .installhelp{flex:1 1 100%;margin:2px 0 0}.getapp .installhelp summary{font-size:13px;font-weight:400}
+html.kr-app .getapp,html.kr-lan .getapp{display:none}
 </style>
 </head>
 <body>
@@ -3981,17 +3983,18 @@ function startView(){
     T('<li>Haben alle geklopft, läuft ein 3-2-1-Countdown \u2013 bis dahin kann jeder noch zurücknehmen.</li>','<li>Once everyone has knocked, a 3-2-1 countdown runs \u2013 until then anyone can still take it back.</li>')+
     T('<li>Aufgedeckt wird zuerst der höchste Chip, danach ab Chip 1 aufwärts.</li>','<li>The highest chip is revealed first, then from chip 1 upwards.</li>')+
     T('</ol><p class="note" style="margin-top:8px">Karten liegen verschlüsselt auf dem Server. Das Geben ist auf drei Spieler verteilt, damit weder der Server noch ein anderer Browser fremde Karten kennt.</p></details>','</ol><p class="note" style="margin-top:8px">Cards are stored encrypted on the server. Dealing is split across three players so that neither the server nor another browser knows anyone else’s cards.</p></details>')+
-  T('<div class="installhelp"><details><summary>Als App speichern (auch offline spielbar)</summary>','<div class="panel installhelp"><details><summary>Save as app (playable offline too)</summary>')+
+  (canDonate()?'<div class="donatebar"><button class="ghost spezibtn" data-a="donate">'+SPEZI+T('Kauf mir eine Spezi</button><span class="note">kostenlos, ohne Werbung</span></div>','Buy me a Spezi</button><span class="note">free, no ads</span></div>'):'')+
+  /* Fußzeile geordnet (2026-11-22): Apps als zwei Knöpfe (nur im Browser), darunter eine ruhige Zeile Rechtliches + Sprache */
+  '<div class="getapp"><span class="note apkdl">'+T('App:','App:')+'</span>'+
+    '<a class="appbtn apkdl" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">iPhone</a>'+
+    '<a class="appbtn apkdl" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">Android (APK)</a>'+
+  '<details class="installhelp">'+T('<summary>Ohne Store: auf den Home-Bildschirm</summary>','<summary>Without a store: add to home screen</summary>')+
     T('<p><b>iPhone / iPad (Safari):</b> unten auf das Teilen-Symbol (Quadrat mit Pfeil) tippen \u2192 \u201eZum Home-Bildschirm\u201c \u2192 \u201eHinzufügen\u201c. Danach startet \u201eLetzte Runde\u201c wie eine App vom Home-Bildschirm.</p>','<p><b>iPhone / iPad (Safari):</b> tap the share icon (square with arrow) \u2192 \u201cAdd to Home Screen\u201d \u2192 \u201cAdd\u201d. Then \u201cLetzte Runde\u201d starts like an app from the home screen.</p>')+
     T('<p><b>Android (Chrome):</b> oben rechts auf \u22ee tippen \u2192 \u201eApp installieren\u201c bzw. \u201eZum Startbildschirm hinzufügen\u201c. Lange auf das Symbol drücken zeigt den Kurzbefehl \u201eSingleplayer\u201c.</p>','<p><b>Android (Chrome):</b> tap \u22ee at the top right \u2192 \u201cInstall app\u201d or \u201cAdd to Home screen\u201d. Long-pressing the icon shows the \u201cSingleplayer\u201d shortcut.</p>')+
     T('<p><b>Offline:</b> Einmal mit Internet öffnen \u2013 danach läuft der Singleplayer (inkl. Lernmodus und Statistik) auch ohne Netz, z. B. im Flugzeug. Räume mit anderen brauchen Internet.</p>','<p><b>Offline:</b> open it once with internet \u2013 afterwards singleplayer (incl. learning mode and statistics) works without a connection, e.g. on a plane. Rooms with others need internet.</p>')+
     T('<p><b>Aktualisieren:</b> passiert automatisch \u2013 jedes Mal, wenn du die App mit Internet öffnest, holt sie sich die neueste Version. Klappt das mal nicht: App ganz schließen (aus der App-Übersicht wischen) und neu öffnen oder oben auf das Logo tippen.</p>','<p><b>Updating:</b> happens automatically \u2013 every time you open the app with internet it fetches the latest version. If that doesn’t work: close the app completely (swipe it away) and reopen it, or tap the logo at the top.</p>')+
-  '</details></div>'+
-  (canDonate()?'<div class="donatebar"><button class="ghost spezibtn" data-a="donate">'+SPEZI+T('Kauf mir eine Spezi</button><span class="note">kostenlos, ohne Werbung</span></div>','Buy me a Spezi</button><span class="note">free, no ads</span></div>'):'')+
-  /* Fußzeile geordnet (2026-11-22): Apps als zwei Knöpfe (nur im Browser), darunter eine ruhige Zeile Rechtliches + Sprache */
-  '<div class="getapp apkdl"><span class="note">'+T('Als App:','As an app:')+'</span>'+
-    '<a class="appbtn" href="https://apps.apple.com/de/app/letzte-runde-kartenspiel/id6823285737" target="_blank" rel="noopener">iPhone</a>'+
-    '<a class="appbtn" href="https://github.com/sgitaize/letzte-runde/releases/latest/download/letzte-runde.apk">Android (APK)</a></div>'+
+  '</details>'+
+  '</div>'+
   '<div id="playcount">'+countsHtml()+'</div>'+
   '<div class="sitefoot"><nav class="footlinks">'+T('<a href="impressum.html">Impressum</a><a href="impressum.html#datenschutz">Datenschutz</a>','<a href="impressum.html">Legal notice</a><a href="impressum.html#privacy">Privacy</a>')+
     '<a href="https://github.com/sgitaize/letzte-runde" target="_blank" rel="noopener">Open Source</a>'+'</nav>'+
